@@ -33,12 +33,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function QuarterlyReportPage() {
   const params = useParams();
   const slug = params.quarter as string;
-  const parsed = parseQuarterSlug(slug);
+  const parsed = useMemo(() => parseQuarterSlug(slug), [slug]);
 
   const [report, setReport] = useState<MemberQuarterlyReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ export default function QuarterlyReportPage() {
     )
       .then((data) => setCommunityMilestones(data.community_milestones || []))
       .catch(() => {});
-  }, [slug]);
+  }, [parsed]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -84,6 +84,9 @@ export default function QuarterlyReportPage() {
     );
   }
 
+  const activity = report.activity_details;
+  const programme = report.member_tier === "academy" ? "Academy" : report.member_tier === "club" ? "Club" : "Community";
+  const rewardBubbles = activity?.wallet.available ? activity.wallet.metrics.reward_bubbles : null;
   const label = quarterLabel(parsed.year, parsed.quarter);
   const activityState = report.activity_state;
   const leaderboardEligible = report.leaderboard_eligible;
@@ -153,7 +156,7 @@ export default function QuarterlyReportPage() {
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             {activityState === "no_activity"
-              ? "You had no recorded SwimBuddz activity this quarter. Your membership remained active, but no verified sessions, events, volunteer contributions, or milestones were recorded."
+              ? "You had no recorded SwimBuddz activity this quarter. No verified sessions, events, volunteer contributions, or milestones were recorded."
               : `You recorded ${report.total_sessions_attended} session${report.total_sessions_attended === 1 ? "" : "s"} this quarter. This report stays factual so you can use it to build a steadier rhythm next quarter.`}
           </p>
           <div className="mt-4 flex flex-wrap gap-3 text-sm font-medium">
@@ -173,43 +176,39 @@ export default function QuarterlyReportPage() {
         </Card>
       )}
 
-      {/* Percentile nudge */}
-      {leaderboardEligible && report.attendance_percentile >= 0.5 && (
-        <Card className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200">
-          <p className="text-center text-sm font-semibold text-amber-800">
-            You&apos;re in the{" "}
-            <span className="text-lg font-bold text-amber-600">
-              top {Math.max(1, Math.round((1 - report.attendance_percentile) * 100))}%
-            </span>{" "}
-            of swimmers this quarter!
-          </p>
-        </Card>
-      )}
+      {activity?.data_quality?.length ? <Card className="p-4 bg-amber-50 text-sm text-amber-800">
+        {activity.data_quality.map(note => <p key={note}>{note}</p>)}
+      </Card> : null}
+      <Card className="p-4 text-sm text-slate-600">
+        Programme attendance and streaks cover your {programme} commitments. All recorded swims include your other programmes.
+        Pool hours estimate scheduled swim time, rather than measured time in the water.
+      </Card>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {activity?.attendance.all_sessions_attended != null && <StatsCard label="All Recorded Swims" value={activity.attendance.all_sessions_attended} icon={<Waves className="h-6 w-6" />} color="cyan" />}
         {report.pool_hours > 0 && (
           <StatsCard
-            label="Pool Hours"
+            label="Scheduled Swim Hours"
             value={`${report.pool_hours.toFixed(1)}h`}
             icon={<Clock className="h-6 w-6" />}
             color="cyan"
           />
         )}
         <StatsCard
-          label="Sessions Attended"
+          label={`${programme} Sessions Attended`}
           value={report.total_sessions_attended}
           icon={<Calendar className="h-6 w-6" />}
           color="cyan"
         />
         <StatsCard
-          label="Attendance Rate"
+          label={`${programme} Attendance Rate`}
           value={`${(report.attendance_rate * 100).toFixed(0)}%`}
           icon={<TrendingUp className="h-6 w-6" />}
           color="green"
         />
         <StatsCard
-          label="Longest Streak"
+          label={`${programme} Longest Streak`}
           value={`${report.streak_longest} weeks`}
           icon={<Flame className="h-6 w-6" />}
           color="orange"
@@ -223,8 +222,8 @@ export default function QuarterlyReportPage() {
           />
         )}
         <StatsCard
-          label="Bubbles Earned"
-          value={report.bubbles_earned}
+          label={rewardBubbles != null ? "Reward Bubbles" : "Wallet Credits"}
+          value={rewardBubbles ?? report.bubbles_earned}
           icon={<Wallet className="h-6 w-6" />}
           color="blue"
         />
@@ -239,14 +238,24 @@ export default function QuarterlyReportPage() {
       </div>
 
       {/* Attendance breakdown */}
-      {report.sessions_by_type && (
+      {(activity?.attendance.attended_by_type || report.sessions_by_type) && (
         <AttendanceBreakdown
-          sessionsByType={report.sessions_by_type}
+          sessionsByType={activity?.attendance.attended_by_type || report.sessions_by_type || {}}
+          basis={activity?.attendance.attended_by_type ? "attended" : "expected"}
           favoriteDay={report.favorite_day}
           favoriteLocation={report.favorite_location}
           punctualityRate={report.punctuality_rate}
         />
       )}
+
+      {activity && <Card className="p-4 space-y-3">
+        <h3 className="font-semibold text-slate-900">Your locations, Club & pod activity</h3>
+        {activity.attendance.locations?.map(location => <p key={location.location} className="text-sm text-slate-600">{location.location}: {location.checkins} recorded swim{location.checkins === 1 ? "" : "s"}</p>)}
+        <dl className="grid grid-cols-2 gap-3 text-sm text-slate-600">
+          {[["Club memberships during quarter", "club_enrolled_members"], ["Pods during quarter", "pods_with_assignments"], ["Experience check-ins", "experience_checkins"]].map(([label, key]) => <div key={key}><dt>{label}</dt><dd className="font-semibold text-slate-900">{activity.members.available ? activity.members.metrics[key] ?? "Unknown" : "Unknown"}</dd></div>)}
+          <div><dt>Bubbles used for purchases</dt><dd className="font-semibold text-slate-900">{activity.wallet.available ? activity.wallet.metrics.purchase_bubbles ?? "Unknown" : "Unknown"}</dd></div>
+        </dl>
+      </Card>}
 
       {/* Achievements */}
       <AchievementsList

@@ -3,6 +3,7 @@ import { CalendarDays, Clock, MapPin } from "lucide-react";
 
 type AttendanceBreakdownProps = {
   sessionsByType: Record<string, number>;
+  basis?: "attended" | "expected";
   favoriteDay: string | null;
   favoriteLocation: string | null;
   punctualityRate: number;
@@ -24,6 +25,7 @@ const typeLabels: Record<string, string> = {
 
 export function AttendanceBreakdown({
   sessionsByType,
+  basis = "attended",
   favoriteDay,
   favoriteLocation,
   punctualityRate,
@@ -33,7 +35,7 @@ export function AttendanceBreakdown({
 
   return (
     <Card className="p-4 space-y-4">
-      <h3 className="font-semibold text-slate-900">Attendance Breakdown</h3>
+      <h3 className="font-semibold text-slate-900">{basis === "attended" ? "Recorded swims by programme" : "Expected sessions by programme"}</h3>
 
       {/* Session type bars */}
       <div className="space-y-2">

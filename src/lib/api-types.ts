@@ -3253,6 +3253,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/members/reporting-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reporting Summary */
+        get: operations["get_reporting_summary_internal_members_reporting_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/members/by-auth/{auth_id}": {
         parameters: {
             query?: never;
@@ -5275,6 +5292,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/reporting-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reporting Summary */
+        get: operations["get_reporting_summary_internal_sessions_reporting_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/sessions/participants/{participant_id}/settlement-context": {
         parameters: {
             query?: never;
@@ -6962,6 +6996,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/commercial-terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview Commercial Terms */
+        get: operations["preview_commercial_terms_academy_admin_enrollments__enrollment_id__commercial_terms_get"];
+        put?: never;
+        /** Approve Commercial Terms */
+        post: operations["approve_commercial_terms_academy_admin_enrollments__enrollment_id__commercial_terms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/my-enrollments": {
         parameters: {
             query?: never;
@@ -7946,6 +7998,23 @@ export interface paths {
          * @description Delete academy enrollments and progress records for a member (Admin only).
          */
         delete: operations["admin_delete_member_academy_records_academy_admin_members__member_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/academy/reporting-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reporting Summary */
+        get: operations["get_reporting_summary_internal_academy_reporting_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -9027,6 +9096,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments/admin/academy-receipts/adopt-settled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adopt Previously Settled Academy Receipt
+         * @description Adopt a settled single-student payment, creating cash-in ONLY for a
+         *     separately confirmed, previously unrecorded bank remainder.
+         *
+         *     Paid history and previous ledger postings are never edited. This is
+         *     deliberately not a refund, reversal or entitlement reapplication.
+         */
+        post: operations["adopt_previously_settled_academy_receipt_payments_admin_academy_receipts_adopt_settled_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/academy-receipts/by-reference/{external_reference}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find Verified Receipt By Bank Reference
+         * @description Resume previously verified receipt allocations without registering cash again.
+         */
+        get: operations["find_verified_receipt_by_bank_reference_payments_admin_academy_receipts_by_reference__external_reference__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/admin/academy-receipts/{receipt_id}": {
         parameters: {
             query?: never;
@@ -9101,6 +9214,29 @@ export interface paths {
          *     attempt and link its claim to the one bank receipt already recorded.
          */
         post: operations["link_superseded_academy_checkout_to_shared_receipt_payments_admin_academy_receipts__receipt_id__reconcile_attempt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/academy-receipts/{receipt_id}/allocations/{allocation_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Void Unapplied Allocation
+         * @description Return an unapplied mistaken allocation to the receipt pool.
+         *
+         *     An applied tuition credit is never voided here; it requires explicit
+         *     finance reversal so a member cannot silently lose money.
+         */
+        post: operations["void_unapplied_allocation_payments_admin_academy_receipts__receipt_id__allocations__allocation_id__void_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11257,6 +11393,23 @@ export interface paths {
         patch: operations["admin_update_testimonial_admin_testimonials__testimonial_id__patch"];
         trace?: never;
     };
+    "/api/v1/internal/communications/reporting-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reporting Summary */
+        get: operations["get_reporting_summary_internal_communications_reporting_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/communications/session-published": {
         parameters: {
             query?: never;
@@ -12911,6 +13064,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/wallet/reporting-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reporting Summary */
+        get: operations["get_reporting_summary_internal_wallet_reporting_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/wallet/referral-code/resolve": {
         parameters: {
             query?: never;
@@ -14244,6 +14414,23 @@ export interface paths {
         put?: never;
         /** Verify a reference via payments_service and record (client fallback) */
         post: operations["claim_founding_member_ai_founding_members_claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/ai/reporting-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reporting Summary */
+        get: operations["get_reporting_summary_internal_ai_reporting_summary_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -18316,6 +18503,23 @@ export interface paths {
          *     - 0.5 = mix both at equal volume
          */
         post: operations["apply_audio_to_video_media_videos__media_id__apply_audio_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/media/reporting-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reporting Summary */
+        get: operations["get_reporting_summary_internal_media_reporting_summary_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -25813,6 +26017,24 @@ export interface components {
              */
             end: string;
         };
+        /** ReportingSection */
+        ReportingSection: {
+            /**
+             * Available
+             * @default true
+             */
+            available: boolean;
+            /** Metrics */
+            metrics?: {
+                [key: string]: number | null;
+            };
+            /** Details */
+            details?: {
+                [key: string]: unknown;
+            };
+            /** Notes */
+            notes?: string[];
+        };
         /**
          * ResolveAccountRequest
          * @description Request to resolve/verify a bank account.
@@ -28264,6 +28486,10 @@ export interface components {
         };
         /** SessionListSummary */
         SessionListSummary: {
+            /** Ends At */
+            ends_at?: string | null;
+            /** Status */
+            status?: string | null;
             /** Id */
             id: string;
             /** Title */
@@ -29183,6 +29409,11 @@ export interface components {
             member_id: string;
             /** Status */
             status: string;
+            /**
+             * Role
+             * @default swimmer
+             */
+            role: string;
         };
         /** AttendanceResponse */
         AttendanceResponse: {
@@ -29387,6 +29618,15 @@ export interface components {
              * @default 0
              */
             total_pool_hours: number;
+            /**
+             * Attendance Available
+             * @default false
+             */
+            attendance_available: boolean;
+            /** Attended Sessions */
+            attended_sessions?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * ParticipantAttendanceCreate
@@ -29461,6 +29701,8 @@ export interface components {
             booking_guest_attended: number;
             /** Participant Ids */
             participant_ids?: string[];
+            /** Member Ids */
+            member_ids?: string[];
         };
         /**
          * SessionSummary
@@ -29735,6 +29977,13 @@ export interface components {
             /** Consumed Services Kobo */
             consumed_services_kobo: number;
             /**
+             * Refund Due Kobo
+             * @default 0
+             */
+            refund_due_kobo: number;
+            /** Refund Reason */
+            refund_reason?: string | null;
+            /**
              * Discount Kobo
              * @default 0
              */
@@ -29746,6 +29995,8 @@ export interface components {
              * @default false
              */
             confirmed_attendance_review: boolean;
+            /** Installment Amounts Kobo */
+            installment_amounts_kobo?: number[];
         };
         /** ApproveUnpaidCohortChange */
         ApproveUnpaidCohortChange: {
@@ -30854,6 +31105,31 @@ export interface components {
             installment_count?: number | null;
             /** Installment Deposit Amount */
             installment_deposit_amount?: number | null;
+        };
+        /** CommercialTermsRequest */
+        CommercialTermsRequest: {
+            /**
+             * Adjustment Id
+             * Format: uuid
+             */
+            adjustment_id: string;
+            /** Reason */
+            reason: string;
+            /** Expected Price Snapshot Kobo */
+            expected_price_snapshot_kobo: number;
+            /** Expected Installments */
+            expected_installments: {
+                [key: string]: unknown;
+            }[];
+            /** Unpaid Installment Amounts Kobo */
+            unpaid_installment_amounts_kobo: number[];
+            /**
+             * Historic Discount Kobo
+             * @default 0
+             */
+            historic_discount_kobo: number;
+            /** Agreed Cash Total Kobo */
+            agreed_cash_total_kobo: number;
         };
         /**
          * ComplexityScoreCalculateRequest
@@ -32293,6 +32569,21 @@ export interface components {
         AdminReviewRequest: {
             /** Note */
             note?: string | null;
+        };
+        /** AdoptSettledAcademyReceiptRequest */
+        AdoptSettledAcademyReceiptRequest: {
+            /** Original Payment Reference */
+            original_payment_reference: string;
+            /** External Reference */
+            external_reference: string;
+            /** Actual Bank Amount Kobo */
+            actual_bank_amount_kobo: number;
+            /** Reviewed Bank Evidence */
+            reviewed_bank_evidence: string;
+            /** Confirm Original Payment Is One Beneficiary */
+            confirm_original_payment_is_one_beneficiary: boolean;
+            /** Confirm Unrecorded Remainder */
+            confirm_unrecorded_remainder: boolean;
         };
         /** AllocateReceiptRequest */
         AllocateReceiptRequest: {
@@ -33982,6 +34273,11 @@ export interface components {
             /** Verification Note */
             verification_note: string;
         };
+        /** VoidReservedAllocation */
+        VoidReservedAllocation: {
+            /** Reason */
+            reason: string;
+        };
         /** _BankItem */
         _BankItem: {
             /** Name */
@@ -34500,6 +34796,8 @@ export interface components {
             featured_image_media_id?: string | null;
             /** Video Url */
             video_url?: string | null;
+            /** Episode Air Date */
+            episode_air_date?: string | null;
             /** Episode Number */
             episode_number?: number | null;
             /** Guest Names */
@@ -34542,6 +34840,8 @@ export interface components {
             featured_image_media_id?: string | null;
             /** Video Url */
             video_url?: string | null;
+            /** Episode Air Date */
+            episode_air_date?: string | null;
             /** Episode Number */
             episode_number?: number | null;
             /** Guest Names */
@@ -34654,6 +34954,8 @@ export interface components {
             category?: string | null;
             /** Video Url */
             video_url?: string | null;
+            /** Episode Air Date */
+            episode_air_date?: string | null;
             /** Episode Number */
             episode_number?: number | null;
             /** Guest Names */
@@ -35358,6 +35660,10 @@ export interface components {
             session_mix: {
                 [key: string]: number;
             };
+            /** Ecosystem */
+            ecosystem?: {
+                [key: string]: unknown;
+            };
             /** Data Quality */
             data_quality?: string[];
             /**
@@ -35473,6 +35779,10 @@ export interface components {
             } | null;
             /** Community Milestones */
             community_milestones?: unknown[] | null;
+            /** Ecosystem Stats */
+            ecosystem_stats?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Computed At
              * Format: date-time
@@ -35823,6 +36133,10 @@ export interface components {
             favorite_day?: string | null;
             /** Favorite Location */
             favorite_location?: string | null;
+            /** Activity Details */
+            activity_details?: {
+                [key: string]: unknown;
+            } | null;
             /** Milestones Achieved */
             milestones_achieved: number;
             /** Milestones In Progress */
@@ -54484,6 +54798,39 @@ export interface operations {
             };
         };
     };
+    get_reporting_summary_internal_members_reporting_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                member_auth_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportingSection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_member_by_auth_id_internal_members_by_auth__auth_id__get: {
         parameters: {
             query?: never;
@@ -57688,6 +58035,38 @@ export interface operations {
             };
         };
     };
+    get_reporting_summary_internal_sessions_reporting_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportingSection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_participant_settlement_context_internal_sessions_participants__participant_id__settlement_context_get: {
         parameters: {
             query?: never;
@@ -60533,6 +60912,72 @@ export interface operations {
             };
         };
     };
+    preview_commercial_terms_academy_admin_enrollments__enrollment_id__commercial_terms_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_commercial_terms_academy_admin_enrollments__enrollment_id__commercial_terms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommercialTermsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_enrollments_academy_my_enrollments_get: {
         parameters: {
             query?: never;
@@ -61978,6 +62423,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_reporting_summary_internal_academy_reporting_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportingSection"];
                 };
             };
             /** @description Validation Error */
@@ -63825,6 +64302,70 @@ export interface operations {
             };
         };
     };
+    adopt_previously_settled_academy_receipt_payments_admin_academy_receipts_adopt_settled_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdoptSettledAcademyReceiptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    find_verified_receipt_by_bank_reference_payments_admin_academy_receipts_by_reference__external_reference__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                external_reference: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_verified_receipt_payments_admin_academy_receipts__receipt_id__get: {
         parameters: {
             query?: never;
@@ -63935,6 +64476,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ReconcileLegacyAttempt"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    void_unapplied_allocation_payments_admin_academy_receipts__receipt_id__allocations__allocation_id__void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+                allocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidReservedAllocation"];
             };
         };
         responses: {
@@ -67767,6 +68344,38 @@ export interface operations {
             };
         };
     };
+    get_reporting_summary_internal_communications_reporting_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportingSection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     handle_session_published_internal_communications_session_published_post: {
         parameters: {
             query?: never;
@@ -70342,6 +70951,39 @@ export interface operations {
             };
         };
     };
+    get_reporting_summary_internal_wallet_reporting_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                member_auth_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportingSection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     resolve_referral_code_for_attribution_internal_wallet_referral_code_resolve_get: {
         parameters: {
             query: {
@@ -72708,6 +73350,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FoundingClaimResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_reporting_summary_internal_ai_reporting_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportingSection"];
                 };
             };
             /** @description Validation Error */
@@ -81095,6 +81769,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_reporting_summary_internal_media_reporting_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportingSection"];
                 };
             };
             /** @description Validation Error */

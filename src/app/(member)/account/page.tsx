@@ -711,8 +711,8 @@ function QuarterlyReportWidget() {
       icon: <Flame className="h-4 w-4 text-orange-500" />,
     },
     {
-      label: "Bubbles",
-      value: report.bubbles_earned,
+      label: report.activity_details?.wallet.available ? "Reward Bubbles" : "Wallet credits",
+      value: report.activity_details?.wallet.available ? report.activity_details.wallet.metrics.reward_bubbles ?? 0 : report.bubbles_earned,
       icon: <Wallet className="h-4 w-4 text-blue-600" />,
     },
   ];
