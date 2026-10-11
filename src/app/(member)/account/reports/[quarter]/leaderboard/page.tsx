@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface LeaderboardEntry {
   rank: number;
@@ -104,7 +104,7 @@ const CATEGORIES = [
   },
   {
     key: "bubbles_earned",
-    label: "Bubbles Earned",
+    label: "Reward Bubbles",
     icon: Wallet,
     color: "text-cyan-600",
     bg: "bg-cyan-100",
@@ -126,7 +126,7 @@ function RankIcon({ rank }: { rank: number }) {
 export default function LeaderboardPage() {
   const params = useParams();
   const slug = params.quarter as string;
-  const parsed = parseQuarterSlug(slug);
+  const parsed = useMemo(() => parseQuarterSlug(slug), [slug]);
 
   const [activeCategory, setActiveCategory] = useState("attendance");
   const [data, setData] = useState<LeaderboardResponse | null>(null);
@@ -142,7 +142,7 @@ export default function LeaderboardPage() {
     )
       .then(setHighlights)
       .catch(() => setHighlights(null));
-  }, [slug]);
+  }, [parsed]);
 
   useEffect(() => {
     if (!parsed) return;
@@ -154,7 +154,7 @@ export default function LeaderboardPage() {
       .then(setData)
       .catch(() => setData(null))
       .finally(() => setLoading(false));
-  }, [slug, activeCategory]);
+  }, [parsed, activeCategory]);
 
   if (!parsed) {
     return <Card className="p-6 text-center text-slate-600">Invalid quarter format</Card>;

@@ -1,5 +1,6 @@
 "use client";
 
+import { QuarterlyEcosystem, type QuarterlyEcosystemData } from "@/components/reports/QuarterlyEcosystem";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { apiGet, apiPost } from "@/lib/api";
@@ -43,6 +44,8 @@ interface MemberReport {
   member_id: string | null;
   member_name: string;
   member_tier: string | null; // legacy API field; value is the quarter programme
+  activity_details?: import("@/lib/reports").MemberActivityDetails | null;
+  pool_hours?: number;
   total_sessions_attended: number;
   attendance_rate: number;
   streak_longest: number;
@@ -101,6 +104,12 @@ interface BusinessReview {
   };
   locations: Array<{
     location: string;
+    unique_members?: number | null;
+    clubs_configured?: number | null;
+    pods_configured?: number | null;
+    pods_populated_at_end?: number | null;
+    member_swimmer_hours?: number | null;
+    completed_sessions?: number | null;
     sessions: number;
     scheduled_pool_hours: number;
     session_capacity: number;
@@ -111,6 +120,7 @@ interface BusinessReview {
     academy_active_enrollments: number;
     club_active_members: number;
   }>;
+  ecosystem?: QuarterlyEcosystemData;
   session_mix: Record<string, number>;
   data_quality: string[];
   member_distribution_ready: boolean;
@@ -415,7 +425,7 @@ export default function AdminReportsPage() {
             <SectionHeading title="Executive scorecard" subtitle="Quarter-over-quarter operating signals" />
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               <ComparisonCard label="Active swimmers" value={score.active_members} />
-              <ComparisonCard label="Sessions held" value={score.sessions_held} />
+              <ComparisonCard label="Calendar sessions" value={score.sessions_held} />
               <ComparisonCard label="Attendance rate" value={score.attendance_rate} suffix="%" />
               <ComparisonCard label="New members" value={score.new_members} />
               <ComparisonCard label="Milestones achieved" value={score.milestones} />
@@ -533,7 +543,7 @@ export default function AdminReportsPage() {
                 detail={`${numberValue(review.community.walk_in_guest_attendance_records)} door walk-ins`}
                 icon={<Users className="h-5 w-5" />}
               />
-              <MetricCard label="Pool hours" value={`${numberValue(review.community.pool_hours).toFixed(1)}h`} icon={<Waves className="h-5 w-5" />} />
+              <MetricCard label="Scheduled swimmer hours" value={`${numberValue(review.community.pool_hours).toFixed(1)}h`} icon={<Waves className="h-5 w-5" />} />
               <MetricCard
                 label="Guest swimmer hours"
                 value={`${numberValue(review.community.guest_swimmer_hours).toFixed(1)}h`}
@@ -560,6 +570,8 @@ export default function AdminReportsPage() {
             )}
           </section>
 
+          <QuarterlyEcosystem data={review.ecosystem} />
+
           {review.locations.length > 0 && (
             <section className="space-y-3">
               <SectionHeading title="Location performance" subtitle="Delivery footprint and active programme load" />
@@ -571,7 +583,12 @@ export default function AdminReportsPage() {
                       <h3 className="font-semibold text-slate-900">{location.location}</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      <MiniStat label="Sessions" value={location.sessions} />
+                      <MiniStat label="Calendar sessions" value={location.sessions} />
+                      <MiniStat label="Distinct swimmers" value={location.unique_members ?? "Unknown"} />
+                      <MiniStat label="Configured Clubs" value={location.clubs_configured ?? "Unknown"} />
+                      <MiniStat label="Configured pods" value={location.pods_configured ?? "Unknown"} />
+                      <MiniStat label="Populated pods at end" value={location.pods_populated_at_end ?? "Unknown"} />
+                      <MiniStat label="Recorded swimmer hrs" value={location.member_swimmer_hours ?? "Unknown"} />
                       <MiniStat label="Actual attendances" value={location.attendance} />
                       <MiniStat label="Guest attendances" value={location.guest_attendance} />
                       <MiniStat label="Scheduled pool hrs" value={location.scheduled_pool_hours.toFixed(1)} />
@@ -624,7 +641,10 @@ export default function AdminReportsPage() {
                     <tr>
                       <th className="px-4 py-3 text-left">Member</th>
                       <th className="px-4 py-3 text-left">Programme</th>
-                      <th className="px-4 py-3 text-right">Sessions</th>
+                      <th className="px-4 py-3 text-right">Programme swims</th>
+                      <th className="px-4 py-3 text-right">All swims</th>
+                      <th className="px-4 py-3 text-right">Swimmer hrs</th>
+                      <th className="px-4 py-3 text-right">Reward Bubbles</th>
                       <th className="px-4 py-3 text-right">Attendance</th>
                       <th className="px-4 py-3 text-right">Streak</th>
                       <th className="px-4 py-3 text-right">Milestones</th>
@@ -641,6 +661,9 @@ export default function AdminReportsPage() {
                           />
                         </td>
                         <td className="px-4 py-3 text-right">{m.total_sessions_attended}</td>
+                        <td className="px-4 py-3 text-right">{m.activity_details?.attendance.all_sessions_attended ?? "Unknown"}</td>
+                        <td className="px-4 py-3 text-right">{m.pool_hours?.toFixed(1) ?? "Unknown"}</td>
+                        <td className="px-4 py-3 text-right">{m.activity_details?.wallet.available ? m.activity_details.wallet.metrics.reward_bubbles ?? "Unknown" : "Unknown"}</td>
                         <td className="px-4 py-3 text-right">{(m.attendance_rate * 100).toFixed(0)}%</td>
                         <td className="px-4 py-3 text-right">{m.streak_longest}w</td>
                         <td className="px-4 py-3 text-right">{m.milestones_achieved}</td>

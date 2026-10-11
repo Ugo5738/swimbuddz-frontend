@@ -6,6 +6,7 @@ export interface ContentPost {
   category: string;
   video_url: string | null;
   episode_number: number | null;
+  episode_air_date?: string | null;
   guest_names: string | null;
   featured_image_url: string | null;
   featured_image_media_id: string | null;
