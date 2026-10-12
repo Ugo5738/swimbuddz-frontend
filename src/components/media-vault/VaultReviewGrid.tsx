@@ -10,6 +10,7 @@ import {
   Loader2,
   RefreshCcw,
   Send,
+  Share2,
   ShieldCheck,
   Star,
   Tags,
@@ -27,6 +28,7 @@ import {
   VaultStatus as Status,
 } from "./VaultMediaDialogs";
 import { VaultVideoDialog, VaultVideoThumbnail } from "./VaultVideoDialog";
+import { MemberVideoShareDialog } from "./MemberVideoShareDialog";
 
 type Props = { vaultId: string; admin?: boolean };
 
@@ -44,6 +46,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
   const [search, setSearch] = useState("");
   const [acting, setActing] = useState(false);
   const [editingLabels, setEditingLabels] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [labelInput, setLabelInput] = useState("");
   const [deleteMode, setDeleteMode] = useState<"vault" | "storage" | null>(null);
   const [viewingVideoId, setViewingVideoId] = useState<string | null>(null);
@@ -385,6 +388,14 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
           />
           {admin && (
             <Action
+              label="Share with member"
+              icon={Share2}
+              onClick={() => setSharing(true)}
+              disabled={acting || !selectionReady}
+            />
+          )}
+          {admin && (
+            <Action
               label="Delete"
               icon={Trash2}
               onClick={() => setDeleteMode("vault")}
@@ -521,6 +532,9 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
         </nav>
       )}
 
+      {sharing && (
+        <MemberVideoShareDialog vaultId={vaultId} videos={chosen} onClose={() => setSharing(false)} />
+      )}
       {deleteMode && (
         <VaultDeleteDialog
           selectedCount={selected.size}
