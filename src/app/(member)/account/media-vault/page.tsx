@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { VaultLibrary } from "@/components/media-vault/VaultLibrary";
+import { MySessionVideos } from "@/components/media-vault/MySessionVideos";
 import { FilterTabs } from "@/components/ui/FilterTabs";
 
 import { useApi } from "@/hooks/useApi";
@@ -10,7 +11,7 @@ import { CalendarDays, ChevronRight, CloudUpload, MapPin, ShieldCheck } from "lu
 import Link from "next/link";
 
 export default function MemberMediaVaultPage() {
-  const [view, setView] = useState("all");
+  const [view, setView] = useState("videos");
   const { data, loading, error } = useApi<VaultList>("/api/v1/media/vaults");
 
   return (
@@ -21,16 +22,16 @@ export default function MemberMediaVaultPage() {
             <CloudUpload className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-950">Media assignments</h1>
+            <h1 className="text-2xl font-bold text-slate-950">My videos & media assignments</h1>
             <p className="text-sm text-slate-600">
-              Private session handoffs assigned through the volunteer roster.
+              See your personal session videos and any volunteer media assignments.
             </p>
           </div>
         </div>
       </div>
 
-      <FilterTabs options={[{ value: "all", label: "All media" }, { value: "vaults", label: "My vaults" }]} value={view} onChange={setView} />
-      {view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
+      <FilterTabs options={[{ value: "videos", label: "My session videos" }, { value: "all", label: "Volunteer media" }, { value: "vaults", label: "My assigned vaults" }]} value={view} onChange={setView} />
+      {view === "videos" ? <MySessionVideos /> : view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
       {loading && (
         <div className="grid gap-4 md:grid-cols-2">
           {[0, 1, 2].map((item) => (
