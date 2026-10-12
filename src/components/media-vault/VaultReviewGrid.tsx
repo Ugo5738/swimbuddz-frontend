@@ -33,6 +33,9 @@ type Props = { vaultId: string; admin?: boolean };
 export function VaultReviewGrid({ vaultId, admin = false }: Props) {
   const [items, setItems] = useState<VaultMedia[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 40;
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [reviewFilter, setReviewFilter] = useState("all");
@@ -51,13 +54,18 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
     async (background = false) => {
       if (!background) setLoading(true);
       try {
-        const query = new URLSearchParams({ page_size: "200" });
+        const query = new URLSearchParams({ page_size: String(pageSize), page: String(page) });
         if (reviewFilter !== "all") query.set("review_status", reviewFilter);
         if (mediaFilter !== "all") query.set("media_type", mediaFilter);
         if (processingFilter !== "ready") query.set("processing_status", processingFilter);
         if (search.trim()) query.set("search", search.trim());
         const result = await mediaVaultApi.listItems(vaultId, `?${query.toString()}`);
+        if (page > Math.max(1, Math.ceil(result.total / pageSize))) {
+          setPage(Math.max(1, Math.ceil(result.total / pageSize)));
+          return;
+        }
         setItems(result.items);
+        setTotal(result.total);
         setError(null);
         setSelected((current) => {
           const available = new Set(result.items.map((item) => item.id));
@@ -69,7 +77,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
         if (!background) setLoading(false);
       }
     },
-    [vaultId, reviewFilter, mediaFilter, processingFilter, search]
+    [vaultId, reviewFilter, mediaFilter, processingFilter, search, page]
   );
 
   useEffect(() => {
@@ -87,6 +95,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
   }, [items, loadItems]);
 
   const chosen = useMemo(() => items.filter((item) => selected.has(item.id)), [items, selected]);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const viewingVideo = items.find((item) => item.id === viewingVideoId);
   const selectionReady = chosen.length > 0 && chosen.every((item) => item.processing_status === "ready");
 
@@ -248,13 +257,13 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 lg:flex-row lg:items-center">
         <input
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => { setSearch(event.target.value); setPage(1); }}
           placeholder="Search filename or label…"
           className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-cyan-500"
         />
         <select
           value={reviewFilter}
-          onChange={(event) => setReviewFilter(event.target.value)}
+          onChange={(event) => { setReviewFilter(event.target.value); setPage(1); }}
           className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
         >
           <option value="all">All review states</option>
@@ -266,7 +275,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
         </select>
         <select
           value={mediaFilter}
-          onChange={(event) => setMediaFilter(event.target.value)}
+          onChange={(event) => { setMediaFilter(event.target.value); setPage(1); }}
           className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
         >
           <option value="all">Photos and videos</option>
@@ -276,7 +285,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
         {admin && (
           <select
             value={processingFilter}
-            onChange={(event) => setProcessingFilter(event.target.value)}
+            onChange={(event) => { setProcessingFilter(event.target.value); setPage(1); }}
             className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
           >
             <option value="ready">Ready uploads</option>
@@ -496,6 +505,20 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
             </div>
           ))}
         </div>
+      )}
+
+      {total > 0 && (
+        <nav aria-label="Media pages" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <p className="text-sm text-slate-600">
+            {total.toLocaleString()} files · page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button type="button" disabled={loading || page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm disabled:opacity-40">Previous</button>
+            <button type="button" disabled={loading || page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm disabled:opacity-40">Next</button>
+          </div>
+        </nav>
       )}
 
       {deleteMode && (
