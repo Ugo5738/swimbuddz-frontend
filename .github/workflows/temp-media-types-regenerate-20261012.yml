@@ -1,0 +1,45 @@
+name: Temporary media contract type regeneration
+on:
+  push:
+    branches:
+      - feature/vault-bulk-access-and-enrollment-ux-20261012
+    paths:
+      - .github/workflows/temp-media-types-regenerate-20261012.yml
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: Ugo5738/swimbuddz-backend
+          ref: feature/vault-bulk-access-and-enrollment-ux-20261012
+          path: swimbuddz-backend
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Generate typed API contract
+        run: |
+          npx openapi-typescript swimbuddz-backend/openapi.json -o src/lib/api-types.ts
+          cp swimbuddz-backend/openapi.json src/lib/openapi.json
+      - name: Commit regenerated API types
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/api-types.ts src/lib/openapi.json
+          if git diff --cached --quiet; then
+            echo "Frontend API types already current"
+          else
+            git commit -m "Refresh typed API contract for media vault endpoints"
+            git push origin "HEAD:feature/vault-bulk-access-and-enrollment-ux-20261012"
+          fi
