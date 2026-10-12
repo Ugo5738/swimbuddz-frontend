@@ -18,6 +18,9 @@ export type Cohort = {
   price_override?: number; // Cohort-specific price override
   membership_policy_override?: "open" | "active_required" | "included" | null;
   status?: string;
+  location_name?: string | null;
+  location_address?: string | null;
+  pool_id?: string | null;
   // Installment billing
   installment_plan_enabled?: boolean;
   installment_count?: number | null;
@@ -98,7 +101,7 @@ type UpgradeContextValue = {
   setClubReadinessData: (data: UpgradeState["clubReadinessData"]) => void;
   setClubApplicationId: (applicationId: string) => void;
   markClubReadinessComplete: () => void;
-  setSelectedCohort: (cohort: Cohort) => void;
+  setSelectedCohort: (cohort: Cohort | null) => void;
   setAcademyDetailsData: (data: UpgradeState["academyDetailsData"]) => void;
   markAcademyDetailsComplete: () => void;
   setLateJoinPreferences: (prefs: UpgradeState["lateJoinPreferences"]) => void;
@@ -232,10 +235,10 @@ export function UpgradeProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, clubApplicationId: applicationId }));
   }, []);
 
-  const setSelectedCohort = useCallback((cohort: Cohort) => {
+  const setSelectedCohort = useCallback((cohort: Cohort | null) => {
     setState((prev) => ({
       ...prev,
-      selectedCohortId: cohort.id,
+      selectedCohortId: cohort?.id ?? null,
       selectedCohort: cohort,
     }));
   }, []);
