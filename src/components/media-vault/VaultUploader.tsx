@@ -47,6 +47,8 @@ export function VaultUploader({ vault, scope }: Props) {
   const [consent, setConsent] = useState(false);
   const [checklist, setChecklist] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [uploadLabels, setUploadLabels] = useState<string[]>([]);
+  const quickLabels = ["Academy", "Club", "Community", "Event", "Progress", "Drills", "Highlights"];
   const [uploading, setUploading] = useState(false);
   const [online, setOnline] = useState(true);
   const [choosingFiles, setChoosingFiles] = useState(false);
@@ -193,6 +195,7 @@ export function VaultUploader({ vault, scope }: Props) {
           size_bytes: entry.file.size,
           captured_at: new Date(entry.file.lastModified).toISOString(),
           client_fingerprint: fingerprint,
+          labels: uploadLabels,
         },
         { auth }
       );
@@ -477,6 +480,22 @@ export function VaultUploader({ vault, scope }: Props) {
             onClear={() => setFiles([])}
             onRemove={removeFile}
           />
+          <fieldset className="rounded-xl border border-slate-200 bg-white p-4" disabled={uploading}>
+            <legend className="px-1 text-sm font-semibold text-slate-900">Quick tags for this upload</legend>
+            <p className="mb-3 text-xs text-slate-500">Choose all that apply. Tags are saved with each newly initiated file.</p>
+            <div className="flex flex-wrap gap-2">
+              {quickLabels.map((label) => {
+                const active = uploadLabels.includes(label);
+                return (
+                  <button type="button" key={label} aria-pressed={active}
+                    onClick={() => setUploadLabels((current) => active ? current.filter((value) => value !== label) : [...current, label])}
+                    className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${active ? "border-cyan-700 bg-cyan-100 text-cyan-950" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}>
+                    {active ? "✓ " : "+ "}{label}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
           <VaultUploadConfirmation
             vault={vault}
             consent={consent}
