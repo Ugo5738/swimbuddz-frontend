@@ -9,7 +9,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Cohort, formatCurrency, useUpgrade } from "@/lib/upgradeContext";
 import { AlertCircle, Calendar, GraduationCap, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LateJoinDisclosureModal,
   LateJoinPreferences,
@@ -23,6 +23,11 @@ import {
 //   payload, admin/coach prefs view) is intentionally left intact so this is
 //   a single-line revert.
 const LATE_JOIN_DISCLOSURE_ENABLED = false;
+
+function cohortLocation(cohort: Cohort): string {
+  return cohort.location_name?.trim() || cohort.location_address?.trim() ||
+    (cohort.pool_id ? `Pool ${cohort.pool_id}` : "");
+}
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -44,6 +49,15 @@ export default function AcademyCohortSelectionPage() {
   const [preparing, setPreparing] = useState(false);
   const [prepareError, setPrepareError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(state.selectedCohortId);
+  const [location, setLocation] = useState("");
+  const locations = useMemo(
+    () => [...new Set(cohorts.map(cohortLocation).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [cohorts]
+  );
+  const visibleCohorts = useMemo(
+    () => cohorts.filter((cohort) => location && cohortLocation(cohort) === location),
+    [cohorts, location]
+  );
   // Cohort that triggered the late-join modal; null when modal is closed.
   const [lateJoinFor, setLateJoinFor] = useState<Cohort | null>(null);
 
@@ -51,6 +65,13 @@ export default function AcademyCohortSelectionPage() {
   useEffect(() => {
     setTargetTier("academy");
   }, [setTargetTier]);
+
+  useEffect(() => {
+    const restored = cohorts.find((cohort) => cohort.id === state.selectedCohortId);
+    if (!location && restored && cohortLocation(restored)) {
+      setLocation(cohortLocation(restored));
+    }
+  }, [cohorts, location, state.selectedCohortId]);
 
   const handleSelectCohort = (cohort: Cohort) => {
     setSelectedId(cohort.id);
@@ -70,7 +91,7 @@ export default function AcademyCohortSelectionPage() {
   };
 
   const handleContinue = () => {
-    const cohort = cohorts.find((c) => c.id === selectedId);
+    const cohort = visibleCohorts.find((c) => c.id === selectedId);
     if (!cohort) return;
 
     // Intercept mid-cohort joins with a disclosure modal. The modal calls
@@ -121,7 +142,7 @@ export default function AcademyCohortSelectionPage() {
     );
   }
 
-  const selectedCohort = cohorts.find((c) => c.id === selectedId);
+  const selectedCohort = visibleCohorts.find((c) => c.id === selectedId);
 
   return (
     <div className="space-y-6">
@@ -132,14 +153,36 @@ export default function AcademyCohortSelectionPage() {
         </div>
         <h1 className="text-2xl font-bold text-slate-900">Choose Your Cohort</h1>
         <p className="text-slate-600 max-w-md mx-auto">
-          Select which Academy cohort you'd like to join. Each cohort has its own schedule and focus
-          area.
+          Choose your preferred swimming location first. Only available cohorts at that location will appear.
         </p>
       </div>
 
+      <Card className="p-5">
+        <label htmlFor="academy-cohort-location" className="block text-sm font-semibold text-slate-800">
+          1. Select your swimming location
+        </label>
+        <select id="academy-cohort-location" value={location} onChange={(event) => {
+          setLocation(event.target.value);
+          setSelectedId(null);
+          setSelectedCohort(null);
+          setLateJoinPreferences(null);
+          setPrepareError(null);
+        }} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-slate-900">
+          <option value="">Choose a location</option>
+          {locations.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+        <p className="mt-2 text-xs text-slate-500">
+          Your cohort selection and checkout will be reset if you change locations.
+        </p>
+      </Card>
+      {location && <h2 className="text-lg font-semibold text-slate-900">2. Select an available cohort in {location}</h2>}
+      {location && visibleCohorts.length === 0 && (
+        <Alert variant="info">There are currently no open cohorts at this location.</Alert>
+      )}
+
       {/* Cohort Cards */}
       <div className="grid gap-4">
-        {cohorts.map((cohort) => {
+        {visibleCohorts.map((cohort) => {
           const isSelected = selectedId === cohort.id;
           const ctx = computeLateJoinContext(cohort);
 
@@ -157,6 +200,7 @@ export default function AcademyCohortSelectionPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-slate-900">{cohort.name}</h3>
+                  <p className="mt-1 text-xs font-semibold text-cyan-700">{cohortLocation(cohort)}</p>
                   {cohort.program_name && (
                     <p className="text-sm text-slate-500 mt-0.5">{cohort.program_name}</p>
                   )}
@@ -219,7 +263,7 @@ export default function AcademyCohortSelectionPage() {
       {selectedCohort && (
         <Card className="p-4 bg-purple-50 border-purple-200">
           <p className="text-sm text-purple-800">
-            <strong>Selected:</strong> {selectedCohort.name}
+            <strong>Selected:</strong> {selectedCohort.name} · {cohortLocation(selectedCohort)}
             {(() => {
               const price = selectedCohort.price_override ?? selectedCohort.program?.price_amount;
               return price && price > 0 ? ` • ${formatCurrency(price)}` : "";
@@ -231,7 +275,7 @@ export default function AcademyCohortSelectionPage() {
       {prepareError && <Alert variant="error">{prepareError}</Alert>}
       {/* Continue button */}
       <div className="flex justify-end">
-        <Button onClick={handleContinue} disabled={!selectedId || preparing} size="lg">
+        <Button onClick={handleContinue} disabled={!selectedCohort || preparing} size="lg">
           {preparing ? "Preparing checkout…" : "Continue to Checkout"}
         </Button>
       </div>
