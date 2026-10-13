@@ -39,6 +39,10 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
   const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [deletionPreview, setDeletionPreview] = useState<{ eligible: boolean; blockers: string[]; preview_token: string; requires_confirmation: string } | null>(null);
+  const [deletionReason, setDeletionReason] = useState("");
+  const [deletionConfirmation, setDeletionConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form State
@@ -93,6 +97,40 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const previewDeletion = async () => {
+    setDeletionPreview(null);
+    try {
+      const preview = await apiGet<{ eligible: boolean; blockers: string[]; preview_token: string; requires_confirmation: string }>(
+        `/api/v1/academy/admin/enrollments/${params.id}/deletion-preview`, { auth: true },
+      );
+      setDeletionPreview(preview);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to verify deletion eligibility");
+    }
+  };
+
+  const deleteEmptyEnrollment = async () => {
+    if (!deletionPreview?.eligible || deletionConfirmation !== params.id ||
+        deletionReason.trim().length < 20) return;
+    if (!confirm("Permanently delete this financially empty enrollment? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      await apiPost(
+        `/api/v1/academy/admin/enrollments/${params.id}/delete-empty`,
+        { preview_token: deletionPreview.preview_token,
+          confirmation: deletionConfirmation, reason: deletionReason.trim() },
+        { auth: true },
+      );
+      toast.success("Empty enrollment deleted; audit retained");
+      router.push("/admin/academy/enrollments");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Deletion rejected; refresh review");
+      setDeletionPreview(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -560,6 +598,34 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
               </div>
             </Card>
           )}
+
+          <Card className="p-6 space-y-4 border border-red-300">
+            <h2 className="text-lg font-semibold text-red-700">Delete accidental enrollment</h2>
+            <p className="text-sm text-slate-600">Only financially empty records without payment attempts, transfers, milestones, or protected history can be deleted. The member account is never deleted. Deletion leaves an admin audit record.</p>
+            <Button onClick={previewDeletion} disabled={deleting}>Check deletion eligibility</Button>
+            {deletionPreview && (
+              <div className="space-y-3">
+                {deletionPreview.eligible ? (
+                  <>
+                    <p className="text-sm text-green-700">Eligible: no protected history found. Review the record before proceeding.</p>
+                    <label className="block text-sm">Reason for deletion (at least 20 characters)
+                      <textarea className="mt-1 w-full rounded border p-2" value={deletionReason}
+                        onChange={(e) => setDeletionReason(e.target.value)} />
+                    </label>
+                    <label className="block text-sm">Type this exact enrollment ID to confirm: <strong>{params.id}</strong>
+                      <input className="mt-1 w-full rounded border p-2" value={deletionConfirmation}
+                        onChange={(e) => setDeletionConfirmation(e.target.value)} />
+                    </label>
+                    <Button onClick={deleteEmptyEnrollment} disabled={deleting || deletionConfirmation !== params.id || deletionReason.trim().length < 20}>
+                      {deleting ? "Deleting..." : "Permanently delete empty enrollment"}
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-amber-700">Deletion blocked: {deletionPreview.blockers.join(", ")}. Use status changes or reconcile and close the related checkout first. Financial history is never deleted.</p>
+                )}
+              </div>
+            )}
+          </Card>
 
           {/* Update Form */}
           <Card className="p-6">
