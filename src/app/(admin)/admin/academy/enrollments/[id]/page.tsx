@@ -39,6 +39,13 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
   const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [deletionPreview, setDeletionPreview] = useState<{ eligible: boolean; blockers: string[]; preview_token: string; requires_confirmation: string; snapshot: { payment_attempts_preserved?: Array<{ reference: string; status: string; closed_unpaid?: boolean }> } } | null>(null);
+  const [deletionReason, setDeletionReason] = useState("");
+  const [deletionConfirmation, setDeletionConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [checkoutPreview, setCheckoutPreview] = useState<{ preview_token: string; payment: { reference: string; status: string; amount: number } } | null>(null);
+  const [closureEvidence, setClosureEvidence] = useState("");
+  const [closureNote, setClosureNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // Form State
@@ -93,6 +100,74 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const previewDeletion = async () => {
+    setDeletionPreview(null);
+    try {
+      const preview = await apiGet<{ eligible: boolean; blockers: string[]; preview_token: string; requires_confirmation: string; snapshot: { payment_attempts_preserved?: Array<{ reference: string; status: string; closed_unpaid?: boolean }> } }>(
+        `/api/v1/academy/admin/enrollments/${params.id}/deletion-preview`, { auth: true },
+      );
+      setDeletionPreview(preview);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to verify deletion eligibility");
+    }
+  };
+
+  const reviewUnpaidCheckout = async (reference: string) => {
+    setCheckoutPreview(null);
+    setClosureEvidence("");
+    setClosureNote("");
+    try {
+      const review = await apiGet<{ preview_token: string; payment: { reference: string; status: string; amount: number } }>(
+        "/api/v1/payments/admin/checkout-reconciliation/" + encodeURIComponent(reference),
+        { auth: true },
+      );
+      setCheckoutPreview(review);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load checkout");
+    }
+  };
+
+  const closeUnpaidCheckout = async () => {
+    if (!checkoutPreview || closureEvidence.trim().length < 10 || closureNote.trim().length < 10) return;
+    if (!confirm("Confirm that the bank/provider verified this attempt was never paid and can no longer settle. This closure is permanent and audited.")) return;
+    setDeleting(true);
+    try {
+      await apiPost(
+        "/api/v1/payments/admin/checkout-reconciliation/" + encodeURIComponent(checkoutPreview.payment.reference) + "/close-unpaid",
+        { preview_token: checkoutPreview.preview_token, provider_closure_evidence: closureEvidence.trim(),
+          note: closureNote.trim(), apply: true },
+        { auth: true },
+      );
+      toast.success("Checkout closed as unpaid. Its historical payment record is preserved.");
+      setCheckoutPreview(null);
+      await previewDeletion();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Checkout closure rejected. Review the payment.");
+    } finally { setDeleting(false); }
+  };
+
+  const deleteEmptyEnrollment = async () => {
+    if (!deletionPreview?.eligible || deletionConfirmation !== params.id ||
+        deletionReason.trim().length < 20) return;
+    if (!confirm("Permanently delete this financially empty enrollment? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      await apiPost(
+        `/api/v1/academy/admin/enrollments/${params.id}/delete-empty`,
+        { preview_token: deletionPreview.preview_token,
+          confirmation: deletionConfirmation, reason: deletionReason.trim() },
+        { auth: true },
+      );
+      toast.success("Empty enrollment deleted; audit retained");
+      router.push("/admin/academy/enrollments");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Deletion rejected; refresh review");
+      setDeletionPreview(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -560,6 +635,63 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
               </div>
             </Card>
           )}
+
+          <Card className="p-6 space-y-4 border border-red-300">
+            <h2 className="text-lg font-semibold text-red-700">Delete accidental enrollment</h2>
+            <p className="text-sm text-slate-600">Only financially empty records without payment attempts, transfers, milestones, or protected history can be deleted. The member account is never deleted. Deletion leaves an admin audit record.</p>
+            <Button onClick={previewDeletion} disabled={deleting}>Check deletion eligibility</Button>
+            {deletionPreview && (
+              <div className="space-y-3">
+                {deletionPreview.eligible ? (
+                  <>
+                    <p className="text-sm text-green-700">Eligible: no protected history found. Review the record before proceeding.</p>
+                    <label className="block text-sm">Reason for deletion (at least 20 characters)
+                      <textarea className="mt-1 w-full rounded border p-2" value={deletionReason}
+                        onChange={(e) => setDeletionReason(e.target.value)} />
+                    </label>
+                    <label className="block text-sm">Type this exact enrollment ID to confirm: <strong>{params.id}</strong>
+                      <input className="mt-1 w-full rounded border p-2" value={deletionConfirmation}
+                        onChange={(e) => setDeletionConfirmation(e.target.value)} />
+                    </label>
+                    <Button onClick={deleteEmptyEnrollment} disabled={deleting || deletionConfirmation !== params.id || deletionReason.trim().length < 20}>
+                      {deleting ? "Deleting..." : "Permanently delete empty enrollment"}
+                    </Button>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-amber-700">Deletion blocked: {deletionPreview.blockers.join(", ")}. Resolve transfers and genuinely unpaid checkout attempts before deletion.</p>
+                    {(deletionPreview.snapshot.payment_attempts_preserved ?? []).map((attempt) => (
+                      <div key={attempt.reference} className="rounded border p-3 text-sm">
+                        <strong>{attempt.reference}</strong> — {attempt.status}
+                        {attempt.closed_unpaid ? " (closed as unpaid)" : (
+                          <button type="button" className="ml-3 text-cyan-700 underline"
+                            onClick={() => reviewUnpaidCheckout(attempt.reference)}>Review unpaid closure</button>
+                        )}
+                      </div>
+                    ))}
+                    {checkoutPreview && (
+                      <div className="space-y-2 rounded border border-amber-400 p-3 text-sm">
+                        <p><strong>{checkoutPreview.payment.reference}</strong> · {checkoutPreview.payment.status} · ₦{checkoutPreview.payment.amount.toLocaleString()}</p>
+                        <p>Only close after independently verifying that no money or proof exists and the payment cannot still settle. This action does not cancel a provider transaction.</p>
+                        <label className="block">Bank/provider closure evidence
+                          <textarea className="mt-1 w-full rounded border p-2" value={closureEvidence}
+                            onChange={(event) => setClosureEvidence(event.target.value)} />
+                        </label>
+                        <label className="block">Closure audit note
+                          <textarea className="mt-1 w-full rounded border p-2" value={closureNote}
+                            onChange={(event) => setClosureNote(event.target.value)} />
+                        </label>
+                        <Button onClick={closeUnpaidCheckout}
+                          disabled={deleting || closureEvidence.trim().length < 10 || closureNote.trim().length < 10}>
+                          Record verified unpaid checkout closure
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
 
           {/* Update Form */}
           <Card className="p-6">
