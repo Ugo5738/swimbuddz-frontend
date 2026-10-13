@@ -1,6 +1,7 @@
 "use client";
 
 import { VaultLibrary } from "@/components/media-vault/VaultLibrary";
+import { BulkVaultAccessPanel } from "@/components/media-vault/BulkVaultAccessPanel";
 import { FilterTabs } from "@/components/ui/FilterTabs";
 
 import { useApi } from "@/hooks/useApi";
@@ -192,6 +193,8 @@ export default function AdminMediaVaultPage() {
       )}
       <FilterTabs options={[{ value: "all", label: "All media" }, { value: "vaults", label: "Media vaults" }]} value={view} onChange={setView} />
       {view === "all" ? <VaultLibrary vaults={data?.items ?? []} admin /> : (
+      <div className="space-y-5">
+        <BulkVaultAccessPanel vaults={data?.items ?? []} />
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-6 py-4">
           <h2 className="font-semibold text-slate-900">Media vaults</h2>
@@ -243,7 +246,7 @@ export default function AdminMediaVaultPage() {
           </div>
         )}
       </div>
-
+      </div>
       )}
 
       {showCreate && (

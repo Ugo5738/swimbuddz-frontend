@@ -18847,6 +18847,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/vaults/my-videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Session Videos
+         * @description Personal videos expressly shared with a member after consent clearance.
+         */
+        get: operations["my_session_videos_media_vaults_my_videos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/grants/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Grant Vault Access
+         * @description Grant access to one member across multiple existing vaults atomically.
+         *
+         *     This does not create a future-vault wildcard grant. Existing grants of
+         *     the same role are renewed; their original source is preserved.
+         */
+        post: operations["bulk_grant_vault_access_media_vaults_grants_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/vaults/{vault_id}": {
         parameters: {
             query?: never;
@@ -19061,6 +19104,26 @@ export interface paths {
         head?: never;
         /** Bulk Review Items */
         patch: operations["bulk_review_items_media_vaults__vault_id__items_patch"];
+        trace?: never;
+    };
+    "/api/v1/media/vaults/{vault_id}/items/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Share Vault Videos With Members
+         * @description Explicit sharing; attendance by itself is never permission to see recordings.
+         */
+        post: operations["share_vault_videos_with_members_media_vaults__vault_id__items_shares_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/media/vaults/{vault_id}/items/{item_id}": {
@@ -45927,6 +45990,51 @@ export interface components {
             /** Media Item Ids */
             media_item_ids: string[];
         };
+        /**
+         * BulkVaultGrantCreate
+         * @description Grant one member access to selected vaults or all existing vaults.
+         */
+        BulkVaultGrantCreate: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "contributor" | "curator";
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "selected" | "all_current";
+            /** Vault Ids */
+            vault_ids?: string[];
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Can Download Originals
+             * @default false
+             */
+            can_download_originals: boolean;
+        };
+        /** BulkVaultGrantResponse */
+        BulkVaultGrantResponse: {
+            /** Granted Count */
+            granted_count: number;
+            /** Vault Ids */
+            vault_ids: string[];
+        };
         /** CompletedPart */
         CompletedPart: {
             /** Part Number */
@@ -46333,6 +46441,51 @@ export interface components {
              */
             created_at: string;
         };
+        /** MemberVideoItem */
+        MemberVideoItem: {
+            media: components["schemas"]["VaultMediaResponse"];
+            /** Vault Title */
+            vault_title: string;
+            /**
+             * Capture Date
+             * Format: date
+             */
+            capture_date: string;
+            /** Session Id */
+            session_id: string | null;
+        };
+        /**
+         * MemberVideoShareRequest
+         * @description Only administrators can give or revoke a member's personal media access.
+         */
+        MemberVideoShareRequest: {
+            /** Media Item Ids */
+            media_item_ids: string[];
+            /** Member Ids */
+            member_ids: string[];
+            /**
+             * Action
+             * @default grant
+             * @enum {string}
+             */
+            action: "grant" | "revoke";
+        };
+        /** MemberVideoShareResponse */
+        MemberVideoShareResponse: {
+            /** Affected Count */
+            affected_count: number;
+        };
+        /** MemberVideosResponse */
+        MemberVideosResponse: {
+            /** Items */
+            items: components["schemas"]["MemberVideoItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** MultipartCompleteRequest */
         MultipartCompleteRequest: {
             /** Parts */
@@ -46352,6 +46505,8 @@ export interface components {
             client_fingerprint?: string | null;
             /** Checksum Sha256 */
             checksum_sha256?: string | null;
+            /** Labels */
+            labels?: string[];
         };
         /** MultipartInitiateResponse */
         MultipartInitiateResponse: {
@@ -82447,6 +82602,71 @@ export interface operations {
             };
         };
     };
+    my_session_videos_media_vaults_my_videos_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberVideosResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_grant_vault_access_media_vaults_grants_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkVaultGrantCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkVaultGrantResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_vault_media_vaults__vault_id__get: {
         parameters: {
             query?: never;
@@ -83037,6 +83257,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultMediaResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    share_vault_videos_with_members_media_vaults__vault_id__items_shares_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vault_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberVideoShareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberVideoShareResponse"];
                 };
             };
             /** @description Validation Error */
