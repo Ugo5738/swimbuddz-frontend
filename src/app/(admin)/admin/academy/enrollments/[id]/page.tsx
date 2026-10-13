@@ -39,10 +39,13 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
   const [milestoneNames, setMilestoneNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [deletionPreview, setDeletionPreview] = useState<{ eligible: boolean; blockers: string[]; preview_token: string; requires_confirmation: string } | null>(null);
+  const [deletionPreview, setDeletionPreview] = useState<{ eligible: boolean; blockers: string[]; preview_token: string; requires_confirmation: string; snapshot: { payment_attempts_preserved?: Array<{ reference: string; status: string; closed_unpaid?: boolean }> } } | null>(null);
   const [deletionReason, setDeletionReason] = useState("");
   const [deletionConfirmation, setDeletionConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [checkoutPreview, setCheckoutPreview] = useState<{ preview_token: string; payment: { reference: string; status: string; amount: number } } | null>(null);
+  const [closureEvidence, setClosureEvidence] = useState("");
+  const [closureNote, setClosureNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // Form State
@@ -103,13 +106,47 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
   const previewDeletion = async () => {
     setDeletionPreview(null);
     try {
-      const preview = await apiGet<{ eligible: boolean; blockers: string[]; preview_token: string; requires_confirmation: string }>(
+      const preview = await apiGet<{ eligible: boolean; blockers: string[]; preview_token: string; requires_confirmation: string; snapshot: { payment_attempts_preserved?: Array<{ reference: string; status: string; closed_unpaid?: boolean }> } }>(
         `/api/v1/academy/admin/enrollments/${params.id}/deletion-preview`, { auth: true },
       );
       setDeletionPreview(preview);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to verify deletion eligibility");
     }
+  };
+
+  const reviewUnpaidCheckout = async (reference: string) => {
+    setCheckoutPreview(null);
+    setClosureEvidence("");
+    setClosureNote("");
+    try {
+      const review = await apiGet<{ preview_token: string; payment: { reference: string; status: string; amount: number } }>(
+        "/api/v1/payments/admin/checkout-reconciliation/" + encodeURIComponent(reference),
+        { auth: true },
+      );
+      setCheckoutPreview(review);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load checkout");
+    }
+  };
+
+  const closeUnpaidCheckout = async () => {
+    if (!checkoutPreview || closureEvidence.trim().length < 10 || closureNote.trim().length < 10) return;
+    if (!confirm("Confirm that the bank/provider verified this attempt was never paid and can no longer settle. This closure is permanent and audited.")) return;
+    setDeleting(true);
+    try {
+      await apiPost(
+        "/api/v1/payments/admin/checkout-reconciliation/" + encodeURIComponent(checkoutPreview.payment.reference) + "/close-unpaid",
+        { preview_token: checkoutPreview.preview_token, provider_closure_evidence: closureEvidence.trim(),
+          note: closureNote.trim(), apply: true },
+        { auth: true },
+      );
+      toast.success("Checkout closed as unpaid. Its historical payment record is preserved.");
+      setCheckoutPreview(null);
+      await previewDeletion();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Checkout closure rejected. Review the payment.");
+    } finally { setDeleting(false); }
   };
 
   const deleteEmptyEnrollment = async () => {
@@ -621,7 +658,36 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
                     </Button>
                   </>
                 ) : (
-                  <p className="text-sm text-amber-700">Deletion blocked: {deletionPreview.blockers.join(", ")}. Use status changes or reconcile and close the related checkout first. Financial history is never deleted.</p>
+                  <div className="space-y-3">
+                    <p className="text-sm text-amber-700">Deletion blocked: {deletionPreview.blockers.join(", ")}. Resolve transfers and genuinely unpaid checkout attempts before deletion.</p>
+                    {(deletionPreview.snapshot.payment_attempts_preserved ?? []).map((attempt) => (
+                      <div key={attempt.reference} className="rounded border p-3 text-sm">
+                        <strong>{attempt.reference}</strong> — {attempt.status}
+                        {attempt.closed_unpaid ? " (closed as unpaid)" : (
+                          <button type="button" className="ml-3 text-cyan-700 underline"
+                            onClick={() => reviewUnpaidCheckout(attempt.reference)}>Review unpaid closure</button>
+                        )}
+                      </div>
+                    ))}
+                    {checkoutPreview && (
+                      <div className="space-y-2 rounded border border-amber-400 p-3 text-sm">
+                        <p><strong>{checkoutPreview.payment.reference}</strong> · {checkoutPreview.payment.status} · ₦{checkoutPreview.payment.amount.toLocaleString()}</p>
+                        <p>Only close after independently verifying that no money or proof exists and the payment cannot still settle. This action does not cancel a provider transaction.</p>
+                        <label className="block">Bank/provider closure evidence
+                          <textarea className="mt-1 w-full rounded border p-2" value={closureEvidence}
+                            onChange={(event) => setClosureEvidence(event.target.value)} />
+                        </label>
+                        <label className="block">Closure audit note
+                          <textarea className="mt-1 w-full rounded border p-2" value={closureNote}
+                            onChange={(event) => setClosureNote(event.target.value)} />
+                        </label>
+                        <Button onClick={closeUnpaidCheckout}
+                          disabled={deleting || closureEvidence.trim().length < 10 || closureNote.trim().length < 10}>
+                          Record verified unpaid checkout closure
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
