@@ -197,14 +197,14 @@ export default function ClubApplicationsPage() {
               <div className="mb-5 space-y-4 rounded-lg border border-cyan-200 p-4">
                 <h3 className="font-semibold">Video assessment evidence</h3>
                 <p className="text-sm">Review the uncut 25 m swim, 30-second tread, breathing, water control and safety before approval. A first-session live verification is mandatory.</p>
-                {selected.assessment.self_report.swim_video_media_id && (
+                {Boolean(selected.assessment.self_report.swim_video_media_id) && (
                   <PrivateAssessmentClip mediaId={String(selected.assessment.self_report.swim_video_media_id)} label="25 m swim" />
                 )}
-                {selected.assessment.self_report.tread_video_media_id && (
+                {Boolean(selected.assessment.self_report.tread_video_media_id) && (
                   <PrivateAssessmentClip mediaId={String(selected.assessment.self_report.tread_video_media_id)} label="30-second tread" />
                 )}
                 <p className="text-sm">Review status: {String(selected.assessment.self_report.video_review_status ?? "pending")}</p>
-                {selected.assessment.self_report.video_feedback && <p className="text-sm">Previous feedback: {String(selected.assessment.self_report.video_feedback)}</p>}
+                {Boolean(selected.assessment.self_report.video_feedback) && <p className="text-sm">Previous feedback: {String(selected.assessment.self_report.video_feedback)}</p>}
                 {selected.status === "assessment_pending" && selected.assessment.self_report.video_review_status === "submitted" && (
                   <div className="space-y-2">
                     <textarea className="w-full rounded border p-2" rows={2} value={videoNotes} onChange={e => setVideoNotes(e.target.value)} placeholder="Explain why another video or an in-person assessment is needed" />
