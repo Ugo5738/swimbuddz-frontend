@@ -37,11 +37,10 @@ export function academyPaymentPath(
   enrollment: AcademyPaymentState & { id: string; cohort_id?: string | null }
 ): string | null {
   if (!hasPayableAcademyBalance(enrollment)) return null;
-  const params = new URLSearchParams({
-    purpose: "academy_cohort",
-    enrollment_id: enrollment.id,
-  });
+  // Preserve the existing parameter order for callers and saved checkout links.
+  const params = new URLSearchParams({ purpose: "academy_cohort" });
   if (enrollment.cohort_id) params.set("cohort_id", enrollment.cohort_id);
+  params.set("enrollment_id", enrollment.id);
   if (enrollment.installments?.length) params.set("billing", "installments");
   return `/checkout?${params.toString()}`;
 }
