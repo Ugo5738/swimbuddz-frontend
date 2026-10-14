@@ -271,7 +271,7 @@ export default function EnrollmentDetailPage() {
                           ? "✓ Active"
                           : "Payment Pending"}
                 </Badge>
-                {canPayOutstanding && hasInstallments && (
+                {(canPay || canPayOutstanding) && hasInstallments && (
                   <Badge className="bg-white/20 text-white text-xs">
                     {paidCount}/{totalInstallments} installments paid
                   </Badge>
@@ -374,7 +374,7 @@ export default function EnrollmentDetailPage() {
           </Card>
 
           {/* ── Installment Payment Schedule ── */}
-          {canPayOutstanding && hasInstallments && (
+          {(canPay || canPayOutstanding) && hasInstallments && (
             <Card className="p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-slate-900">
@@ -755,7 +755,7 @@ export default function EnrollmentDetailPage() {
                     </dd>
                   </div>
                 )}
-                {canPayOutstanding && hasInstallments && (
+                {(canPay || canPayOutstanding) && hasInstallments && (
                   <>
                     <hr className="border-slate-100" />
                     <div className="flex justify-between">
