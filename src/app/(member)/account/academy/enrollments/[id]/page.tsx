@@ -316,8 +316,9 @@ export default function EnrollmentDetailPage() {
             </p>
             <p className="text-sm text-orange-700">
               You have missed {missedCount} installment
-              {missedCount !== 1 ? "s" : ""}. An admin is reviewing your
-              enrollment. Please contact support if you&apos;d like to continue.
+              {missedCount !== 1 ? "s" : ""}. Your enrollment is under review.
+              Pay outstanding installments below to get back on track, or contact
+              support if you need help.
             </p>
           </div>
         )}
