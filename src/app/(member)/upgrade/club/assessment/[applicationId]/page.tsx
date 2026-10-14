@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
 import { MediaInput } from "@/components/ui/MediaInput";
-import { EvidenceMedia } from "@/components/academy/EvidenceMedia";
+import { PrivateAssessmentClip } from "@/components/club/PrivateAssessmentClip";
 import { useApi } from "@/hooks/useApi";
 import { ClubApplication, submitClubVideoAssessment } from "@/lib/clubOnboarding";
 
@@ -115,8 +115,8 @@ export default function ClubAssessmentMethodPage() {
       )}
       {(previousSwim || previousTread) && <Card>
         <h2 className="font-semibold mb-3">Submitted evidence</h2>
-        {previousSwim && <EvidenceMedia mediaId={previousSwim} label="25-metre swim" />}
-        {previousTread && <EvidenceMedia mediaId={previousTread} label="30-second tread" />}
+        {previousSwim && <PrivateAssessmentClip mediaId={previousSwim} label="25-metre swim" />}
+        {previousTread && <PrivateAssessmentClip mediaId={previousTread} label="30-second tread" />}
       </Card>}
     </div>
   );
