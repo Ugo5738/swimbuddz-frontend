@@ -16,6 +16,7 @@ interface MediaInputProps {
     | "payment_proof"
     | "milestone_evidence"
     | "milestone_video"
+    | "club_assessment_video"
     | "profile_photo"
     | "cover_image"
     | "size_chart"
@@ -31,6 +32,8 @@ interface MediaInputProps {
   /** Display mode - upload-only shows just upload, both shows tabs */
   mode?: MediaInputMode;
   multiple?: boolean;
+  /** Bind private evidence to one Club application. */
+  linkedId?: string;
   /** Current media_id value */
   value?: string | null;
   /** Callback when media is uploaded/registered, returns media_id */
@@ -58,6 +61,7 @@ export function MediaInput({
   mode = "upload-only",
   multiple = false,
   value,
+  linkedId,
   onChange,
   onError,
   onUploadingChange,
@@ -103,6 +107,7 @@ export function MediaInput({
       case "product_image":
         return "image/*";
       case "product_video":
+      case "club_assessment_video":
         return "video/*";
       case "size_chart":
         return "image/*,.pdf";
@@ -142,7 +147,7 @@ export function MediaInput({
       onUploadingChange?.(true);
 
       try {
-        const mediaItem = await uploadMedia(file, purpose, undefined, undefined, undefined, { onProgress: setProgress });
+        const mediaItem = await uploadMedia(file, purpose, linkedId, undefined, undefined, { onProgress: setProgress });
 
         // Set preview for images and videos
         if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
@@ -160,7 +165,7 @@ export function MediaInput({
         onUploadingChange?.(false);
       }
     },
-    [purpose, onChange, onError, onUploadingChange]
+    [purpose, linkedId, onChange, onError, onUploadingChange]
   );
 
   const closeImageAdjustment = useCallback(() => {

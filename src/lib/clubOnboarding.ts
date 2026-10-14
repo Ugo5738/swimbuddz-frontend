@@ -259,6 +259,18 @@ export function submitClubPreAssessment(
   );
 }
 
+export function chooseClubAssessmentMethod(applicationId: string, method: "in_person" | "video"): Promise<ClubApplication> {
+  return apiPut<ClubApplication>("/api/v1/clubs/applications/" + applicationId + "/assessment-method", { method }, { auth: true });
+}
+export function submitClubVideoAssessment(applicationId: string, input: { swim_video_media_id: string; tread_video_media_id: string; recorded_in_supervised_pool: boolean; authentic_uncut_footage: boolean; notes?: string }): Promise<ClubApplication> {
+  return apiPost<ClubApplication>("/api/v1/clubs/applications/" + applicationId + "/video-assessment", input, { auth: true });
+}
+export function submitClubVideoFeedback(applicationId: string, decision: "request_another_video" | "in_person_required", notes: string): Promise<ClubApplication> {
+  return apiPut<ClubApplication>("/api/v1/clubs/admin/applications/" + applicationId + "/video-feedback", { decision, notes }, { auth: true });
+}
+export function submitFirstSessionVerification(applicationId: string, verified: boolean, notes: string): Promise<ClubApplication> {
+  return apiPut<ClubApplication>("/api/v1/clubs/admin/applications/" + applicationId + "/first-session-verification", { verified, notes }, { auth: true });
+}
 export function previewClubCheckout(
   applicationId: string,
   paymentMethod: "paystack" | "manual_transfer" = "paystack",
@@ -336,6 +348,7 @@ export function completeObservedClubAssessment(
   applicationId: string,
   input: {
     outcome: "club_ready" | "club_ready_modified" | "academy_first";
+    assessment_method?: "in_person" | "video";
     observed_checks: Record<string, boolean>;
     nonstop_distance_m?: number;
     deep_water_comfort?: string;
