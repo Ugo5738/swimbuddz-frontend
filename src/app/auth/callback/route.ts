@@ -9,6 +9,23 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/account";
   const nextPath = safeReturnPath(next) ?? "/account";
+  const isPasswordReset = nextPath === "/reset-password";
+
+  function redirectError(message: string) {
+    // Recovery errors belong on the reset page, which can also read any
+    // Supabase error fragment preserved by the browser across this redirect.
+    const url = new URL(
+      isPasswordReset ? "/reset-password" : "/auth/auth-code-error",
+      origin,
+    );
+    url.searchParams.set("error", message);
+    return NextResponse.redirect(url);
+  }
+
+  const authError = searchParams.get("error");
+  if (authError) {
+    return redirectError(searchParams.get("error_description") || authError);
+  }
 
   if (code) {
     try {
@@ -36,7 +53,6 @@ export async function GET(request: Request) {
       if (!error) {
         // Best-effort: complete any pending registration so member routes don't fail on first login.
         // Skip this for password recovery — the user already has a member profile.
-        const isPasswordReset = nextPath === "/reset-password";
         if (!isPasswordReset) {
           try {
             const { data } = await supabase.auth.getSession();
@@ -60,19 +76,15 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}${nextPath}`);
       } else {
         console.error("Supabase auth error:", error);
-        return NextResponse.redirect(
-          `${origin}/auth/auth-code-error?error=${encodeURIComponent(error.message)}`,
-        );
+        return redirectError(error.message);
       }
     } catch (err) {
       console.error("Auth callback error:", err);
       const message = err instanceof Error ? err.message : "Unknown error";
-      return NextResponse.redirect(
-        `${origin}/auth/auth-code-error?error=${encodeURIComponent(message)}`,
-      );
+      return redirectError(message);
     }
   }
 
   // Return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error?error=no_code`);
+  return redirectError("no_code");
 }
