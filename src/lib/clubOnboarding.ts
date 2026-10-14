@@ -259,6 +259,9 @@ export function submitClubPreAssessment(
   );
 }
 
+export function chooseClubAssessmentMethod(applicationId: string, method: "in_person" | "video"): Promise<ClubApplication> {
+  return apiPut<ClubApplication>("/api/v1/clubs/applications/" + applicationId + "/assessment-method", { method }, { auth: true });
+}
 export function submitClubVideoAssessment(applicationId: string, input: { swim_video_media_id: string; tread_video_media_id: string; recorded_in_supervised_pool: boolean; authentic_uncut_footage: boolean; notes?: string }): Promise<ClubApplication> {
   return apiPost<ClubApplication>("/api/v1/clubs/applications/" + applicationId + "/video-assessment", input, { auth: true });
 }
