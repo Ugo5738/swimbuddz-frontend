@@ -247,7 +247,8 @@ export default function ClubPlanSelectionPage() {
           `/checkout?purpose=club&application_id=${application.id}&payment_mode=quarterly_prepaid`
         );
       } else {
-        toast.success("Application submitted. We will arrange your in-pool assessment.");
+        toast.success("Application submitted. Choose your assessment method.");
+        router.push(`/upgrade/club/assessment/${application.id}`);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not submit your application");
@@ -311,7 +312,14 @@ export default function ClubPlanSelectionPage() {
         </Alert>
       ) : openApplication?.status === "assessment_pending" ? (
         <Alert variant="success" title="Application received">
-          We will complete a 10–15 minute in-pool assessment, then email your result.
+          {openApplication.assessment?.self_report?.video_review_status === "submitted"
+            ? "Your videos are awaiting review."
+            : "Choose video submission or an in-pool assessment."}
+          <div className="mt-3">
+            <Button size="sm" onClick={() => router.push(`/upgrade/club/assessment/${openApplication.id}`)}>
+              View assessment options
+            </Button>
+          </div>
         </Alert>
       ) : openApplication?.status === "assessment_required" ? (
         <Alert variant="info" title="Finish your safety pre-assessment">
