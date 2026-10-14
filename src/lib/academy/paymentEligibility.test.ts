@@ -17,7 +17,7 @@ describe("Academy outstanding installment payment", () => {
     const value = enrollment(["paid", "pending", "pending"]);
     expect(hasPayableAcademyBalance(value)).toBe(true);
     expect(academyPaymentPath(value)).toBe(
-      "/checkout?purpose=academy_cohort&enrollment_id=enrollment-123&cohort_id=cohort-123&billing=installments"
+      "/checkout?purpose=academy_cohort&cohort_id=cohort-123&enrollment_id=enrollment-123&billing=installments"
     );
   });
 
