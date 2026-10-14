@@ -14,7 +14,11 @@ export type AcademyPaymentState = {
 };
 
 export function hasPayableAcademyBalance(enrollment: AcademyPaymentState): boolean {
-  if (!canPayAcademyEnrollment(enrollment.status)) return false;
+  // Dropout review can be cured by paying missed installments. This does not
+  // reopen a confirmed dropout, and cannot create a new payment obligation.
+  const recoveringFromDropoutReview =
+    enrollment.status === "dropout_pending" && !!enrollment.installments?.length;
+  if (!canPayAcademyEnrollment(enrollment.status) && !recoveringFromDropoutReview) return false;
   if (enrollment.installments?.length) {
     return enrollment.installments.some(
       (row) => (row.status === "pending" || row.status === "missed") && row.amount > 0
