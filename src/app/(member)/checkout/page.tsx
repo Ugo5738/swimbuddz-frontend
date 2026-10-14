@@ -4,7 +4,7 @@ import { prepareCheckout, prepareAcademyEnrollment } from "@/lib/checkoutPrepara
 import { loadAcademyBillingQuotes, type AcademyBillingQuotes } from "@/lib/academyBillingQuotes";
 import { BANK_TRANSFER_ACCOUNT } from "@/lib/bank-transfer";
 
-import { canPayAcademyEnrollment } from "@/lib/academy/paymentEligibility";
+import { hasPayableAcademyBalance, type AcademyPaymentState } from "@/lib/academy/paymentEligibility";
 
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -282,16 +282,16 @@ function CheckoutContent() {
       }
       if (purpose === "academy_cohort" && urlEnrollmentId) {
         try {
-          const enrollments = await prepareCheckout("academy-enrollment-status", () => apiGet<{
-            id: string; cohort_id?: string; status: string; payment_status: string;
-          }[]>("/api/v1/academy/my-enrollments", { auth: true }));
+          const enrollments = await prepareCheckout("academy-enrollment-status", () => apiGet<
+            (AcademyPaymentState & { id: string; cohort_id?: string | null })[]
+          >("/api/v1/academy/my-enrollments", { auth: true }));
           if (request !== quoteRequest.current) return;
           const enrollment = enrollments.find((item) => item.id === urlEnrollmentId);
           if (!enrollment) throw new Error("Academy enrollment not found");
           if (enrollment.cohort_id && urlCohortId && enrollment.cohort_id !== urlCohortId) {
             throw new Error("This enrollment belongs to another cohort. Open it from My Academy.");
           }
-          if (enrollment.payment_status === "paid" || !canPayAcademyEnrollment(enrollment.status)) {
+          if (!hasPayableAcademyBalance(enrollment)) {
             setAcademyQuotes(null);
             router.replace(`/account/academy/enrollments/${enrollment.id}`);
             return;
@@ -301,7 +301,7 @@ function CheckoutContent() {
             `/api/v1/academy/cohorts/${cohortId}`, { auth: true }
           )) : null;
           const options = await loadAcademyBillingQuotes(
-            !!cohort?.installment_plan_enabled, adjustments.bubbles_to_apply || 0,
+            !!cohort?.installment_plan_enabled || !!enrollment.installments?.length, adjustments.bubbles_to_apply || 0,
             (mode, bubbles) => prepareCheckout(`academy-${mode}-quote`, () => previewAcademyCheckout(
               urlEnrollmentId, mode === "installments", paymentMethod, urlAmountOverrideKobo,
               adjustments.bubbles_to_apply ? { ...adjustments, bubbles_to_apply: bubbles } : adjustments

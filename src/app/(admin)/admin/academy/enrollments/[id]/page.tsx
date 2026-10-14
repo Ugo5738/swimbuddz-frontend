@@ -7,6 +7,8 @@ import {
 import { EnrollmentEvidenceGallery } from "@/components/admin/EnrollmentEvidenceGallery";
 import { AcademyCommercialTerms } from "@/components/admin/AcademyCommercialTerms";
 import { academyPaymentPosition, formatAcademyNaira } from "@/lib/academy/paymentPosition";
+import { academyPaymentPath } from "@/lib/academy/paymentEligibility";
+import { buildAppUrl } from "@/lib/config";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -25,7 +27,7 @@ import {
 } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import { ArrowLeft, CheckCircle, Clock, CreditCard, User, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, Copy, CreditCard, User, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -271,6 +273,8 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
   const isSuspended = !!enrollment.access_suspended;
   const installments: EnrollmentInstallment[] = enrollment.installments ?? [];
   const paymentPosition = academyPaymentPosition(enrollment);
+  const paymentPath = academyPaymentPath(enrollment);
+  const paymentUrl = paymentPath ? buildAppUrl(paymentPath) : null;
   const totalInstallments = enrollment.total_installments ?? installments.length;
   const paidCount = enrollment.paid_installments_count ?? 0;
   const missedCount = enrollment.missed_installments_count ?? 0;
@@ -536,6 +540,37 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
           {/* Existing enrollment commercial amendments, separate from transfers. */}
           {enrollment.cohort_id && installments.length > 0 && (
             <AcademyCommercialTerms enrollmentId={enrollment.id} onChanged={loadData} />
+          )}
+
+          {/* Shareable, member-authenticated checkout for outstanding tuition. */}
+          {paymentUrl && (
+            <Card className="p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Learner payment link</h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Share with this learner to review their remaining installment.
+                    They must sign in; the amount is confirmed at checkout.
+                  </p>
+                </div>
+                <Button type="button" variant="outline" onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(paymentUrl);
+                    toast.success("Payment link copied");
+                  } catch {
+                    toast.error("Could not copy automatically. Select the link below.");
+                  }
+                }}>
+                  <Copy className="mr-2 h-4 w-4" /> Copy payment link
+                </Button>
+              </div>
+              <label className="mt-3 block text-sm text-slate-700">
+                Payment link
+                <input readOnly value={paymentUrl}
+                  onFocus={(event) => event.currentTarget.select()}
+                  className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+              </label>
+            </Card>
           )}
 
           {/* Installment Schedule */}
