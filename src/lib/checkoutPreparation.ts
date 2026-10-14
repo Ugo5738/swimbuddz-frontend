@@ -40,6 +40,11 @@ export async function prepareAcademyEnrollment(cohortId: string, lateJoin?: Upgr
     if (!match) throw error;
     enrollment = match;
   }
-  const checkoutPath = academyPaymentPath(enrollment);
+  // Newly created enrollment responses may omit cohort_id. The selected,
+  // server-submitted cohortId still scopes the resulting checkout URL.
+  const checkoutPath = academyPaymentPath({
+    ...enrollment,
+    cohort_id: enrollment.cohort_id || cohortId,
+  });
   return { enrollment, path: checkoutPath ?? `/account/academy/enrollments/${enrollment.id}` };
 }
