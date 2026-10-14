@@ -4,12 +4,13 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
+import { EvidenceMedia } from "@/components/academy/EvidenceMedia";
 import {
   ClubPaymentArrangementFields,
   type ClubPaymentArrangementValue,
 } from "@/components/club/ClubPaymentArrangementFields";
 import { useApi } from "@/hooks/useApi";
-import { ClubApplication, completeObservedClubAssessment } from "@/lib/clubOnboarding";
+import { ClubApplication, completeObservedClubAssessment, submitClubVideoFeedback, submitFirstSessionVerification } from "@/lib/clubOnboarding";
 import { ClipboardCheck, Mail, Waves } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -42,6 +43,9 @@ export default function ClubApplicationsPage() {
     } as ClubPaymentArrangementValue,
   });
   const [saving, setSaving] = useState(false);
+  const [videoNotes, setVideoNotes] = useState("");
+  const [verificationNotes, setVerificationNotes] = useState("");
+  const [verificationPassed, setVerificationPassed] = useState(true);
   const selected = applications.data?.find((application) => application.id === selectedId) ?? null;
 
   const save = async (event: React.FormEvent) => {
@@ -62,6 +66,7 @@ export default function ClubApplicationsPage() {
     try {
       await completeObservedClubAssessment(selected.id, {
         outcome: form.outcome,
+        assessment_method: selected.assessment?.self_report?.assessment_method === "video" ? "video" : "in_person",
         observed_checks: form.checks,
         nonstop_distance_m: form.nonstop_distance_m ? Number(form.nonstop_distance_m) : undefined,
         deep_water_comfort: form.deep_water_comfort || undefined,
@@ -83,6 +88,29 @@ export default function ClubApplicationsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const sendFeedback = async (decision: "request_another_video" | "in_person_required") => {
+    if (!selected || videoNotes.trim().length < 5) return;
+    setSaving(true);
+    try {
+      await submitClubVideoFeedback(selected.id, decision, videoNotes.trim());
+      await applications.refetch();
+      toast.success("Video review feedback saved");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save feedback");
+    } finally { setSaving(false); }
+  };
+  const verifyFirstSession = async () => {
+    if (!selected || verificationNotes.trim().length < 5) return;
+    setSaving(true);
+    try {
+      await submitFirstSessionVerification(selected.id, verificationPassed, verificationNotes.trim());
+      await applications.refetch();
+      toast.success("First-session verification recorded");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not record verification");
+    } finally { setSaving(false); }
   };
 
   if (applications.loading) return <LoadingCard text="Loading Club applications..." />;
@@ -165,7 +193,42 @@ export default function ClubApplicationsPage() {
                 ))}
               </dl>
             </div>
+            {selected.assessment?.self_report?.assessment_method === "video" && (
+              <div className="mb-5 space-y-4 rounded-lg border border-cyan-200 p-4">
+                <h3 className="font-semibold">Video assessment evidence</h3>
+                <p className="text-sm">Review the uncut 25 m swim, 30-second tread, breathing, water control and safety before approval. A first-session live verification is mandatory.</p>
+                {selected.assessment.self_report.swim_video_media_id && (
+                  <EvidenceMedia mediaId={String(selected.assessment.self_report.swim_video_media_id)} label="25 m swim" />
+                )}
+                {selected.assessment.self_report.tread_video_media_id && (
+                  <EvidenceMedia mediaId={String(selected.assessment.self_report.tread_video_media_id)} label="30-second tread" />
+                )}
+                <p className="text-sm">Review status: {String(selected.assessment.self_report.video_review_status ?? "pending")}</p>
+                {selected.assessment.self_report.video_feedback && <p className="text-sm">Previous feedback: {String(selected.assessment.self_report.video_feedback)}</p>}
+                {selected.status === "assessment_pending" && selected.assessment.self_report.video_review_status === "submitted" && (
+                  <div className="space-y-2">
+                    <textarea className="w-full rounded border p-2" rows={2} value={videoNotes} onChange={e => setVideoNotes(e.target.value)} placeholder="Explain why another video or an in-person assessment is needed" />
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" disabled={saving || videoNotes.trim().length < 5} onClick={() => sendFeedback("request_another_video")}>Request another video</Button>
+                      <Button type="button" variant="outline" disabled={saving || videoNotes.trim().length < 5} onClick={() => sendFeedback("in_person_required")}>Require in-person assessment</Button>
+                    </div>
+                  </div>
+                )}
+                {selected.status === "enrolled" && Boolean(selected.assessment.self_report.first_session_check_required) && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">First Club session: verify in person</h4>
+                    <label className="flex gap-2"><input type="checkbox" checked={verificationPassed} onChange={e => setVerificationPassed(e.target.checked)} /> Member demonstrated the required safety skills</label>
+                    <textarea className="w-full rounded border p-2" rows={2} value={verificationNotes} onChange={e => setVerificationNotes(e.target.value)} placeholder="Document what you observed, or why further assessment is required" />
+                    <Button type="button" disabled={saving || verificationNotes.trim().length < 5} onClick={verifyFirstSession}>Save first-session verification</Button>
+                  </div>
+                )}
+              </div>
+            )}
             <form onSubmit={save} className="space-y-5">
+              {selected.assessment?.self_report?.assessment_method === "video"
+                && selected.assessment.self_report.video_review_status !== "submitted"
+                && selected.status === "assessment_pending"
+                && <Alert variant="info">This video submission is not ready for approval. Ask for replacement footage or complete an in-pool assessment.</Alert>}
               <fieldset className="space-y-2">
                 <legend className="text-sm font-semibold text-slate-900">Observed checks</legend>
                 {observedChecks.map(([key, label]) => (
@@ -281,7 +344,11 @@ export default function ClubApplicationsPage() {
                   Send the assessment result, coaching focus and next steps to the member.
                 </span>
               </label>
-              <Button type="submit" disabled={saving} className="w-full">
+              <Button type="submit" disabled={saving || (
+                selected.assessment?.self_report?.assessment_method === "video" &&
+                selected.assessment.self_report.video_review_status !== "submitted" &&
+                selected.status === "assessment_pending"
+              )} className="w-full">
                 {saving ? "Saving..." : "Save assessment outcome"}
               </Button>
             </form>
