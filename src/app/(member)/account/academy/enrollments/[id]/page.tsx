@@ -7,7 +7,7 @@ import {
   WithdrawEnrollmentModal,
   WithdrawLink,
 } from "@/components/academy/WithdrawEnrollmentModal";
-import { canPayAcademyEnrollment } from "@/lib/academy/paymentEligibility";
+import { canPayAcademyEnrollment, hasPayableAcademyBalance } from "@/lib/academy/paymentEligibility";
 import { PaymentChoicePanel } from "@/components/payment/PaymentChoicePanel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -130,12 +130,14 @@ export default function EnrollmentDetailPage() {
    *  used the "Pay a different amount" option, it's their chosen value and
    *  gets passed as amount_override_kobo to the payment intent. */
   const handlePayWithCard = (chosenAmountKobo: number) => {
-    if (!openPaymentModal || !canPayAcademyEnrollment(enrollment?.status)) return;
+    if (!openPaymentModal || !enrollment || !hasPayableAcademyBalance(enrollment)) return;
     const inst = installments.find((i) => i.id === openPaymentModal);
     if (!inst) return;
+    // Paying a scheduled row must never silently switch to the full balance.
     const params = new URLSearchParams({
       purpose: "academy_cohort",
       enrollment_id: enrollmentId,
+      billing: "installments",
     });
     // Only pass the override when it differs from the stipulated amount,
     // so the default flow stays clean.
@@ -204,6 +206,7 @@ export default function EnrollmentDetailPage() {
   const cohort = enrollment.cohort;
   const program = enrollment.program || cohort?.program;
   const canPay = canPayAcademyEnrollment(enrollment.status);
+  const canPayOutstanding = hasPayableAcademyBalance(enrollment);
   const isWaitlisted = enrollment.status === EnrollmentStatus.WAITLIST;
   const isPaid = enrollment.payment_status === PaymentStatus.PAID;
   const isPending = enrollment.payment_status === PaymentStatus.PENDING;
@@ -227,7 +230,7 @@ export default function EnrollmentDetailPage() {
 
   // Next unpaid installment (for top-up prompt)
   const nextPending = installments.find(
-    (i) => i.status === InstallmentStatus.PENDING,
+    (i) => i.status === InstallmentStatus.PENDING || i.status === InstallmentStatus.MISSED,
   );
   return (
     <div className="space-y-8">
@@ -268,7 +271,7 @@ export default function EnrollmentDetailPage() {
                           ? "✓ Active"
                           : "Payment Pending"}
                 </Badge>
-                {canPay && hasInstallments && (
+                {(canPay || canPayOutstanding) && hasInstallments && (
                   <Badge className="bg-white/20 text-white text-xs">
                     {paidCount}/{totalInstallments} installments paid
                   </Badge>
@@ -313,8 +316,9 @@ export default function EnrollmentDetailPage() {
             </p>
             <p className="text-sm text-orange-700">
               You have missed {missedCount} installment
-              {missedCount !== 1 ? "s" : ""}. An admin is reviewing your
-              enrollment. Please contact support if you&apos;d like to continue.
+              {missedCount !== 1 ? "s" : ""}. Your enrollment is under review.
+              Pay outstanding installments below to get back on track, or contact
+              support if you need help.
             </p>
           </div>
         )}
@@ -370,7 +374,7 @@ export default function EnrollmentDetailPage() {
           </Card>
 
           {/* ── Installment Payment Schedule ── */}
-          {canPay && hasInstallments && (
+          {(canPay || canPayOutstanding) && hasInstallments && (
             <Card className="p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-slate-900">
@@ -395,7 +399,7 @@ export default function EnrollmentDetailPage() {
                     installment={inst}
                     index={i}
                     total={totalInstallments}
-                    onOpenPayment={(id) => setOpenPaymentModal(id)}
+                    onOpenPayment={inst.id === nextPending?.id ? (id) => setOpenPaymentModal(id) : undefined}
                   />
                 ))}
               </div>
@@ -694,7 +698,7 @@ export default function EnrollmentDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Next Payment Due Callout — academy cohort fees are real-money only */}
-          {canPay && nextPending && (
+          {canPayOutstanding && nextPending && (
             <Card className="overflow-hidden">
               <div className="bg-gradient-to-br from-slate-700 to-slate-900 p-4 text-white">
                 <div className="text-xs font-medium uppercase tracking-wide opacity-80">
@@ -751,7 +755,7 @@ export default function EnrollmentDetailPage() {
                     </dd>
                   </div>
                 )}
-                {canPay && hasInstallments && (
+                {(canPay || canPayOutstanding) && hasInstallments && (
                   <>
                     <hr className="border-slate-100" />
                     <div className="flex justify-between">
@@ -897,7 +901,7 @@ export default function EnrollmentDetailPage() {
       />
 
       {/* Payment Choice Modal */}
-      {canPay && openPaymentModal && (() => {
+      {canPayOutstanding && openPaymentModal && (() => {
         const activeInstallment = installments.find(
           (i) => i.id === openPaymentModal,
         );
@@ -940,7 +944,7 @@ export default function EnrollmentDetailPage() {
                   // Used by the "Pay a different amount" option as the upper
                   // bound a member can apply in one transaction.
                   const remainingKobo = installments
-                    .filter((i) => i.status === InstallmentStatus.PENDING)
+                    .filter((i) => i.status === InstallmentStatus.PENDING || i.status === InstallmentStatus.MISSED)
                     .reduce((s, i) => s + i.amount, 0);
                   return (
                     <PaymentChoicePanel

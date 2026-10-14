@@ -1,5 +1,5 @@
 import { apiGet, apiPost } from "@/lib/api";
-import { canPayAcademyEnrollment } from "@/lib/academy/paymentEligibility";
+import { academyPaymentPath, canPayAcademyEnrollment, type AcademyPaymentState } from "@/lib/academy/paymentEligibility";
 import type { UpgradeState } from "@/lib/upgradeContext";
 
 const statusOf = (error: unknown): number | undefined =>
@@ -19,7 +19,7 @@ export async function prepareCheckout<T>(stage: string, operation: () => Promise
   }
 }
 
-type Enrollment = { id: string; cohort_id?: string; status: string; payment_status?: string };
+type Enrollment = AcademyPaymentState & { id: string; cohort_id?: string | null };
 
 export async function prepareAcademyEnrollment(cohortId: string, lateJoin?: UpgradeState["lateJoinPreferences"]) {
   let enrollment: Enrollment;
@@ -40,8 +40,11 @@ export async function prepareAcademyEnrollment(cohortId: string, lateJoin?: Upgr
     if (!match) throw error;
     enrollment = match;
   }
-  const payable = enrollment.payment_status !== "paid" && canPayAcademyEnrollment(enrollment.status);
-  return { enrollment, path: payable
-    ? `/checkout?purpose=academy_cohort&cohort_id=${encodeURIComponent(cohortId)}&enrollment_id=${encodeURIComponent(enrollment.id)}`
-    : `/account/academy/enrollments/${enrollment.id}` };
+  // Newly created enrollment responses may omit cohort_id. The selected,
+  // server-submitted cohortId still scopes the resulting checkout URL.
+  const checkoutPath = academyPaymentPath({
+    ...enrollment,
+    cohort_id: enrollment.cohort_id || cohortId,
+  });
+  return { enrollment, path: checkoutPath ?? `/account/academy/enrollments/${enrollment.id}` };
 }
