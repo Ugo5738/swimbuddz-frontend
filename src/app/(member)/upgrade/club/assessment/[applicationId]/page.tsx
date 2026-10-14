@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -25,6 +25,17 @@ export default function ClubAssessmentMethodPage() {
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const requestVideo = async () => {
+    setSubmitting(true);
+    try {
+      await chooseClubAssessmentMethod(applicationId, "video");
+      toast.success("Video assessment selected. Upload your footage whenever ready.");
+      await applications.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save assessment method");
+    } finally { setSubmitting(false); }
+  };
+
   const requestInPerson = async () => {
     setSubmitting(true);
     try {
@@ -36,6 +47,11 @@ export default function ClubAssessmentMethodPage() {
     } finally { setSubmitting(false); }
   };
   const status = String(report.video_review_status ?? "");
+  const persistedMethod = String(report.assessment_method ?? "");
+  useEffect(() => {
+    if (status === "in_person_required") setMethod("in_person");
+    else if (persistedMethod === "video") setMethod("video");
+  }, [persistedMethod, status]);
   const previousSwim = String(report.swim_video_media_id ?? "");
   const previousTread = String(report.tread_video_media_id ?? "");
   const blocked = ["submitted", "reviewed"].includes(status) ||
@@ -94,6 +110,11 @@ export default function ClubAssessmentMethodPage() {
               </div>
             ) : (
               <div className="space-y-5">
+                {persistedMethod !== "video" && (
+                  <Button variant="outline" onClick={requestVideo} disabled={submitting || uploading}>
+                    Save video assessment preference
+                  </Button>
+                )}
                 <p className="text-sm">
                   Upload two clear clips from a safely supervised pool. Existing footage is welcome.
                   Clip 1 must show an uncut, continuous 25-metre swim from start to finish, with breathing and control visible.
