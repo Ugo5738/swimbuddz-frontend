@@ -29,6 +29,8 @@ function ResetPasswordContent() {
   // Phase 1: verify the incoming token and establish a session
   const [tokenReady, setTokenReady] = useState(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const didRun = useRef(false);
 
   // Phase 2: update password
@@ -45,9 +47,9 @@ function ResetPasswordContent() {
   //   redirects here. By the time we arrive, supabase.auth.getSession() already
   //   has a valid PASSWORD_RECOVERY session — no token in the URL needed.
   //
-  // Flow B (PKCE direct — token_hash + type=recovery in query params):
-  //   Supabase skipped /auth/callback and delivered the token directly. We call
-  //   verifyOtp to exchange it for a session ourselves.
+  // Flow B (recovery email links directly to this page with token_hash):
+  //   Capture the token without redeeming it. Only the user's Continue action
+  //   calls verifyOtp, so email previews cannot consume the link on page load.
   //
   // Flow C (Implicit — access_token + refresh_token in hash):
   //   Older / non-PKCE flow. We call setSession directly.
@@ -66,32 +68,24 @@ function ResetPasswordContent() {
         return;
       }
 
-      // Flow A: session already established by /auth/callback
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        setTokenReady(true);
-        return;
-      }
-
-      // Flow B: PKCE token delivered directly (token_hash + type=recovery)
-      const tokenHash = getParam("token_hash");
-      const type = getParam("type");
-      if (tokenHash && type) {
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: type as "recovery",
-        });
-        if (error) {
-          setTokenError(
-            error.message.includes("expired")
-              ? "This reset link has expired. Please request a new one."
-              : error.message,
-          );
+      // Process the email token ahead of any existing signed-in session. The
+      // link may belong to a different account from that existing session.
+      const recoveryState = window.history.state?.swimbuddzPasswordReset;
+      const tokenHash = getParam("token_hash") || recoveryState?.tokenHash;
+      const type = getParam("type") || recoveryState?.type;
+      if (tokenHash) {
+        if (typeof tokenHash !== "string" || type !== "recovery") {
+          setTokenError("This is not a password reset link. Please request a new password reset.");
           return;
         }
-        setTokenReady(true);
+        setPendingToken(tokenHash);
+        // Keep the pending credential in this history entry so refresh still
+        // verifies the email account, while removing it from the URL/tracking.
+        window.history.replaceState(
+          { ...window.history.state, swimbuddzPasswordReset: { tokenHash, type } },
+          "",
+          window.location.pathname,
+        );
         return;
       }
 
@@ -115,6 +109,15 @@ function ResetPasswordContent() {
         return;
       }
 
+      // Flow A: a successful legacy PKCE callback established the session.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        setTokenReady(true);
+        return;
+      }
+
       // No session and no tokens found
       setTokenError(
         "This reset link is missing or invalid. Please request a new password reset.",
@@ -123,6 +126,34 @@ function ResetPasswordContent() {
 
     void verifyToken();
   }, []);
+
+  async function handleVerifyToken() {
+    if (!pendingToken || verifying) return;
+    setVerifying(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: pendingToken,
+        type: "recovery",
+      });
+      if (error) {
+        setTokenError(authLinkErrorMessage(error.code || error.message, error.message));
+        return;
+      }
+      if (!data.session) {
+        setTokenError("We couldn't establish your reset session. Please request a new password reset.");
+        return;
+      }
+      const historyState = { ...window.history.state };
+      delete historyState.swimbuddzPasswordReset;
+      window.history.replaceState(historyState, "", window.location.pathname);
+      setPendingToken(null);
+      setTokenReady(true);
+    } catch {
+      setTokenError("We couldn't verify your reset link. Please reopen the email link and try again.");
+    } finally {
+      setVerifying(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -208,6 +239,30 @@ function ResetPasswordContent() {
               Back to login
             </Link>
           </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (pendingToken) {
+    return (
+      <div className="mx-auto max-w-lg space-y-6">
+        <header className="space-y-2 text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">
+            Password reset
+          </p>
+          <h1 className="text-3xl font-bold text-slate-900">Reset your password</h1>
+          <p className="text-sm text-slate-600">
+            Continue to verify your email link and choose a new password.
+          </p>
+        </header>
+        <Card className="space-y-4">
+          <Button type="button" className="w-full" disabled={verifying} onClick={handleVerifyToken}>
+            {verifying ? "Verifying..." : "Continue to reset password"}
+          </Button>
+          <p className="text-center text-sm text-slate-600">
+            Didn&apos;t request this? You can close this page.
+          </p>
         </Card>
       </div>
     );
