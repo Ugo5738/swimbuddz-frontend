@@ -1949,6 +1949,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/applications/{application_id}/assessment-method": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Choose Club Assessment Method */
+        put: operations["choose_club_assessment_method_clubs_applications__application_id__assessment_method_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/applications/{application_id}/video-assessment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Club Video Assessment */
+        post: operations["submit_club_video_assessment_clubs_applications__application_id__video_assessment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/applications/{application_id}/video-feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Review Club Video Feedback */
+        put: operations["review_club_video_feedback_clubs_admin_applications__application_id__video_feedback_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/applications/{application_id}/first-session-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Verify Club First Session */
+        put: operations["verify_club_first_session_clubs_admin_applications__application_id__first_session_verification_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/admin/applications": {
         parameters: {
             query?: never;
@@ -7014,6 +7082,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/deletion-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Deletion Preview */
+        get: operations["deletion_preview_academy_admin_enrollments__enrollment_id__deletion_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/delete-empty": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete Empty Enrollment */
+        post: operations["delete_empty_enrollment_academy_admin_enrollments__enrollment_id__delete_empty_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/my-enrollments": {
         parameters: {
             query?: never;
@@ -11057,6 +11159,7 @@ export interface paths {
          *     - coach_application_more_info: More info requested from coach applicant
          *     - member_approved: Member application approved
          *     - club_assessment_result: Club approval or Academy recommendation with next steps
+         *     - club_assessment_video_feedback: Request clearer evidence or an in-person assessment
          *     - member_rejected: Member application rejected
          *     - payment_approved: Payment was approved
          *     - session_confirmation: Session booking confirmed
@@ -18526,6 +18629,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/media/club-assessments/{media_id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verify Club Assessment Video
+         * @description Verify purpose, upload ownership and application binding without sharing URLs.
+         */
+        get: operations["verify_club_assessment_video_internal_media_club_assessments__media_id__verify_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/media/alumni-evidence/{media_id}": {
         parameters: {
             query?: never;
@@ -22359,6 +22482,14 @@ export interface components {
              */
             updated_at: string;
         };
+        /** ClubAssessmentMethodChoice */
+        ClubAssessmentMethodChoice: {
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "in_person" | "video";
+        };
         /** ClubAssessmentResponse */
         ClubAssessmentResponse: {
             /**
@@ -22681,6 +22812,13 @@ export interface components {
              */
             is_active: boolean;
         };
+        /** ClubFirstSessionVerification */
+        ClubFirstSessionVerification: {
+            /** Verified */
+            verified: boolean;
+            /** Notes */
+            notes: string;
+        };
         /** ClubLocationTransferPreview */
         ClubLocationTransferPreview: {
             /**
@@ -22879,6 +23017,12 @@ export interface components {
              * @default true
              */
             send_result_email: boolean;
+            /**
+             * Assessment Method
+             * @default in_person
+             * @enum {string}
+             */
+            assessment_method: "in_person" | "video";
             /** Approved Payment Modes */
             approved_payment_modes?: ("quarterly_prepaid" | "transition_per_session")[];
             /** Transition Expires At */
@@ -23287,6 +23431,35 @@ export interface components {
             default_pool_id?: string | null;
             /** Operating Area Id */
             operating_area_id?: string | null;
+        };
+        /** ClubVideoAssessmentFeedback */
+        ClubVideoAssessmentFeedback: {
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "request_another_video" | "in_person_required";
+            /** Notes */
+            notes: string;
+        };
+        /** ClubVideoAssessmentSubmit */
+        ClubVideoAssessmentSubmit: {
+            /**
+             * Swim Video Media Id
+             * Format: uuid
+             */
+            swim_video_media_id: string;
+            /**
+             * Tread Video Media Id
+             * Format: uuid
+             */
+            tread_video_media_id: string;
+            /** Recorded In Supervised Pool */
+            recorded_in_supervised_pool: boolean;
+            /** Authentic Uncut Footage */
+            authentic_uncut_footage: boolean;
+            /** Notes */
+            notes?: string | null;
         };
         /**
          * CoachAgreementHistoryItem
@@ -31215,6 +31388,15 @@ export interface components {
             pay_band_min: number;
             /** Pay Band Max */
             pay_band_max: number;
+        };
+        /** ConfirmDelete */
+        ConfirmDelete: {
+            /** Preview Token */
+            preview_token: string;
+            /** Confirmation */
+            confirmation: string;
+            /** Reason */
+            reason: string;
         };
         /**
          * CurriculumLessonCreate
@@ -52790,6 +52972,146 @@ export interface operations {
             };
         };
     };
+    choose_club_assessment_method_clubs_applications__application_id__assessment_method_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubAssessmentMethodChoice"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_club_video_assessment_clubs_applications__application_id__video_assessment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubVideoAssessmentSubmit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_club_video_feedback_clubs_admin_applications__application_id__video_feedback_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubVideoAssessmentFeedback"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_club_first_session_clubs_admin_applications__application_id__first_session_verification_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubFirstSessionVerification"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubApplicationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_club_applications_for_review_clubs_admin_applications_get: {
         parameters: {
             query?: {
@@ -61110,6 +61432,72 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CommercialTermsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deletion_preview_academy_admin_enrollments__enrollment_id__deletion_preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_empty_enrollment_academy_admin_enrollments__enrollment_id__delete_empty_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmDelete"];
             };
         };
         responses: {
@@ -81956,6 +82344,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportingSection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_club_assessment_video_internal_media_club_assessments__media_id__verify_get: {
+        parameters: {
+            query: {
+                owner_auth_id: string;
+                application_id: string;
+            };
+            header?: never;
+            path: {
+                media_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
                 };
             };
             /** @description Validation Error */
