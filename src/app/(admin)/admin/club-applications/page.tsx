@@ -205,7 +205,10 @@ export default function ClubApplicationsPage() {
                 )}
                 <p className="text-sm">Review status: {String(selected.assessment.self_report.video_review_status ?? "pending")}</p>
                 {Boolean(selected.assessment.self_report.video_feedback) && <p className="text-sm">Previous feedback: {String(selected.assessment.self_report.video_feedback)}</p>}
-                {selected.status === "assessment_pending" && selected.assessment.self_report.video_review_status === "submitted" && (
+                {selected.status === "assessment_pending" &&
+                  ["submitted", "request_another_video"].includes(
+                    String(selected.assessment.self_report.video_review_status ?? "")
+                  ) && (
                   <div className="space-y-2">
                     <textarea className="w-full rounded border p-2" rows={2} value={videoNotes} onChange={e => setVideoNotes(e.target.value)} placeholder="Explain why another video or an in-person assessment is needed" />
                     <div className="flex flex-wrap gap-2">
@@ -225,10 +228,16 @@ export default function ClubApplicationsPage() {
               </div>
             )}
             <form onSubmit={save} className="space-y-5">
-              {selected.assessment?.self_report?.assessment_method === "video"
-                && selected.assessment.self_report.video_review_status !== "submitted"
-                && selected.status === "assessment_pending"
-                && <Alert variant="info">This video submission is not ready for approval. Ask for replacement footage or complete an in-pool assessment.</Alert>}
+              {selected.assessment?.self_report?.assessment_method === "video" &&
+                selected.assessment.self_report.video_review_status === "request_another_video" &&
+                selected.status === "assessment_pending" && (
+                  <Alert variant="info">Waiting for replacement footage. You may instead require an in-person assessment above.</Alert>
+                )}
+              {selected.assessment?.self_report?.assessment_method === "video" &&
+                selected.assessment.self_report.video_review_status === "in_person_required" &&
+                selected.status === "assessment_pending" && (
+                  <Alert variant="info">Complete and document the in-pool assessment before recording a decision.</Alert>
+                )}
               <fieldset className="space-y-2">
                 <legend className="text-sm font-semibold text-slate-900">Observed checks</legend>
                 {observedChecks.map(([key, label]) => (
@@ -346,7 +355,7 @@ export default function ClubApplicationsPage() {
               </label>
               <Button type="submit" disabled={saving || (
                 selected.assessment?.self_report?.assessment_method === "video" &&
-                selected.assessment.self_report.video_review_status !== "submitted" &&
+                selected.assessment.self_report.video_review_status === "request_another_video" &&
                 selected.status === "assessment_pending"
               )} className="w-full">
                 {saving ? "Saving..." : "Save assessment outcome"}
