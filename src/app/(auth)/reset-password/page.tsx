@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { supabase } from "@/lib/auth";
+import { authLinkErrorMessage } from "@/lib/authLinkError";
 import Link from "next/link";
 import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
 
@@ -59,7 +60,9 @@ function ResetPasswordContent() {
       const errorDescription = getParam("error_description");
 
       if (errorCode) {
-        setTokenError(errorDescription || `Authentication error: ${errorCode}`);
+        setTokenError(
+          authLinkErrorMessage(getParam("error_code") || errorCode, errorDescription),
+        );
         return;
       }
 
