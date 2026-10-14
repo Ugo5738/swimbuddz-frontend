@@ -66,7 +66,7 @@ export default function ClubApplicationsPage() {
     try {
       await completeObservedClubAssessment(selected.id, {
         outcome: form.outcome,
-        assessment_method: selected.assessment?.self_report?.assessment_method === "video" ? "video" : "in_person",
+        assessment_method: selected.assessment?.self_report?.assessment_method === "video" && selected.assessment?.self_report?.video_review_status === "submitted" ? "video" : "in_person",
         observed_checks: form.checks,
         nonstop_distance_m: form.nonstop_distance_m ? Number(form.nonstop_distance_m) : undefined,
         deep_water_comfort: form.deep_water_comfort || undefined,
