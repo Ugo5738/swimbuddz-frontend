@@ -4,7 +4,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { EvidenceMedia } from "@/components/academy/EvidenceMedia";
+import { PrivateAssessmentClip } from "@/components/club/PrivateAssessmentClip";
 import {
   ClubPaymentArrangementFields,
   type ClubPaymentArrangementValue,
@@ -198,10 +198,10 @@ export default function ClubApplicationsPage() {
                 <h3 className="font-semibold">Video assessment evidence</h3>
                 <p className="text-sm">Review the uncut 25 m swim, 30-second tread, breathing, water control and safety before approval. A first-session live verification is mandatory.</p>
                 {selected.assessment.self_report.swim_video_media_id && (
-                  <EvidenceMedia mediaId={String(selected.assessment.self_report.swim_video_media_id)} label="25 m swim" />
+                  <PrivateAssessmentClip mediaId={String(selected.assessment.self_report.swim_video_media_id)} label="25 m swim" />
                 )}
                 {selected.assessment.self_report.tread_video_media_id && (
-                  <EvidenceMedia mediaId={String(selected.assessment.self_report.tread_video_media_id)} label="30-second tread" />
+                  <PrivateAssessmentClip mediaId={String(selected.assessment.self_report.tread_video_media_id)} label="30-second tread" />
                 )}
                 <p className="text-sm">Review status: {String(selected.assessment.self_report.video_review_status ?? "pending")}</p>
                 {selected.assessment.self_report.video_feedback && <p className="text-sm">Previous feedback: {String(selected.assessment.self_report.video_feedback)}</p>}
