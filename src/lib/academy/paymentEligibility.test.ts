@@ -27,12 +27,23 @@ describe("Academy outstanding installment payment", () => {
     expect(hasPayableAcademyBalance(enrollment(["paid", "paid"]))).toBe(false);
   });
 
-  it.each(["waitlist", "dropped", "dropout_pending", "graduated"])(
+  it.each(["waitlist", "dropped", "graduated"])(
     "never generates a payment link for %s", (status) => {
       const value = { ...enrollment(["paid", "pending"]), status };
       expect(academyPaymentPath(value)).toBeNull();
     }
   );
+
+  it("permits a missed installment during dropout review for catch-up", () => {
+    const value = { ...enrollment(["missed", "missed", "pending"], "failed"), status: "dropout_pending" };
+    expect(hasPayableAcademyBalance(value)).toBe(true);
+    expect(academyPaymentPath(value)).toContain("billing=installments");
+  });
+
+  it("does not create new obligations while the student is in dropout review", () => {
+    const value = { ...enrollment([], "failed"), status: "dropout_pending" };
+    expect(hasPayableAcademyBalance(value)).toBe(false);
+  });
 
   it("keeps unscheduled legacy unpaid enrollments payable", () => {
     const value = enrollment([], "pending");
