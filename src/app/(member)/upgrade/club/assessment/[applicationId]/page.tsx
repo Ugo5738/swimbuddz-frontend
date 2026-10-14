@@ -9,7 +9,7 @@ import { Alert } from "@/components/ui/Alert";
 import { MediaInput } from "@/components/ui/MediaInput";
 import { PrivateAssessmentClip } from "@/components/club/PrivateAssessmentClip";
 import { useApi } from "@/hooks/useApi";
-import { ClubApplication, submitClubVideoAssessment } from "@/lib/clubOnboarding";
+import { ClubApplication, chooseClubAssessmentMethod, submitClubVideoAssessment } from "@/lib/clubOnboarding";
 
 export default function ClubAssessmentMethodPage() {
   const { applicationId } = useParams<{ applicationId: string }>();
@@ -25,6 +25,16 @@ export default function ClubAssessmentMethodPage() {
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const requestInPerson = async () => {
+    setSubmitting(true);
+    try {
+      await chooseClubAssessmentMethod(applicationId, "in_person");
+      toast.success("Your in-pool assessment preference has been saved.");
+      await applications.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save assessment method");
+    } finally { setSubmitting(false); }
+  };
   const status = String(report.video_review_status ?? "");
   const previousSwim = String(report.swim_video_media_id ?? "");
   const previousTread = String(report.tread_video_media_id ?? "");
@@ -72,12 +82,16 @@ export default function ClubAssessmentMethodPage() {
           <div className="space-y-4">
             <h2 className="font-semibold">Assessment method</h2>
             <label className="flex gap-2"><input type="radio" checked={method === "in_person"} onChange={() => setMethod("in_person")} /> Short in-pool assessment (10–15 minutes)</label>
-            <label className="flex gap-2"><input type="radio" checked={method === "video"} onChange={() => setMethod("video")} /> Submit a video assessment</label>
+            <label className="flex gap-2"><input type="radio" disabled={status === "in_person_required"} checked={method === "video"} onChange={() => setMethod("video")} /> Submit a video assessment</label>
             {method === "in_person" ? (
-              <p className="rounded-lg bg-slate-50 p-4 text-sm">
-                We'll contact you to arrange an in-pool assessment at an appropriate SwimBuddz location.
-                You'll receive your result and registration instructions afterwards.
-              </p>
+              <div className="space-y-3 rounded-lg bg-slate-50 p-4 text-sm">
+                <p>We'll contact you to arrange an in-pool assessment at an appropriate SwimBuddz location.
+                You'll receive your result and registration instructions afterwards.</p>
+                <p>{report.in_person_requested_at ? "In-person assessment requested." : "Save your preference so our team can schedule you."}</p>
+                <Button disabled={submitting || uploading} onClick={requestInPerson}>
+                  {submitting ? "Saving…" : "Request in-person assessment"}
+                </Button>
+              </div>
             ) : (
               <div className="space-y-5">
                 <p className="text-sm">
