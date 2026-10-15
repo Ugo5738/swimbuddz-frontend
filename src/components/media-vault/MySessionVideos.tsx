@@ -11,6 +11,10 @@ type SharedVideo = {
   vault_title: string;
   capture_date: string;
   session_id: string | null;
+  session_title?: string | null;
+  session_starts_at?: string | null;
+  location_name?: string | null;
+  session_type?: string | null;
 };
 type MyVideosResponse = {
   items: SharedVideo[];
@@ -26,6 +30,7 @@ export function MySessionVideos() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<SharedVideo | null>(null);
   const [duration, setDuration] = useState(0);
+  const [filter, setFilter] = useState<"all" | "academy" | "club" | "community">("all");
 
   useEffect(() => {
     let active = true;
@@ -38,6 +43,18 @@ export function MySessionVideos() {
   }, [page]);
 
   const pages = Math.max(1, Math.ceil((data?.total ?? 0) / 24));
+  const category = (video: SharedVideo): "academy" | "club" | "community" => {
+    const type = (video.session_type || "").toLowerCase();
+    if (type.includes("cohort") || type.includes("academy")) return "academy";
+    if (type.includes("club")) return "club";
+    return "community";
+  };
+  const videos = (data?.items ?? []).filter((entry) => filter === "all" || category(entry) === filter);
+  const sessions = videos.reduce<Record<string, SharedVideo[]>>((groups, entry) => {
+    const key = entry.session_id || entry.vault_title;
+    (groups[key] ??= []).push(entry);
+    return groups;
+  }, {});
   return (
     <section className="space-y-5" aria-label="My session videos">
       <div>
@@ -54,11 +71,24 @@ export function MySessionVideos() {
           No personal videos have been shared with you yet. Your instructors or the media team can add them after review.
         </div>
       )}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data?.items.map((entry) => (
+      <label className="block text-sm font-medium text-slate-700">Show videos from
+        <select value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} className="ml-3 rounded-lg border border-slate-300 bg-white px-3 py-2">
+          <option value="all">All swims</option><option value="academy">Academy</option>
+          <option value="club">Club</option><option value="community">Community</option>
+        </select>
+      </label>
+      <div className="space-y-6">
+        {Object.entries(sessions).map(([key, entries]) => (
+          <section key={key} className="space-y-3">
+            <div><h3 className="font-semibold text-slate-900">{entries[0].session_title || entries[0].vault_title}</h3>
+              <p className="text-xs text-slate-600">{entries[0].location_name || ""}
+                {entries[0].session_starts_at ? ` · ${new Date(entries[0].session_starts_at).toLocaleDateString("en-NG", { dateStyle: "medium" })}` : ""}
+              </p></div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {entries.map((entry) => (
           <button type="button" key={entry.media.id} onClick={() => { setSelected(entry); setDuration(0); }}
             className="overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:border-cyan-300 hover:shadow-md"
-            aria-label={`View video from ${entry.vault_title}`}>
+            aria-label={`View video from ${entry.session_title || entry.vault_title}`}>
             <div className="relative aspect-video bg-slate-100">
               {entry.media.thumbnail_url ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -67,13 +97,16 @@ export function MySessionVideos() {
               <Play className="absolute bottom-3 right-3 h-9 w-9 rounded-full bg-slate-900/80 p-2 text-white" />
             </div>
             <div className="p-4">
-              <p className="font-semibold text-slate-900">{entry.vault_title}</p>
+              <p className="font-semibold text-slate-900">{entry.session_title || entry.vault_title}</p>
               <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
                 <CalendarDays className="h-3.5 w-3.5" />
-                {new Date(`${entry.capture_date}T12:00:00`).toLocaleDateString("en-NG", { dateStyle: "medium" })}
+                {new Date(entry.session_starts_at || `${entry.capture_date}T12:00:00`).toLocaleDateString("en-NG", { dateStyle: "medium" })}
               </p>
             </div>
           </button>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
       {(data?.total ?? 0) > 24 && (
@@ -92,7 +125,7 @@ export function MySessionVideos() {
           onClick={() => setSelected(null)}>
           <div className="w-full max-w-4xl rounded-xl bg-white p-4" onClick={(event) => event.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between gap-4">
-              <h2 className="truncate font-semibold text-slate-900">{selected.vault_title}</h2>
+              <h2 className="truncate font-semibold text-slate-900">{selected.session_title || selected.vault_title}</h2>
               <button type="button" onClick={() => setSelected(null)} className="rounded-lg px-3 py-2 text-sm">Close</button>
             </div>
             {selected.media.preview_url ? (
