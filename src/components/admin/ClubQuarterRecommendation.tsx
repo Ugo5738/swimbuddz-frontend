@@ -40,10 +40,17 @@ export function ClubQuarterRecommendation({
   const [excluded, setExcluded] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [step, setStep] = useState<1 | 2>(1);
+  const selectedLocation = clubs.find(c => c.id === club);
+  const canAdvance = Boolean(club && year >= 2026 && quarter >= 1 && quarter <= 4 && capacity > 0);
   return (
     <Card>
       <h2 className="text-xl font-semibold">Create a Club quarter</h2>
-      <p className="mt-1 text-sm font-medium text-cyan-700">Step 1 — Choose the location and weekly practice. Step 2 — Check your costs. Step 3 — Review the generated dates and publish.</p>
+      <p className="mt-1 text-sm font-medium text-cyan-700">1. Location and weekly swim → 2. Cost assumptions → 3. Review dates and publish</p>
+      <div role="status" className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+        {step === 1 ? "Step 1 of 2: choose which Club, practice and quarter to prepare." :
+          `Step 2 of 2: confirm estimates for ${selectedLocation?.name || "this Club"} before generating a reviewable draft.`}
+      </div>
       <p className="my-3 text-sm text-slate-600">
         Works for your first quarter too. The normal Club product should select one regular weekly
         <strong> plan-included</strong> series; selecting multiple series means members are buying
@@ -92,7 +99,7 @@ export function ClubQuarterRecommendation({
         }}
       >
         <fieldset disabled={busy} className="grid gap-4 sm:grid-cols-2">
-          <label>
+          {step === 1 && <><label>
             Club location
             <select
               required
@@ -181,6 +188,8 @@ export function ClubQuarterRecommendation({
               onChange={(e) => setExcluded(e.target.value)}
             />
           </label>
+          </>}
+          {step === 2 && <>
           <label className="sm:col-span-2">
             <input
               type="checkbox"
@@ -252,15 +261,18 @@ export function ClubQuarterRecommendation({
               </label>
             </>
           )}
+          </>}
         </fieldset>
         <p className="my-3 text-sm text-slate-600">
           Refreshment costs come from the same inherited operating rates as other Sessions. An
           Experience does not automatically remove a swim. Exclude a date only if no swim is being
           promised on that date.
         </p>
-        <Button type="submit" disabled={busy}>
-          {busy ? "Generating…" : "Generate reviewable quarter"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {step === 2 && <Button type="button" variant="outline" disabled={busy} onClick={() => setStep(1)}>Back to location and schedule</Button>}
+          {step === 1 ? <Button type="button" disabled={!canAdvance || busy} onClick={() => setStep(2)}>Continue to cost estimates</Button> :
+            <Button type="submit" disabled={busy}>{busy ? "Generating…" : "Generate reviewable quarter"}</Button>}
+        </div>
       </form>
     </Card>
   );
