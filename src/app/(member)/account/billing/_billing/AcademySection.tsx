@@ -1,16 +1,11 @@
 "use client";
 
-import {
-  PaymentMethodChoice,
-  type CheckoutPaymentMethod,
-} from "@/components/checkout/PaymentMethodChoice";
-
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { apiPost } from "@/lib/api";
+import { academyBillingCheckoutPath, academyOutstandingKobo, academyTuitionSettled, remainingAcademyInstallments } from "./academyBilling";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import type { Cohort, Enrollment, Member } from "../types";
 import { formatCurrency, formatDate } from "../utils";
@@ -23,51 +18,21 @@ type Props = {
 };
 
 export function AcademySection({ myEnrollments, openCohorts, communityActive, member }: Props) {
-  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("paystack");
-  const [payingEnrollmentId, setPayingEnrollmentId] = useState<string | null>(null);
-  // How many of the next consecutive unpaid installments the member has
-  // selected to pay, keyed by enrollment id. Defaults to 1 (the next one).
-  // Selection is always a prefix because the backend rolls a payment forward
-  // from the earliest unpaid installment — you can't skip ahead.
+  const router = useRouter();
   const [selectedCounts, setSelectedCounts] = useState<Record<string, number>>({});
+  const [loadingCheckout, setLoadingCheckout] = useState<string | null>(null);
 
-  // Pay one or more consecutive installments for an enrollment. When paying a
-  // single (next) installment we omit amount_override_kobo so the backend
-  // charges the stipulated amount. When paying ahead (count > 1) we pass the
-  // summed amount as amount_override_kobo; the backend's
-  // apply_member_payment_across_installments rolls it forward, marking each
-  // installment PAID in turn.
-  const handlePayInstallment = async (enrollmentId: string, amountOverrideKobo?: number) => {
-    setPayingEnrollmentId(enrollmentId);
-    try {
-      const intent = await apiPost<{ checkout_url: string | null }>(
-        "/api/v1/payments/intents",
-        {
-          purpose: "academy_cohort",
-          enrollment_id: enrollmentId,
-          currency: "NGN",
-          payment_method: paymentMethod,
-          ...(amountOverrideKobo ? { amount_override_kobo: amountOverrideKobo } : {}),
-        },
-        { auth: true }
-      );
-      if (intent.checkout_url) {
-        window.location.href = intent.checkout_url;
-      } else {
-        toast.error("Unable to start payment. Please try again.");
-        setPayingEnrollmentId(null);
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unable to start payment.";
-      toast.error(msg);
-      setPayingEnrollmentId(null);
-    }
+  const goToCheckout = (enrollment: Enrollment, count: number) => {
+    const path = academyBillingCheckoutPath(enrollment, count);
+    if (!path) return;
+    setLoadingCheckout(enrollment.id);
+    router.push(path);
   };
 
   const { paidEnrollments, pendingEnrollments, availableCohorts } = useMemo(() => {
-    const paid = myEnrollments.filter((e) => e.status === "enrolled");
+    const paid = myEnrollments.filter((e) => e.status === "enrolled" || e.status === "dropout_pending");
     const pending = myEnrollments.filter(
-      (e) => e.payment_status === "pending" && e.status === "pending_approval"
+      (e) => e.status === "pending_approval"
     );
     const enrolledCohortIds = new Set(myEnrollments.map((e) => e.cohort_id));
     const available = openCohorts.filter((c) => !enrolledCohortIds.has(c.id));
@@ -92,7 +57,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
                 Academy enrollment
               </h2>
               <p className="text-xs md:text-sm text-slate-600 mt-0.5 md:mt-1">
-                {paidEnrollments.length} active enrollment
+                {paidEnrollments.length} current enrollment
                 {paidEnrollments.length > 1 ? "s" : ""}
               </p>
             </div>
@@ -110,7 +75,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              <span className="font-medium">Enrollment active</span>
+              <span className="font-medium">Enrollment records</span>
             </div>
           </div>
 
@@ -139,9 +104,11 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide opacity-70">Payment</p>
                 <p className="mt-0.5 font-semibold">
-                  {paidEnrollments.every((enrollment) => enrollment.payment_status === "paid")
-                    ? "Fully paid"
-                    : "Installments in progress"}
+                  {paidEnrollments.every(academyTuitionSettled)
+                    ? "Tuition settled"
+                    : paidEnrollments.some((e) => e.installments?.length && !academyTuitionSettled(e))
+                      ? "Installments outstanding"
+                      : "See enrollment details"}
                 </p>
               </div>
             </div>
@@ -168,7 +135,8 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
                   // Unpaid installments are payable only in order (the backend
                   // rolls a payment forward from the earliest unpaid one), so
                   // a member's selection is always a prefix of this list.
-                  const unpaid = sorted.filter((i) => i.status !== "paid" && i.status !== "waived");
+                  const unpaid = remainingAcademyInstallments(e);
+                  const balanceKobo = academyOutstandingKobo(e);
                   const selectedCount = Math.min(
                     Math.max(selectedCounts[e.id] ?? 1, 1),
                     Math.max(unpaid.length, 1)
@@ -177,12 +145,29 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
                   const selectedTotalKobo = unpaid
                     .slice(0, selectedCount)
                     .reduce((sum, i) => sum + i.amount, 0);
-                  const isPaying = payingEnrollmentId === e.id;
+                  const isPaying = loadingCheckout === e.id;
+                  const canPay = academyBillingCheckoutPath(e, 1) !== null;
                   // Checkboxes only make sense when there's a choice to make.
                   const multiSelectable = unpaid.length > 1;
 
                   return (
-                    <div key={e.id} className="space-y-2">
+                    <div key={e.id} className="space-y-3 rounded-xl border border-slate-200 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-semibold text-slate-900">{e.cohort?.name || e.cohort?.program?.name || "Academy cohort"}</h3>
+                          <p className="text-xs text-slate-500">{e.status === "dropout_pending" ? "Dropout review — settle outstanding installments to recover" : "Enrollment payment schedule"}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-slate-800">
+                          {balanceKobo === null ? "See details for balance" : `Balance: ${formatCurrency(balanceKobo / 100)}`}
+                        </span>
+                      </div>
+                      {e.price_snapshot_amount != null && (
+                        <p className="text-xs text-slate-600">Agreed tuition: {formatCurrency(e.price_snapshot_amount / 100)}
+                          {balanceKobo !== null && e.price_snapshot_amount >= balanceKobo
+                            ? ` · Settled or waived: ${formatCurrency((e.price_snapshot_amount - balanceKobo) / 100)}`
+                            : ""}
+                        </p>
+                      )}
                       {sorted.map((inst) => {
                         const isPaid = inst.status === "paid";
                         const isMissed = inst.status === "missed";
@@ -237,14 +222,7 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
                         );
                       })}
 
-                      {unpaid.length > 0 && (
-                        <PaymentMethodChoice
-                          value={paymentMethod}
-                          onChange={setPaymentMethod}
-                          disabled={isPaying}
-                        />
-                      )}
-                      {unpaid.length > 0 && (
+                      {unpaid.length > 0 && canPay && (
                         <div className="flex items-center justify-between gap-3 pt-0.5">
                           <span className="text-xs text-slate-500">
                             {selectedCount > 1
@@ -255,20 +233,15 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
                           </span>
                           <Button
                             size="sm"
-                            onClick={() =>
-                              handlePayInstallment(
-                                e.id,
-                                selectedCount > 1 ? selectedTotalKobo : undefined
-                              )
-                            }
+                            onClick={() => goToCheckout(e, selectedCount)}
                             disabled={isPaying}
                           >
-                            {isPaying
-                              ? "…"
-                              : `Pay ${formatCurrency(Math.round(selectedTotalKobo / 100))}`}
+                            {isPaying ? "Opening checkout…" : `Review & pay ${formatCurrency(selectedTotalKobo / 100)}`}
                           </Button>
                         </div>
                       )}
+                      {!canPay && unpaid.length > 0 && <p className="text-sm text-amber-800">Payment is unavailable for this enrollment. Contact support or review your Academy enrollment.</p>}
+                      <Link href={`/account/academy/enrollments/${e.id}`} className="text-sm font-medium text-cyan-700 hover:underline">View enrollment details →</Link>
                     </div>
                   );
                 })}
