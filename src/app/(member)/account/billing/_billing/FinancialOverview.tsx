@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { buildFinancialOverview } from "./financialOverview";
-import type { Enrollment, PaymentRecord, UnpaidBooking, StoreCreditSummary, BubbleWallet } from "../types";
+import type { Enrollment, PaymentRecord, UnpaidBooking, StoreCreditSummary, BubbleWallet, MemberStoreOrder } from "../types";
 import { formatCurrency, formatDate } from "../utils";
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
   transfers: PaymentRecord[];
   credits: StoreCreditSummary | null;
   wallet: BubbleWallet | null;
+  orders: MemberStoreOrder[] | null;
   incomplete: boolean;
   onRefresh: () => void;
   refreshing: boolean;
@@ -19,7 +20,7 @@ type Props = {
 
 const money = (kobo: number) => formatCurrency(kobo / 100);
 
-export function FinancialOverview({ enrollments, sessions, transfers, credits, wallet, incomplete, onRefresh, refreshing }: Props) {
+export function FinancialOverview({ enrollments, sessions, transfers, credits, wallet, orders, incomplete, onRefresh, refreshing }: Props) {
   const overview = buildFinancialOverview(enrollments, sessions ?? [], transfers);
   const incompleteTotal = incomplete || sessions === null || overview.needsQuote.length > 0;
   const groups = [
@@ -76,6 +77,17 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
       <h3 className="font-semibold">Payment details need checking</h3>
       <p className="text-sm text-slate-600">We couldn't confirm an exact amount for these enrolments. They are not included in the totals above.</p>
       {overview.needsQuote.map(item => <Link key={item.id} href={item.href} className="block py-2 text-sm font-medium text-cyan-700 underline">{item.title} — View details</Link>)}
+    </Card>}
+    {orders?.some(order => ["pending_payment", "payment_failed"].includes(order.status)) && <Card className="space-y-3 p-4 md:p-6">
+      <h3 className="font-semibold text-slate-900">Unfinished store purchases</h3>
+      <p className="text-sm text-slate-600">These are orders you started, not automatic debts. You can review each order without paying twice.</p>
+      {orders.filter(order => ["pending_payment", "payment_failed"].includes(order.status)).map(order => <div key={order.id} className="flex items-center justify-between gap-3 border-t border-slate-100 py-3">
+        <div>
+          <p className="font-medium text-slate-900">Order {order.order_number}</p>
+          <p className="text-sm text-slate-600">{formatCurrency(Number(order.total_ngn))} · {order.status === "payment_failed" ? "Payment unsuccessful" : "Checkout unfinished"}</p>
+        </div>
+        <Link href={`/account/orders/${encodeURIComponent(order.id)}`} className="shrink-0 text-sm font-semibold text-cyan-700 underline">View order</Link>
+      </div>)}
     </Card>}
     <Card className="space-y-3 p-4 md:p-6">
       <h3 className="font-semibold text-slate-900">Your credits</h3>
