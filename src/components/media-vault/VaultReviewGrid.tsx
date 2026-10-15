@@ -1,6 +1,7 @@
 "use client";
 
 import { formatBytes, mediaVaultApi, type VaultMedia } from "@/lib/media-vault";
+import { apiPatch } from "@/lib/api";
 import {
   Check,
   Download,
@@ -47,6 +48,9 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
   const [acting, setActing] = useState(false);
   const [editingLabels, setEditingLabels] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [visibilityOpen, setVisibilityOpen] = useState(false);
+  const [visibility, setVisibility] = useState<"private" | "selected_members" | "session_participants">("selected_members");
+  const [canClip, setCanClip] = useState(false);
   const [labelInput, setLabelInput] = useState("");
   const [deleteMode, setDeleteMode] = useState<"vault" | "storage" | null>(null);
   const [viewingVideoId, setViewingVideoId] = useState<string | null>(null);
@@ -387,6 +391,9 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
             disabled={acting || !selectionReady}
           />
           {admin && (
+            <Action label="Visibility" icon={ShieldCheck} onClick={() => setVisibilityOpen(true)} disabled={acting || !selectionReady} />
+          )}
+          {admin && (
             <Action
               label="Share with member"
               icon={Share2}
@@ -510,6 +517,8 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
                   {item.processing_status !== "ready" && <Status value={item.processing_status} />}
                   <Status value={item.review_status} />
                   <Status value={item.consent_status} />
+                  {item.session_visibility === "session_participants" && <span className="rounded bg-cyan-50 px-2 py-0.5 text-[10px] text-cyan-800">Session attendees</span>}
+                  {item.allow_member_clips && <span className="rounded bg-teal-50 px-2 py-0.5 text-[10px] text-teal-800">Clips allowed</span>}
                 </div>
                 <VaultMediaLabels labels={item.labels ?? []} />
               </div>
@@ -532,6 +541,37 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
         </nav>
       )}
 
+      {visibilityOpen && (
+        <div role="dialog" aria-modal="true" aria-label="Manage video visibility" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
+          <div className="w-full max-w-lg space-y-4 rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-slate-900">Who can watch these {selected.size} videos?</h2>
+            <p className="text-sm text-slate-600">Session participants means verified attendees, not everyone who booked. Only approved, consent-cleared videos may be shared.</p>
+            <label className="block text-sm font-medium text-slate-800">Visibility
+              <select className="mt-2 w-full rounded-lg border p-3" value={visibility} onChange={(e) => setVisibility(e.target.value as typeof visibility)}>
+                <option value="private">Admin only — private</option>
+                <option value="selected_members">Individually shared members</option>
+                <option value="session_participants">Verified session participants</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-800"><input type="checkbox" checked={canClip} onChange={(e) => setCanClip(e.target.checked)} disabled={visibility === "private"} /> Allow approved viewers to save 1–90 second clips</label>
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setVisibilityOpen(false)} className="rounded-lg border px-4 py-2">Cancel</button>
+              <button type="button" disabled={acting} onClick={async () => {
+                setActing(true);
+                try {
+                  await apiPatch(`/api/v1/media/vaults/${vaultId}/items/visibility`, {
+                    media_item_ids: [...selected], session_visibility: visibility, allow_member_clips: canClip,
+                  }, { auth: true });
+                  toast.success("Visibility updated");
+                  setVisibilityOpen(false);
+                  await loadItems();
+                } catch(e) { toast.error(e instanceof Error ? e.message : "Unable to update visibility"); }
+                finally { setActing(false); }
+              }} className="rounded-lg bg-cyan-700 px-4 py-2 font-semibold text-white disabled:opacity-50">Save access policy</button>
+            </div>
+          </div>
+        </div>
+      )}
       {sharing && (
         <MemberVideoShareDialog vaultId={vaultId} videos={chosen} onClose={() => setSharing(false)} />
       )}
