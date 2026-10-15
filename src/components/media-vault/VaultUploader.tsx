@@ -183,7 +183,7 @@ export function VaultUploader({ vault, scope, associatedSessionId, onUploadingCh
         "The browser could not read this file. If it came from Photos/iCloud, download or export the original to this device and select it again."
       );
     }
-    const persistenceKey = `swimbuddz-vault-upload:${scope.vaultId}:${fingerprint}`;
+    const persistenceKey = `swimbuddz-vault-upload:${scope.vaultId}:${associatedSessionId || "personal"}:${fingerprint}`;
     const savedRaw = localStorage.getItem(persistenceKey);
     let saved: SavedUpload | null = savedRaw ? (JSON.parse(savedRaw) as SavedUpload) : null;
     const auth = scope.kind === "member";
@@ -327,7 +327,7 @@ export function VaultUploader({ vault, scope, associatedSessionId, onUploadingCh
         };
       };
       wakeLock = (await navigatorWithWakeLock.wakeLock?.request("screen")) ?? null;
-      const batchStorageKey = `swimbuddz-vault-batch:${scope.vaultId}`;
+      const batchStorageKey = `swimbuddz-vault-batch:${scope.vaultId}:${associatedSessionId || "personal"}`;
       const batchSignature = pendingFiles
         .map((entry) => entry.key)
         .sort()
