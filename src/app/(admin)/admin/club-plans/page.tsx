@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -55,6 +56,8 @@ const initialForm = () => {
 };
 
 export default function ClubPlansAdminPage() {
+  const searchParams = useSearchParams();
+  const initialClubFilter = searchParams?.get("club_id") ?? "all";
   const clubs = useApi<Club[]>("/api/v1/clubs?active_only=false", { auth: false });
   const plans = useApi<ClubPlan[]>("/api/v1/clubs/admin/plans");
   const experiences = useApi<CommunityExperienceOffering[]>(
@@ -67,7 +70,7 @@ export default function ClubPlansAdminPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [showManualBuilder, setShowManualBuilder] = useState(false);
-  const [locationFilter, setLocationFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState(initialClubFilter);
   const [error, setError] = useState("");
   const field = (key: keyof ReturnType<typeof initialForm>, value: string | boolean) =>
     setForm((old) => ({ ...old, [key]: value }));
@@ -172,7 +175,7 @@ export default function ClubPlansAdminPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Existing quarters</h2>
-            <p className="text-sm text-slate-600">Open a draft to review it, or inspect a published schedule.</p>
+            <p className="text-sm text-slate-600">Open a draft to review it, or inspect a published schedule. Publishing locks the member-facing commercial promise.</p>
           </div>
           <label className="text-sm">Location
             <select aria-label="Filter quarters by Club" value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className={inputClass}>
@@ -191,9 +194,10 @@ export default function ClubPlansAdminPage() {
               {plan.club_name} · {plan.period_start} → {plan.period_end}
             </p>
             <p>
-              {plan.sessions_included} sessions · {money(plan.club_fee_kobo)}
+              {plan.sessions_included} included swims · {money(plan.club_fee_kobo)} total
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
+              <Link className="text-sm text-cyan-700 underline" href={`/admin/community/clubs/${plan.club_id}`}>Club setup and Pods</Link>
               {plan.published_at && <details className="w-full text-sm"><summary className="cursor-pointer font-medium text-slate-600">Maintenance: reconcile prepaid reservations</summary><Button variant="outline" disabled={busy} onClick={() => run(async () => {
                 const result = await apiPost<{ synced_enrollment_ids: string[]; failed_enrollment_ids: string[] }>(
                   `/api/v1/clubs/admin/plans/${plan.id}/sync-prepaid-reservations`, {}, { auth: true }

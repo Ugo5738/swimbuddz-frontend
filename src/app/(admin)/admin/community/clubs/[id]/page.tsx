@@ -20,6 +20,8 @@ import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { PoolPicker } from "@/components/admin/PoolPicker";
+import { useApi } from "@/hooks/useApi";
+import type { ClubPlan } from "@/lib/clubOnboarding";
 import { OperatingArea, PoolPricingApi } from "@/lib/poolPricing";
 import { getClub, updateClub, type Club, type ClubDayOfWeek, type ClubInput } from "@/lib/clubs";
 import { formatDay, formatTime, podDisplayName, type PodSummary } from "@/lib/pods";
@@ -80,6 +82,7 @@ export default function AdminClubDetailPage() {
 
   const [club, setClub] = useState<Club | null>(null);
   const [pods, setPods] = useState<PodSummary[]>([]);
+  const quarters = useApi<ClubPlan[]>("/api/v1/clubs/admin/plans");
   const [operatingAreas, setOperatingAreas] = useState<OperatingArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +145,9 @@ export default function AdminClubDetailPage() {
     }
   };
 
+  const clubQuarters = (quarters.data ?? []).filter(plan => plan.club_id === clubId);
+  const activeQuarter = clubQuarters.find(plan => plan.published_at && plan.is_active && plan.period_end >= new Date().toISOString().slice(0, 10));
+  const unfilledPlaces = pods.filter(pod => pod.status === "active").reduce((sum, pod) => sum + Math.max(0, pod.max_size - pod.active_member_count), 0);
   const sortedPods = useMemo(
     () =>
       [...pods].sort((a, b) => {
@@ -189,12 +195,18 @@ export default function AdminClubDetailPage() {
       )}
 
       <Card className="space-y-3 p-5">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div><p className="text-sm text-slate-600">Club practice</p><p className="mt-1 font-semibold">{club.default_session_day ? formatDay(club.default_session_day) : "Not set"} · {club.default_session_time ? formatTime(club.default_session_time) : "No time"}</p></div>
+          <div><p className="text-sm text-slate-600">Training Pods</p><p className="mt-1 font-semibold">{pods.filter(pod => pod.status === "active").length} active · {unfilledPlaces} spaces</p></div>
+          <div><p className="text-sm text-slate-600">Current Club quarter</p><p className="mt-1 font-semibold">{activeQuarter ? `${activeQuarter.name} · Published` : quarters.loading ? "Checking…" : "No active published quarter"}</p></div>
+        </div>
+        <div className="border-t border-slate-200 pt-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold text-slate-900">Set up this Club</h2>
             <p className="text-sm text-slate-600">Complete the pool, weekly practice, and Pod before inviting swimmers. Create the quarter from the plans workspace.</p>
           </div>
-          <Link className="text-sm font-medium text-cyan-700 underline" href="/admin/club-plans">Create or review quarter →</Link>
+          <Link className="text-sm font-medium text-cyan-700 underline" href={`/admin/club-plans?club_id=${club.id}`}>Create or review quarter →</Link>
         </div>
         <ol className="grid gap-2 sm:grid-cols-2">
           {[
@@ -212,7 +224,8 @@ export default function AdminClubDetailPage() {
             </li>
           ))}
         </ol>
-        <p className="text-xs text-slate-500">Published quarter status is checked in Club Plans & Pricing; these four checks cover location operations only.</p>
+        <p className="text-xs text-slate-500">The current-quarter status above is checked against published Club plans; Pod capacity is managed separately from quarter seats.</p>
+        </div>
       </Card>
 
       {/* Settings */}
@@ -264,10 +277,10 @@ export default function AdminClubDetailPage() {
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-3">
           <div>
-            <h2 className="font-semibold text-slate-900">Pods in this club ({pods.length})</h2>
+            <h2 className="font-semibold text-slate-900">Training Pods ({pods.filter(pod => pod.status === "active").length} active)</h2>
             <p className="text-xs text-slate-500">
-              Small training crews (2–5 swimmers each). New pods inherit this club's default
-              schedule.
+              Peer-led swimming crews at this Club. Pod membership is separate from enrollment
+              and the quarterly price; swimmers may move between Pods here, not between Clubs.
             </p>
           </div>
           <Link href={`/admin/community/pods/new?club_id=${club.id}`}>
