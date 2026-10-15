@@ -27,6 +27,7 @@ import type {
   UnpaidBooking,
   StoreCreditSummary,
   BubbleWallet,
+  MemberStoreOrder,
 } from "./types";
 import { formatDate } from "./utils";
 
@@ -57,6 +58,7 @@ export default function BillingPage() {
   const [unpaidBookings, setUnpaidBookings] = useState<UnpaidBooking[] | null>(null);
   const [storeCredits, setStoreCredits] = useState<StoreCreditSummary | null>(null);
   const [bubblesWallet, setBubblesWallet] = useState<BubbleWallet | null>(null);
+  const [storeOrders, setStoreOrders] = useState<MemberStoreOrder[] | null>(null);
   const [obligationError, setObligationError] = useState(false);
   const [obligationRefreshing, setObligationRefreshing] = useState(false);
 
@@ -186,14 +188,16 @@ export default function BillingPage() {
   const refreshFinancialSources = useCallback(async () => {
     setObligationRefreshing(true);
     try {
-      const [sessions, credits, wallet] = await Promise.allSettled([
+      const [sessions, credits, wallet, orders] = await Promise.allSettled([
         apiGet<UnpaidBooking[]>("/api/v1/sessions/bookings/me/unpaid", { auth: true }),
         apiGet<StoreCreditSummary>("/api/v1/store/credits/me", { auth: true }),
         apiGet<BubbleWallet>("/api/v1/wallet/me", { auth: true }),
+        apiGet<MemberStoreOrder[]>("/api/v1/store/orders", { auth: true }),
       ]);
       setUnpaidBookings(sessions.status === "fulfilled" ? sessions.value : null);
       setStoreCredits(credits.status === "fulfilled" ? credits.value : null);
       setBubblesWallet(wallet.status === "fulfilled" ? wallet.value : null);
+      setStoreOrders(orders.status === "fulfilled" ? orders.value : null);
       setObligationError(sessions.status === "rejected");
     } finally {
       setObligationRefreshing(false);
@@ -323,6 +327,7 @@ export default function BillingPage() {
         transfers={pendingTransfers}
         credits={storeCredits}
         wallet={bubblesWallet}
+        orders={storeOrders}
         incomplete={!!academyLoadError || obligationError || academyRefreshing}
         onRefresh={refreshOverview}
         refreshing={obligationRefreshing || academyRefreshing}
