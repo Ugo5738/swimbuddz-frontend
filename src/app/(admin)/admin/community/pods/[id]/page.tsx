@@ -129,7 +129,7 @@ export default function AdminPodDetailPage() {
       try {
         const { adminListPods } = await import("@/lib/pods");
         const list = await adminListPods({ status: "active" });
-        setAllPods(list.filter((p) => p.id !== pod.id));
+        setAllPods(list.filter((p) => p.id !== pod.id && p.club_id === pod.club_id));
       } catch (e) {
         console.warn("Failed to load transfer targets", e);
       }
@@ -223,11 +223,11 @@ export default function AdminPodDetailPage() {
       {/* Top bar */}
       <div>
         <Link
-          href="/admin/community/pods"
+          href={club ? `/admin/community/clubs/${club.id}` : "/admin/community/pods"}
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to pods
+          Back to all Pods
         </Link>
       </div>
 
@@ -284,8 +284,8 @@ export default function AdminPodDetailPage() {
           {reviewOverdue && (
             <div className="mt-3 flex items-center gap-2 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900">
               <AlertTriangle className="h-4 w-4" />
-              This pod is past its 3-month review. Decide whether to extend,
-              rebalance members, or dissolve.
+              Pod review is due. Check attendance, leadership, capacity, and whether
+              this training crew is working for its swimmers before renewing its cycle.
             </div>
           )}
           {isInactive && pod.dissolved_at && (
@@ -312,10 +312,19 @@ export default function AdminPodDetailPage() {
         </div>
       </Card>
 
-      {/* Editable fields */}
-      <Card className="space-y-4 p-5">
+      <nav className="flex flex-wrap gap-3 text-sm" aria-label="Pod management">
+        <a href="#pod-roster" className="rounded-lg border border-slate-200 px-3 py-2 text-cyan-700">Swimmers and membership</a>
+        <a href="#pod-operations" className="rounded-lg border border-slate-200 px-3 py-2 text-cyan-700">Pod leadership and schedule</a>
+        {club && <Link href={`/admin/community/clubs/${club.id}`} className="rounded-lg border border-slate-200 px-3 py-2 text-cyan-700">Home Club</Link>}
+      </nav>
+      <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        Pod membership is different from Club enrollment. To move a swimmer to another Club location,
+        use their member profile's home-Club transfer first; transferring here only moves between Pods in the same Club.
+      </p>
+      {/* Pod roster */}
+      <Card id="pod-roster" className="overflow-hidden">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">Pod settings</h2>
+          <h2 className="font-semibold text-gray-900">Pod operations and leadership</h2>
           {!isInactive &&
             (editing ? (
               <div className="flex gap-2">
@@ -356,11 +365,11 @@ export default function AdminPodDetailPage() {
         )}
       </Card>
 
-      {/* Pod roster */}
-      <Card className="overflow-hidden">
+      {/* Editable fields */}
+      <Card id="pod-operations" className="space-y-4 p-5">
         <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-5 py-3">
           <h2 className="font-semibold text-gray-900">
-            Pod roster ({pod.members.length})
+            Swimmers in this Pod ({pod.members.length})
           </h2>
           {!isInactive && pod.active_member_count < pod.max_size && (
             <Button size="sm" onClick={() => setAddingMember(true)}>
