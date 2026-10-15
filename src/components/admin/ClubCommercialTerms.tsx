@@ -27,7 +27,7 @@ export function ClubCommercialTerms({ enrollmentId, endsAt }: { enrollmentId: st
 
   const reload = async () => {
     const result = await apiGet<{adjustments: Agreement[]}>(`/api/v1/clubs/admin/enrollments/${enrollmentId}/commercial-terms`, {auth: true});
-    setRows(result.adjustments);
+    setRows(Array.isArray(result?.adjustments) ? result.adjustments : []);
   };
   useEffect(() => { void reload().catch((e: Error) => setError(e.message)); }, [enrollmentId]);
 
