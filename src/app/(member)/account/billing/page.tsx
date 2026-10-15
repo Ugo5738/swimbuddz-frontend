@@ -342,6 +342,9 @@ export default function BillingPage() {
 
       <PendingTransfersCard pendingTransfers={pendingTransfers} onReload={load} />
 
+      <details className="rounded-xl border border-slate-200 p-4">
+        <summary className="cursor-pointer font-semibold text-slate-900">Memberships and renewal options</summary>
+        <div className="mt-4 space-y-4">
       <CommunityCard
         member={member}
         communityActive={communityActive}
@@ -356,8 +359,18 @@ export default function BillingPage() {
       />
 
       <MembershipHistoryCard history={membershipHistory} />
-      <ProductPaymentReceipts payments={payments} />
+        </div>
+      </details>
+      <details className="rounded-xl border border-slate-200 p-4">
+        <summary className="cursor-pointer font-semibold text-slate-900">Payment receipts and history</summary>
+        <div className="mt-4">
+          <ProductPaymentReceipts payments={payments} />
+        </div>
+      </details>
 
+      <details className="rounded-xl border border-slate-200 p-4">
+        <summary className="cursor-pointer font-semibold text-slate-900">Academy payment schedules and enrolments</summary>
+        <div className="mt-4 space-y-4">
       {academyLoadError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">{academyLoadError} <button type="button" className="font-semibold underline" onClick={() => void fetchEnrollments()}>Retry</button></div>}
       <AcademySection
         loading={academyRefreshing}
@@ -367,6 +380,8 @@ export default function BillingPage() {
         communityActive={communityActive}
         member={member}
       />
+        </div>
+      </details>
     </div>
   );
 }
