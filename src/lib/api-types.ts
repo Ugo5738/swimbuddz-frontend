@@ -1771,6 +1771,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clubs/admin/enrollments/{enrollment_id}/commercial-terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Club Terms */
+        get: operations["list_club_terms_clubs_admin_enrollments__enrollment_id__commercial_terms_get"];
+        put?: never;
+        /** Approve Club Terms */
+        post: operations["approve_club_terms_clubs_admin_enrollments__enrollment_id__commercial_terms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clubs/admin/commercial-terms/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Club Commercial Terms Report
+         * @description Approved Club concessions, not inferred future billing or ledger revenue.
+         *
+         *     A transition member owes nothing for an unbooked swim. Only an actual
+         *     booking freezes the agreed rate into an obligation/payment attempt.
+         */
+        get: operations["club_commercial_terms_report_clubs_admin_commercial_terms_report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clubs/admin/members/{member_id}/enrollments": {
         parameters: {
             query?: never;
@@ -6009,6 +6050,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/financial-obligations/{member_auth_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Member Session Financial Obligations
+         * @description Service-owned projection of already confirmed, unpaid session fees.
+         *
+         *     Uses exactly the member Billing unpaid-booking predicate, including
+         *     absence of both a linked payment intent and a wallet transaction.
+         */
+        get: operations["member_session_financial_obligations_internal_sessions_financial_obligations__member_auth_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attendance/sessions/{session_id}/sign-in": {
         parameters: {
             query?: never;
@@ -7076,6 +7140,31 @@ export interface paths {
         put?: never;
         /** Approve Commercial Terms */
         post: operations["approve_commercial_terms_academy_admin_enrollments__enrollment_id__commercial_terms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/finance/academy-contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Academy Contract Summary
+         * @description Operational contract value, not cash collected or recognized revenue.
+         *
+         *     List value is based on the enrollment's first frozen tuition before later
+         *     commercial amendments. The most recent approved amendment determines its
+         *     cash contract. Discounted checkout attempts not yet reconciled into an
+         *     approved contract must not be silently called cash or receivables.
+         */
+        get: operations["academy_contract_summary_academy_admin_finance_academy_contracts_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8435,6 +8524,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/academy/financial-obligations/{member_auth_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Member Academy Financial Obligations
+         * @description Minimal service-only financial projection, owned by Academy.
+         *
+         *     Never accept a member ID directly from a public client; Payments derives it
+         *     from the authenticated JWT before requesting this service-role endpoint.
+         *     Existing frozen schedules take precedence over cohort pricing.
+         */
+        get: operations["member_academy_financial_obligations_internal_academy_financial_obligations__member_auth_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/extension-requests/cohorts/{cohort_id}": {
         parameters: {
             query?: never;
@@ -8966,6 +9079,26 @@ export interface paths {
          *     verify the transaction status with Paystack before applying entitlements.
          */
         post: operations["verify_my_paystack_payment_payments_paystack_verify__reference__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/me/obligations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Financial Obligations
+         * @description A summary, not a payment initiation endpoint or universal receivables ledger.
+         */
+        get: operations["my_financial_obligations_payments_me_obligations_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -17698,6 +17831,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/store/financial-obligations/{member_auth_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Member Store Unfinished Orders
+         * @description Unfinished orders are OPTIONAL checkouts, not automatically member debt.
+         */
+        get: operations["member_store_unfinished_orders_internal_store_financial_obligations__member_auth_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/events/": {
         parameters: {
             query?: never;
@@ -23406,6 +23559,30 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** ClubTermsApproval */
+        ClubTermsApproval: {
+            /**
+             * Adjustment Id
+             * Format: uuid
+             */
+            adjustment_id: string;
+            /** Agreed Session Fee Kobo */
+            agreed_session_fee_kobo: number;
+            /** Standard Session Fee Kobo */
+            standard_session_fee_kobo: number;
+            /**
+             * Valid From
+             * Format: date-time
+             */
+            valid_from: string;
+            /**
+             * Valid Until
+             * Format: date-time
+             */
+            valid_until: string;
+            /** Reason */
+            reason: string;
         };
         /**
          * ClubUpdate
@@ -52620,6 +52797,92 @@ export interface operations {
             };
         };
     };
+    list_club_terms_clubs_admin_enrollments__enrollment_id__commercial_terms_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_club_terms_clubs_admin_enrollments__enrollment_id__commercial_terms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClubTermsApproval"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    club_commercial_terms_report_clubs_admin_commercial_terms_report_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_member_club_enrollments_clubs_admin_members__member_id__enrollments_get: {
         parameters: {
             query?: never;
@@ -59530,6 +59793,37 @@ export interface operations {
             };
         };
     };
+    member_session_financial_obligations_internal_sessions_financial_obligations__member_auth_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sign_in_to_session_attendance_sessions__session_id__sign_in_post: {
         parameters: {
             query?: never;
@@ -61434,6 +61728,37 @@ export interface operations {
                 "application/json": components["schemas"]["CommercialTermsRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    academy_contract_summary_academy_admin_finance_academy_contracts_get: {
+        parameters: {
+            query?: {
+                cohort_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -63464,6 +63789,37 @@ export interface operations {
             };
         };
     };
+    member_academy_financial_obligations_internal_academy_financial_obligations__member_auth_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_extension_requests_for_cohort_academy_extension_requests_cohorts__cohort_id__get: {
         parameters: {
             query?: never;
@@ -64478,6 +64834,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_financial_obligations_payments_me_obligations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -80321,6 +80697,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberStoreSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_store_unfinished_orders_internal_store_financial_obligations__member_auth_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

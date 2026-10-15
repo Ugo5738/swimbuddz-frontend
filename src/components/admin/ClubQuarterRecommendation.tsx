@@ -42,7 +42,8 @@ export function ClubQuarterRecommendation({
   const [error, setError] = useState("");
   return (
     <Card>
-      <h2 className="text-xl font-semibold">Generate a quarter recommendation</h2>
+      <h2 className="text-xl font-semibold">Create a Club quarter</h2>
+      <p className="mt-1 text-sm font-medium text-cyan-700">Step 1 — Choose the location and weekly practice. Step 2 — Check your costs. Step 3 — Review the generated dates and publish.</p>
       <p className="my-3 text-sm text-slate-600">
         Works for your first quarter too. The normal Club product should select one regular weekly
         <strong> plan-included</strong> series; selecting multiple series means members are buying
@@ -92,7 +93,7 @@ export function ClubQuarterRecommendation({
       >
         <fieldset disabled={busy} className="grid gap-4 sm:grid-cols-2">
           <label>
-            Recommendation Club
+            Club location
             <select
               required
               className={css}
@@ -110,30 +111,29 @@ export function ClubQuarterRecommendation({
               ))}
             </select>
           </label>
-          <label>
-            Included session templates (select all series sold in this quarter)
-            <select
-              className={css}
-              multiple
-              value={template}
-              onChange={(e) => {
-                const ids = Array.from(e.target.selectedOptions, (option) => option.value).filter(Boolean);
-                setTemplate(ids);
-                setConfigure(!ids.length);
-              }}
-            >
-              <option value="">Default schedule (create template if needed)</option>
-              {templates.data
-                ?.filter(
-                  (t) => t.club_id === club && !t.pod_id && t.club_access_mode === "plan_included"
-                )
-                .map((t) => (
-                  <option value={t.id} key={t.id}>
-                    {t.title}
-                  </option>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Which regular practice is included?</p>
+            <p className="text-xs text-slate-600">Most Club quarters include one practice a week. Choose more only if members are buying multiple sessions every week.</p>
+            {templates.data?.filter(t => t.club_id === club && !t.pod_id && t.club_access_mode === "plan_included").length ? (
+              <div className="space-y-2">
+                {templates.data?.filter(t => t.club_id === club && !t.pod_id && t.club_access_mode === "plan_included").map(t => (
+                  <label key={t.id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm">
+                    <input type="checkbox" checked={template.includes(t.id)}
+                      onChange={e => {
+                        const next = e.target.checked ? [...template, t.id] : template.filter(id => id !== t.id);
+                        setTemplate(next);
+                        setConfigure(!next.length);
+                      }} />
+                    <span>{t.title}</span>
+                  </label>
                 ))}
-            </select>
-          </label>
+              </div>
+            ) : (
+              <p className="rounded-lg border border-amber-200 p-3 text-sm text-amber-800">
+                No regular Club template is set up at this location yet. Configure the weekly practice in Session Templates, or use the saved Club default schedule below.
+              </p>
+            )}
+          </div>
           <label>
             Year
             <input
@@ -161,7 +161,7 @@ export function ClubQuarterRecommendation({
             </select>
           </label>
           <label>
-            Capacity
+            Maximum quarter members
             <input
               required
               type="number"
@@ -192,7 +192,7 @@ export function ClubQuarterRecommendation({
           {configure && (
             <>
               <label>
-                Expected attendees for cost sharing
+                Expected swimmers each week (for sharing costs)
                 <input
                   required
                   type="number"

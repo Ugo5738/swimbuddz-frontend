@@ -139,7 +139,7 @@ describe("Admin actual-session quarter drafts", () => {
     mocks.plans = [];
     mocks.post.mockResolvedValueOnce({ ...plan, id: "new-draft" });
     render(<ClubPlansAdminPage />);
-    fireEvent.change(screen.getByLabelText("Recommendation Club"), { target: { value: "yaba" } });
+    fireEvent.change(screen.getByLabelText("Club location"), { target: { value: "yaba" } });
     fireEvent.change(screen.getByLabelText("Quarter"), { target: { value: "4" } });
     fireEvent.change(screen.getByLabelText("Margin (₦)"), { target: { value: "1000" } });
     fireEvent.click(screen.getByRole("button", { name: "Generate reviewable quarter" }));
@@ -184,10 +184,10 @@ describe("Admin actual-session quarter drafts", () => {
     mocks.plans = [empty];
     mocks.post.mockResolvedValueOnce({ ...plan, id: empty.id, name: empty.name, capacity: 15 });
     render(<ClubPlansAdminPage />);
-    fireEvent.change(screen.getByLabelText("Recommendation Club"), { target: { value: "yaba" } });
+    fireEvent.change(screen.getByLabelText("Club location"), { target: { value: "yaba" } });
     fireEvent.change(screen.getByLabelText("Quarter"), { target: { value: "4" } });
     fireEvent.change(screen.getByLabelText("Margin (₦)"), { target: { value: "1500" } });
-    fireEvent.change(screen.getByLabelText("Capacity"), { target: { value: "15" } });
+    fireEvent.change(screen.getByLabelText("Maximum quarter members"), { target: { value: "15" } });
     fireEvent.click(screen.getByRole("button", { name: "Generate reviewable quarter" }));
     expect(
       await screen.findByText(/2 included sessions · recommended ₦12,000/)
@@ -211,7 +211,7 @@ describe("Admin actual-session quarter drafts", () => {
       )
     );
     render(<ClubPlansAdminPage />);
-    fireEvent.change(screen.getByLabelText("Recommendation Club"), { target: { value: "yaba" } });
+    fireEvent.change(screen.getByLabelText("Club location"), { target: { value: "yaba" } });
     fireEvent.change(screen.getByLabelText("Quarter"), { target: { value: "4" } });
     fireEvent.change(screen.getByLabelText("Margin (₦)"), { target: { value: "1500" } });
     fireEvent.click(screen.getByRole("button", { name: "Generate reviewable quarter" }));
@@ -232,7 +232,7 @@ describe("Admin actual-session quarter drafts", () => {
     mocks.plans = [published];
     mocks.post.mockResolvedValueOnce(published);
     render(<ClubPlansAdminPage />);
-    fireEvent.change(screen.getByLabelText("Recommendation Club"), { target: { value: "yaba" } });
+    fireEvent.change(screen.getByLabelText("Club location"), { target: { value: "yaba" } });
     fireEvent.change(screen.getByLabelText("Quarter"), { target: { value: "4" } });
     fireEvent.change(screen.getByLabelText("Margin (₦)"), { target: { value: "9999" } });
     fireEvent.click(screen.getByRole("button", { name: "Generate reviewable quarter" }));
