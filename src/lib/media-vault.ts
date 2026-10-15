@@ -6,6 +6,7 @@ export type MediaVault = {
   id: string;
   session_id: string | null;
   event_id: string | null;
+  owner_member_id?: string | null;
   title: string;
   description: string | null;
   capture_date: string;
@@ -70,6 +71,8 @@ export type VaultMedia = {
   thumbnail_url: string | null;
   preview_status: "pending" | "processing" | "thumbnail_ready" | "ready" | "failed" | "unavailable";
   labels: string[];
+  session_visibility?: "private" | "selected_members" | "session_participants";
+  allow_member_clips?: boolean;
 };
 
 export type VaultList = { items: MediaVault[]; total: number };
