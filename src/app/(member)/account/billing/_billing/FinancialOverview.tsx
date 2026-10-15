@@ -2,18 +2,13 @@
 
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { buildFinancialOverview } from "./financialOverview";
 import type { ServerFinancialOverview } from "./serverFinancialOverview";
-import type { Enrollment, PaymentRecord, UnpaidBooking, StoreCreditSummary, BubbleWallet, MemberStoreOrder } from "../types";
+import type { StoreCreditSummary, BubbleWallet } from "../types";
 import { formatCurrency, formatDate } from "../utils";
 
 type Props = {
-  enrollments: Enrollment[];
-  sessions: UnpaidBooking[] | null;
-  transfers: PaymentRecord[];
   credits: StoreCreditSummary | null;
   wallet: BubbleWallet | null;
-  orders: MemberStoreOrder[] | null;
   serverOverview: ServerFinancialOverview | null;
   incomplete: boolean;
   onRefresh: () => void;
@@ -22,7 +17,7 @@ type Props = {
 
 const money = (kobo: number) => formatCurrency(kobo / 100);
 
-export function FinancialOverview({ enrollments, sessions, transfers, credits, wallet, orders, serverOverview, incomplete, onRefresh, refreshing }: Props) {
+export function FinancialOverview({ credits, wallet, serverOverview, incomplete, onRefresh, refreshing }: Props) {
   const overview = serverOverview ? {
     due: serverOverview.items.filter(item => item.status === "due" || item.status === "overdue").map(item => ({ ...item, amountKobo: item.amount_kobo, date: item.due_at })),
     upcoming: serverOverview.items.filter(item => item.status === "upcoming").map(item => ({ ...item, amountKobo: item.amount_kobo, date: item.due_at })),
@@ -30,7 +25,7 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
     needsQuote: serverOverview.unpriced,
     dueKobo: serverOverview.due_kobo,
     upcomingKobo: serverOverview.upcoming_kobo,
-  } : buildFinancialOverview([], [], []);
+  } : { due: [], upcoming: [], checking: [], needsQuote: [], dueKobo: 0, upcomingKobo: 0 };
 
   const incompleteTotal = incomplete || !serverOverview || !serverOverview.complete;
   const canDisplayTotals = !!serverOverview;
@@ -89,10 +84,10 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
       <p className="text-sm text-slate-600">We couldn't confirm an exact amount for these enrolments. They are not included in the totals above.</p>
       {overview.needsQuote.map(item => <Link key={item.id} href={item.href} className="block py-2 text-sm font-medium text-cyan-700 underline">{item.title} — View details</Link>)}
     </Card>}
-    {(serverOverview ? serverOverview.optional_purchases.length > 0 : orders?.some(order => ["pending_payment", "payment_failed"].includes(order.status))) && <Card className="space-y-3 p-4 md:p-6">
+    {!!serverOverview?.optional_purchases.length && <Card className="space-y-3 p-4 md:p-6">
       <h3 className="font-semibold text-slate-900">Unfinished store purchases</h3>
       <p className="text-sm text-slate-600">These are orders you started, not automatic debts. You can review each order without paying twice.</p>
-      {(serverOverview ? serverOverview.optional_purchases.map(order => ({ id: order.id, order_number: order.href.split("/").pop() ?? "", status: order.status, total_ngn: order.amount_kobo / 100 })) : (orders ?? []).filter(order => ["pending_payment", "payment_failed"].includes(order.status))).map(order => <div key={order.id} className="flex items-center justify-between gap-3 border-t border-slate-100 py-3">
+      {(serverOverview?.optional_purchases ?? []).map(order => ({ id: order.id, order_number: order.href.split("/").pop() ?? "", status: order.status, total_ngn: order.amount_kobo / 100 })).map(order => <div key={order.id} className="flex items-center justify-between gap-3 border-t border-slate-100 py-3">
         <div>
           <p className="font-medium text-slate-900">Order {order.order_number}</p>
           <p className="text-sm text-slate-600">{formatCurrency(Number(order.total_ngn))} · {order.status === "payment_failed" ? "Payment unsuccessful" : "Checkout unfinished"}</p>
