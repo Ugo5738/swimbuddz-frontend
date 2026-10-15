@@ -15,6 +15,7 @@ export function UploadMySwim() {
   const [busy, setBusy] = useState(false);
   const [sessions, setSessions] = useState<AttendedSession[]>([]);
   const [sessionId, setSessionId] = useState("");
+  const [uploading, setUploading] = useState(false);
   useEffect(() => {
     apiGet<AttendedSession[]>("/api/v1/media/vaults/my-swim-sessions", { auth: true })
       .then(setSessions).catch(() => setSessions([]));
@@ -53,7 +54,7 @@ export function UploadMySwim() {
         <div className="space-y-5">
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <label htmlFor="my-swim-session" className="block text-sm font-semibold text-slate-800">Which swim was this from?</label>
-            <select id="my-swim-session" value={sessionId} onChange={event => setSessionId(event.target.value)}
+            <select id="my-swim-session" value={sessionId} disabled={uploading} onChange={event => setSessionId(event.target.value)}
               className="mt-2 w-full rounded-lg border border-slate-300 bg-white p-3 text-sm">
               <option value="">Personal practice — no session</option>
               {sessions.map(session => (
@@ -65,7 +66,8 @@ export function UploadMySwim() {
             <p className="mt-2 text-xs text-slate-500">Only swims with recorded attendance appear here. Selecting a session does not share your upload automatically.</p>
           </div>
           <VaultUploader key={`${vault.id}:${sessionId}`} vault={vault}
-            associatedSessionId={sessionId || null} scope={{ kind: "member", vaultId: vault.id }} />
+            associatedSessionId={sessionId || null} onUploadingChange={setUploading}
+            scope={{ kind: "member", vaultId: vault.id }} />
         </div>
       )}
       <MySwimUploads />
