@@ -71,6 +71,8 @@ export default function ClubPlansAdminPage() {
   const [busy, setBusy] = useState(false);
   const [showManualBuilder, setShowManualBuilder] = useState(false);
   const [locationFilter, setLocationFilter] = useState(initialClubFilter);
+  const [periodFilter, setPeriodFilter] = useState<"current" | "drafts" | "upcoming" | "past" | "all">("current");
+  const [showGenerator, setShowGenerator] = useState(false);
   const [error, setError] = useState("");
   const field = (key: keyof ReturnType<typeof initialForm>, value: string | boolean) =>
     setForm((old) => ({ ...old, [key]: value }));
@@ -164,13 +166,19 @@ export default function ClubPlansAdminPage() {
         <p className="mt-1">1. Confirm the Club, pool and weekly practice · 2. Select the included swim series · 3. Review costs and price · 4. Check dates · 5. Publish.</p>
         <p className="mt-2">Most locations need one included weekly series. To set up a new location first, <Link href="/admin/community/clubs" className="font-medium underline">manage Clubs and Pods</Link>.</p>
       </div>
-      <ClubQuarterRecommendation
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
+        <div><h2 className="font-semibold">Create or manage a Club quarter</h2>
+          <p className="text-sm text-slate-600">Use the guided generator for normal weekly swimming plans. Manual construction is under Advanced.</p></div>
+        <Button type="button" onClick={() => setShowGenerator(v => !v)}>{showGenerator ? "Close quarter setup" : "Create quarter"}</Button>
+      </div>
+      {showGenerator && <ClubQuarterRecommendation
         clubs={clubs.data ?? []}
         onCreated={async (plan) => {
-          plans.refetch();
+          await plans.refetch();
           await open(plan);
+          setShowGenerator(false);
         }}
-      />
+      />}
       <section aria-label="Existing Club quarters" className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -184,8 +192,26 @@ export default function ClubPlansAdminPage() {
             </select>
           </label>
         </div>
+        <div role="group" aria-label="Quarter status" className="flex flex-wrap gap-2">
+          {(["current","drafts","upcoming","past","all"] as const).map(status => (
+            <button key={status} type="button" aria-pressed={periodFilter === status}
+              onClick={() => setPeriodFilter(status)}
+              className={`rounded-full border px-3 py-1.5 text-sm ${periodFilter === status ? "border-cyan-600 bg-cyan-50 font-semibold text-cyan-900" : "border-slate-200 text-slate-700"}`}>
+              {status === "drafts" ? "Drafts" : status === "upcoming" ? "Upcoming" : status === "past" ? "Past" : status === "all" ? "All" : "Current"}
+            </button>
+          ))}
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
-        {plans.data?.filter(plan => locationFilter === "all" || plan.club_id === locationFilter).map((plan) => (
+        {plans.data?.filter(plan => {
+          if (locationFilter !== "all" && plan.club_id !== locationFilter) return false;
+          if (periodFilter === "all") return true;
+          const today = new Date().toISOString().slice(0,10);
+          if (periodFilter === "drafts") return !plan.published_at;
+          if (!plan.published_at) return false;
+          if (periodFilter === "past") return plan.period_end < today;
+          if (periodFilter === "upcoming") return plan.period_start > today;
+          return plan.period_start <= today && plan.period_end >= today;
+        }).map((plan) => (
           <Card key={plan.id}>
             <h2 className="font-semibold">
               {plan.name} · {plan.published_at ? "Published" : "Draft"}
@@ -195,6 +221,12 @@ export default function ClubPlansAdminPage() {
             </p>
             <p>
               {plan.sessions_included} included swims · {money(plan.club_fee_kobo)} total
+            </p>
+            <p className="text-sm text-slate-600">
+              {plan.remaining_sessions} swims remaining · {plan.entry_available ? "Joining available" : (plan.entry_reason || "Not currently available to join")}
+            </p>
+            <p className="text-sm text-slate-600">
+              Sales: {plan.effective_from} to {plan.effective_to || "no closing date"}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Link className="text-sm text-cyan-700 underline" href={`/admin/community/clubs/${plan.club_id}`}>Club setup and Pods</Link>
