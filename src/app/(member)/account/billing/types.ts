@@ -124,3 +124,13 @@ export type WalletSummary = {
   welcomeBonusGranted: boolean;
   welcomeBonusAmount: number;
 };
+
+export type UnpaidBooking = {
+  id: string;
+  session_id: string;
+  session_title: string;
+  session_starts_at: string;
+  fee_amount_kobo: number;
+};
+export type StoreCreditSummary = { total_balance_ngn: number | string };
+export type BubbleWallet = { balance: number; available_balance?: number; status: string };
