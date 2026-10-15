@@ -134,3 +134,11 @@ export type UnpaidBooking = {
 };
 export type StoreCreditSummary = { total_balance_ngn: number | string };
 export type BubbleWallet = { balance: number; available_balance?: number; status: string };
+
+export type MemberStoreOrder = {
+  id: string;
+  order_number: string;
+  status: string;
+  total_ngn: number | string;
+  created_at: string;
+};
