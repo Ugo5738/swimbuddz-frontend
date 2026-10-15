@@ -66,6 +66,8 @@ export type PaymentRecord = {
       total_kobo: number;
       additional_charges_total_kobo: number;
     };
+    installment_id?: string;
+    booking_id?: string;
     purpose?: string; // Legacy/backup
   } | null;
 };
