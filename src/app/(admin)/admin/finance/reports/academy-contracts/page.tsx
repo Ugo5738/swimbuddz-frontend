@@ -10,6 +10,9 @@ type ContractRow = {
   list_value_kobo: number;
   contracted_cash_value_kobo: number;
   concession_kobo: number;
+  verified_paid_cash_kobo: number | null;
+  outstanding_cash_obligation_kobo: number | null;
+  applied_prior_cash_credit_kobo: number;
   needs_commercial_review: boolean;
 };
 type ContractReport = {
@@ -17,6 +20,8 @@ type ContractReport = {
   gross_list_value_kobo: number;
   contracted_cash_value_kobo: number;
   commercial_concessions_kobo: number;
+  verified_paid_cash_kobo: number | null;
+  outstanding_cash_obligations_kobo: number | null;
   items: ContractRow[];
   note: string;
 };
@@ -52,18 +57,30 @@ export default function AcademyContractsReport() {
           <p className="mt-2 text-2xl font-semibold">{money(Number(amount))}</p>
         </div>)}
       </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <p className="text-sm text-slate-600">Verified tuition payments allocated</p>
+          <p className="mt-2 text-2xl font-semibold">{report.verified_paid_cash_kobo == null ? "Not available" : money(report.verified_paid_cash_kobo)}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <p className="text-sm text-slate-600">Remaining agreed cash obligations</p>
+          <p className="mt-2 text-2xl font-semibold">{report.outstanding_cash_obligations_kobo == null ? "Needs reconciliation" : money(report.outstanding_cash_obligations_kobo)}</p>
+        </div>
+      </div>
       <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
         These are commercial contract figures, not a cash collection report or recognized revenue.
         Check the ledger reports for actual income. {report.note}
       </p>
       <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full min-w-[650px] text-left text-sm">
-          <thead className="bg-slate-50"><tr><th className="p-3">Enrollment</th><th className="p-3">List value</th><th className="p-3">Concession</th><th className="p-3">Contracted</th><th className="p-3">Review</th></tr></thead>
+          <thead className="bg-slate-50"><tr><th className="p-3">Enrollment</th><th className="p-3">List value</th><th className="p-3">Concession</th><th className="p-3">Contracted</th><th className="p-3">Verified paid</th><th className="p-3">Still due</th><th className="p-3">Review</th></tr></thead>
           <tbody>{report.items.map(row => <tr className="border-t border-slate-200" key={row.enrollment_id}>
             <td className="p-3"><Link className="text-cyan-700 underline" href={`/admin/academy/enrollments/${row.enrollment_id}`}>View enrollment</Link></td>
             <td className="p-3">{money(row.list_value_kobo)}</td>
             <td className="p-3">{money(row.concession_kobo)}</td>
             <td className="p-3 font-semibold">{money(row.contracted_cash_value_kobo)}</td>
+            <td className="p-3">{row.verified_paid_cash_kobo == null ? "Unavailable" : money(row.verified_paid_cash_kobo)}</td>
+            <td className="p-3">{row.outstanding_cash_obligation_kobo == null ? "Check" : money(row.outstanding_cash_obligation_kobo)}</td>
             <td className="p-3">{row.needs_commercial_review ? "Check contract" : "—"}</td>
           </tr>)}</tbody>
         </table>
