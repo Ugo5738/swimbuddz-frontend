@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api";
 import { type VaultMedia } from "@/lib/media-vault";
 import { CalendarDays, FileVideo, Play, Video } from "lucide-react";
+import { MemberClipTool } from "./MemberClipTool";
 
 type SharedVideo = {
   media: VaultMedia;
@@ -24,6 +25,7 @@ export function MySessionVideos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<SharedVideo | null>(null);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -54,7 +56,7 @@ export function MySessionVideos() {
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data?.items.map((entry) => (
-          <button type="button" key={entry.media.id} onClick={() => setSelected(entry)}
+          <button type="button" key={entry.media.id} onClick={() => { setSelected(entry); setDuration(0); }}
             className="overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:border-cyan-300 hover:shadow-md"
             aria-label={`View video from ${entry.vault_title}`}>
             <div className="relative aspect-video bg-slate-100">
@@ -94,12 +96,15 @@ export function MySessionVideos() {
               <button type="button" onClick={() => setSelected(null)} className="rounded-lg px-3 py-2 text-sm">Close</button>
             </div>
             {selected.media.preview_url ? (
-              <video controls playsInline preload="none" poster={selected.media.thumbnail_url ?? undefined} src={selected.media.preview_url}
+              <video controls playsInline preload="metadata" onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} poster={selected.media.thumbnail_url ?? undefined} src={selected.media.preview_url}
                 className="max-h-[75vh] w-full rounded-lg bg-black" />
             ) : (
               <p className="rounded-lg bg-slate-100 p-10 text-center text-slate-600">
                 This video has not yet been prepared for streaming. Please ask the media team to generate its review preview.
               </p>
+            )}
+            {selected.media.allow_member_clips && selected.media.preview_url && (
+              <div className="mt-4"><MemberClipTool videoId={selected.media.id} duration={duration} /></div>
             )}
             <p className="mt-3 text-xs text-slate-500">
               For your personal viewing. Sharing or publishing videos of other swimmers requires their consent.
