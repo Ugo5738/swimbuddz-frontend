@@ -188,6 +188,33 @@ export default function AdminClubDetailPage() {
         <Card className="border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</Card>
       )}
 
+      <Card className="space-y-3 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-slate-900">Set up this Club</h2>
+            <p className="text-sm text-slate-600">Complete the pool, weekly practice, and Pod before inviting swimmers. Create the quarter from the plans workspace.</p>
+          </div>
+          <Link className="text-sm font-medium text-cyan-700 underline" href="/admin/club-plans">Create or review quarter →</Link>
+        </div>
+        <ol className="grid gap-2 sm:grid-cols-2">
+          {[
+            { label: "Club details and location", ready: Boolean(club.location && club.is_active) },
+            { label: "Partner pool selected", ready: Boolean(club.default_pool_id) },
+            { label: "Weekly practice schedule", ready: Boolean(club.default_session_day && club.default_session_time) },
+            { label: "Training pods created", ready: pods.some(pod => pod.status === "active") },
+          ].map((step, index) => (
+            <li key={step.label} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm">
+              <span aria-hidden className="font-semibold text-slate-500">{index + 1}.</span>
+              <span className="flex-1">{step.label}</span>
+              <span className={step.ready ? "font-medium text-emerald-700" : "text-amber-700"}>
+                {step.ready ? "Ready" : "Needs setup"}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="text-xs text-slate-500">Published quarter status is checked in Club Plans & Pricing; these four checks cover location operations only.</p>
+      </Card>
+
       {/* Settings */}
       <Card className="space-y-4 p-5">
         <div className="flex items-center justify-between">

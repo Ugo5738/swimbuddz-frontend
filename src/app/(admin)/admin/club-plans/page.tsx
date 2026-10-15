@@ -66,6 +66,8 @@ export default function ClubPlansAdminPage() {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [showManualBuilder, setShowManualBuilder] = useState(false);
+  const [locationFilter, setLocationFilter] = useState("all");
   const [error, setError] = useState("");
   const field = (key: keyof ReturnType<typeof initialForm>, value: string | boolean) =>
     setForm((old) => ({ ...old, [key]: value }));
@@ -142,10 +144,10 @@ export default function ClubPlansAdminPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 py-8">
       <header>
-        <h1 className="text-3xl font-bold">Club location pricing</h1>
+        <h1 className="text-3xl font-bold">Club quarters and pricing</h1>
         <p className="mt-2 text-slate-600">
-          Actual sessions supply pool, refreshment and margin economics. Each location has its own
-          quarter; paid prices stay frozen.
+          Set up a location's weekly swims, review the quarter price, and publish only
+          when the dates and fees are correct. Already-purchased terms stay unchanged.
         </p>
         <Link className="text-cyan-700 underline" href="/admin/community/experiences">
           Manage separate Community Experience offerings
@@ -154,6 +156,11 @@ export default function ClubPlansAdminPage() {
       {(error || plans.error || clubs.error || experiences.error) && (
         <Alert variant="error">{error || plans.error || clubs.error || experiences.error}</Alert>
       )}
+      <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
+        <h2 className="font-semibold">Set up a Club quarter</h2>
+        <p className="mt-1">1. Confirm the Club, pool and weekly practice · 2. Select the included swim series · 3. Review costs and price · 4. Check dates · 5. Publish.</p>
+        <p className="mt-2">Most locations need one included weekly series. To set up a new location first, <Link href="/admin/community/clubs" className="font-medium underline">manage Clubs and Pods</Link>.</p>
+      </div>
       <ClubQuarterRecommendation
         clubs={clubs.data ?? []}
         onCreated={async (plan) => {
@@ -161,8 +168,21 @@ export default function ClubPlansAdminPage() {
           await open(plan);
         }}
       />
-      <div className="grid gap-4 md:grid-cols-2">
-        {plans.data?.map((plan) => (
+      <section aria-label="Existing Club quarters" className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Existing quarters</h2>
+            <p className="text-sm text-slate-600">Open a draft to review it, or inspect a published schedule.</p>
+          </div>
+          <label className="text-sm">Location
+            <select aria-label="Filter quarters by Club" value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className={inputClass}>
+              <option value="all">All locations</option>
+              {clubs.data?.map(club => <option key={club.id} value={club.id}>{club.name}</option>)}
+            </select>
+          </label>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+        {plans.data?.filter(plan => locationFilter === "all" || plan.club_id === locationFilter).map((plan) => (
           <Card key={plan.id}>
             <h2 className="font-semibold">
               {plan.name} · {plan.published_at ? "Published" : "Draft"}
@@ -174,14 +194,14 @@ export default function ClubPlansAdminPage() {
               {plan.sessions_included} sessions · {money(plan.club_fee_kobo)}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {plan.published_at && <Button variant="outline" disabled={busy} onClick={() => run(async () => {
+              {plan.published_at && <details className="w-full text-sm"><summary className="cursor-pointer font-medium text-slate-600">Maintenance: reconcile prepaid reservations</summary><Button variant="outline" disabled={busy} onClick={() => run(async () => {
                 const result = await apiPost<{ synced_enrollment_ids: string[]; failed_enrollment_ids: string[] }>(
                   `/api/v1/clubs/admin/plans/${plan.id}/sync-prepaid-reservations`, {}, { auth: true }
                 );
                 if (result.failed_enrollment_ids.length) {
                   setError(`Some reservations need reconciliation. Enrollment IDs: ${result.failed_enrollment_ids.join(", ")}`);
                 } else toast.success(`Reservations synced for ${result.synced_enrollment_ids.length} prepaid members.`);
-              })}>Sync prepaid reservations</Button>}
+              })}>Sync prepaid reservations</Button></details>}
               <Button variant="outline" disabled={busy} onClick={() => run(() => open(plan))}>
                 {plan.published_at ? "View schedule" : "Review draft"}
               </Button>
@@ -213,15 +233,28 @@ export default function ClubPlansAdminPage() {
             )}
           </Card>
         ))}
-      </div>
-      <Card>
+        </div>
+      </section>
+      {!editing && (
+        <button
+          type="button"
+          aria-expanded={showManualBuilder}
+          onClick={() => setShowManualBuilder(open => !open)}
+          className="w-full rounded-xl border border-slate-200 p-4 text-left hover:border-cyan-300"
+        >
+          <span className="block font-semibold">Advanced: build a quarter manually</span>
+          <span className="block text-sm text-slate-600">Only for irregular schedules or existing swims. The normal quarter generator above is recommended.</span>
+          <span className="mt-1 block text-sm text-cyan-700">{showManualBuilder ? "Hide advanced setup" : "Show advanced setup"}</span>
+        </button>
+      )}
+      {(editing || showManualBuilder) && <Card>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">
             {editing
               ? editing.published_at
                 ? "Published schedule (read-only)"
                 : "Review draft"
-              : "Create a quarter draft"}
+              : "Advanced: manual quarter draft"}
           </h2>
           {editing && (
             <Button
@@ -511,7 +544,7 @@ export default function ClubPlansAdminPage() {
             </div>
           )}
         </form>
-      </Card>
+      </Card>}
     </div>
   );
 }

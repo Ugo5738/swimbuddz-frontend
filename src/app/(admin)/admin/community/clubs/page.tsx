@@ -63,6 +63,7 @@ const emptyForm: ClubInput = {
 export default function AdminClubsPage() {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -131,11 +132,11 @@ export default function AdminClubsPage() {
 
   const sortedClubs = useMemo(
     () =>
-      [...clubs].sort((a, b) => {
+      [...clubs].filter(c => `${c.name} ${c.location || ""}`.toLowerCase().includes(search.trim().toLowerCase())).sort((a, b) => {
         if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;
         return a.name.localeCompare(b.name);
       }),
-    [clubs],
+    [clubs, search],
   );
 
   if (loading) return <LoadingPage text="Loading clubs..." />;
@@ -148,9 +149,8 @@ export default function AdminClubsPage() {
             Clubs
           </h1>
           <p className="mt-2 text-slate-600">
-            One Club per location (e.g. <em>SwimBuddz Yaba</em>). Pods are
-            small training crews inside a Club — open a Club to manage its
-            pods and default schedule.
+            Choose a swimming location to manage its pool, regular practice, pods and quarterly price.
+            Pods belong inside a Club, not the other way around.
           </p>
         </div>
         <Button onClick={openCreate} className="flex w-fit items-center gap-2">
@@ -165,6 +165,13 @@ export default function AdminClubsPage() {
         </div>
       )}
 
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
+        <label className="w-full max-w-sm text-sm font-medium text-slate-700">
+          Find a Club location
+          <Input className="mt-1" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search VI, Yaba, Ikeja…" />
+        </label>
+        <Link className="text-sm font-medium text-cyan-700 underline" href="/admin/club-plans">View and set up Club quarters →</Link>
+      </div>
       {sortedClubs.length === 0 ? (
         <Card className="py-12 text-center">
           <Users className="mx-auto h-10 w-10 text-slate-300" />
