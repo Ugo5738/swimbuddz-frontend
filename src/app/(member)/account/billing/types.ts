@@ -66,6 +66,8 @@ export type PaymentRecord = {
       total_kobo: number;
       additional_charges_total_kobo: number;
     };
+    installment_id?: string;
+    booking_id?: string;
     purpose?: string; // Legacy/backup
   } | null;
 };
@@ -121,4 +123,22 @@ export type WalletSummary = {
   balance: number;
   welcomeBonusGranted: boolean;
   welcomeBonusAmount: number;
+};
+
+export type UnpaidBooking = {
+  id: string;
+  session_id: string;
+  session_title: string;
+  session_starts_at: string;
+  fee_amount_kobo: number;
+};
+export type StoreCreditSummary = { total_balance_ngn: number | string };
+export type BubbleWallet = { balance: number; available_balance?: number; status: string };
+
+export type MemberStoreOrder = {
+  id: string;
+  order_number: string;
+  status: string;
+  total_ngn: number | string;
+  created_at: string;
 };
