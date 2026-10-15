@@ -86,7 +86,7 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
           <p className="font-medium text-slate-900">Order {order.order_number}</p>
           <p className="text-sm text-slate-600">{formatCurrency(Number(order.total_ngn))} · {order.status === "payment_failed" ? "Payment unsuccessful" : "Checkout unfinished"}</p>
         </div>
-        <Link href={`/account/orders/${encodeURIComponent(order.id)}`} className="shrink-0 text-sm font-semibold text-cyan-700 underline">View order</Link>
+        <Link href={`/account/orders/${encodeURIComponent(order.order_number)}`} className="shrink-0 text-sm font-semibold text-cyan-700 underline">View order</Link>
       </div>)}
     </Card>}
     <Card className="space-y-3 p-4 md:p-6">
