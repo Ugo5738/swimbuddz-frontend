@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: ["main", "develop"]
 
-permissions:
-  contents: write
-
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
@@ -24,21 +21,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      # Temporary feature-only generated type synchronization.
-      - name: Synchronize Club OpenAPI types
-        if: github.event_name == 'pull_request' && github.head_ref == 'feature/commercial-terms-and-club-admin-ux'
-        run: |
-          git fetch origin feature/commercial-terms-and-club-admin-ux
-          git switch -C ci-codegen origin/feature/commercial-terms-and-club-admin-ux
-          ./node_modules/.bin/openapi-typescript src/lib/openapi.json -o src/lib/api-types.ts
-          if ! git diff --quiet -- src/lib/api-types.ts; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add src/lib/api-types.ts
-            git commit -m "chore(api): regenerate Club commercial terms types"
-            git push origin HEAD:feature/commercial-terms-and-club-admin-ux
-          fi
 
       - name: Lint
         run: npm run lint
