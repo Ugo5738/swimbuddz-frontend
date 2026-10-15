@@ -50,6 +50,7 @@ export type GuestVault = {
 export type VaultMedia = {
   id: string;
   vault_id: string;
+  source_session_id?: string | null;
   upload_batch_id: string | null;
   media_type: "IMAGE" | "VIDEO";
   original_filename: string | null;
