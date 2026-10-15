@@ -318,8 +318,6 @@ export default function BillingPage() {
       )}
 
       <FinancialOverview
-        enrollments={myEnrollments}
-        transfers={pendingTransfers}
         credits={storeCredits}
         wallet={bubblesWallet}
         serverOverview={serverOverview}
