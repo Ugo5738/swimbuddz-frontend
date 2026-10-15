@@ -146,7 +146,8 @@ export default function AdminClubDetailPage() {
   };
 
   const clubQuarters = (quarters.data ?? []).filter(plan => plan.club_id === clubId);
-  const activeQuarter = clubQuarters.find(plan => plan.published_at && plan.is_active && plan.period_end >= new Date().toISOString().slice(0, 10));
+  const activeQuarter = clubQuarters.find(plan => plan.published_at && plan.is_active && plan.period_start <= new Date().toISOString().slice(0, 10) && plan.period_end >= new Date().toISOString().slice(0, 10));
+  const clubReady = Boolean(club?.is_active && club.location && club.default_pool_id && club.default_session_day && club.default_session_time && pods.some(pod => pod.status === "active") && activeQuarter);
   const unfilledPlaces = pods.filter(pod => pod.status === "active").reduce((sum, pod) => sum + Math.max(0, pod.max_size - pod.active_member_count), 0);
   const sortedPods = useMemo(
     () =>
@@ -228,6 +229,15 @@ export default function AdminClubDetailPage() {
         </div>
       </Card>
 
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
+        <div><p className="font-semibold">{clubReady ? "Club operational setup ready" : "Club setup needs attention"}</p>
+          <p className="text-sm text-slate-600">{clubReady ? "Club, pool, schedule, Pod and current published quarter are configured. Verify member eligibility and actual session availability before transfer." : "Complete the location, pool, schedule, Pod and published quarter before moving members here."}</p></div>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link href={`/admin/club-plans?club_id=${club.id}`} className="font-medium text-cyan-700 underline">Quarter plans</Link>
+          <Link href={`/admin/community/pods?club_id=${club.id}`} className="font-medium text-cyan-700 underline">Manage Pods</Link>
+          <Link href="/admin/sessions" className="font-medium text-cyan-700 underline">Session templates</Link>
+        </div>
+      </div>
       {/* Settings */}
       <Card className="space-y-4 p-5">
         <div className="flex items-center justify-between">

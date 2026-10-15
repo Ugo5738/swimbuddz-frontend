@@ -81,8 +81,7 @@ const navSections: NavSection[] = [
       { href: "/admin/academy/enrollment-changes", label: "Academy Transfers", icon: Repeat },
       { href: "/admin/academy/receipts", label: "Shared Academy Receipts", icon: Receipt },
       { href: "/admin/club-applications", label: "Club Assessments", icon: ClipboardCheck },
-      { href: "/admin/club-plans", label: "Club Plans & Pricing", icon: Waves },
-      { href: "/admin/community/clubs", label: "Clubs & Pods", icon: Users },
+      { href: "/admin/community/clubs", label: "Club Operations", icon: Waves },
       { href: "/admin/community/experiences", label: "Experience Offerings", icon: Calendar },
     ],
   },
@@ -276,9 +275,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   // Close the mobile drawer on navigation and always reveal the active group.
   useEffect(() => {
     setSidebarOpen(false);
+    const clubSubpage = pathname?.startsWith("/admin/club-plans") || pathname?.startsWith("/admin/community/pods");
     const activeSection = navSections.find((section) =>
       section.items.some(
-        (item) => pathname === item.href || pathname?.startsWith(item.href + "/")
+        (item) => pathname === item.href || pathname?.startsWith(item.href + "/") ||
+          (item.href === "/admin/community/clubs" && clubSubpage)
       )
     );
     if (activeSection) {
@@ -313,6 +314,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   const isActive = (href: string) => {
     if (!pathname) return false;
+    if (href === "/admin/community/clubs" &&
+      (pathname.startsWith("/admin/club-plans") || pathname.startsWith("/admin/community/pods"))) return true;
     if (pathname === href) return true;
     // Only highlight if this href is a prefix of the current path AND
     // no other, more specific nav href also matches
