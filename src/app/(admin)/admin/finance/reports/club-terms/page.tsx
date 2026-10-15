@@ -39,7 +39,7 @@ export default function ClubCommercialTermsReport() {
         <thead className="bg-slate-50"><tr><th className="p-3">Location</th><th className="p-3">Member</th><th className="p-3">Standard swim</th><th className="p-3">Approved swim</th><th className="p-3">Difference / swim</th><th className="p-3">Valid until</th><th className="p-3">Reason</th></tr></thead>
         <tbody>{items.map(item => <tr className="border-t border-slate-200" key={item.adjustment_id}>
           <td className="p-3">{item.club_name}</td>
-          <td className="p-3"><Link href={`/admin/community/members/${item.member_id}`} className="text-cyan-700 underline">View member</Link></td>
+          <td className="p-3"><Link href={`/admin/members/${item.member_id}`} className="text-cyan-700 underline">View member</Link></td>
           <td className="p-3">{item.standard_session_fee_kobo == null ? "Not recorded" : money(item.standard_session_fee_kobo)}</td>
           <td className="p-3 font-semibold">{money(item.agreed_session_fee_kobo)}</td>
           <td className="p-3">{item.potential_concession_per_swim_kobo == null ? "—" : money(item.potential_concession_per_swim_kobo)}</td>
