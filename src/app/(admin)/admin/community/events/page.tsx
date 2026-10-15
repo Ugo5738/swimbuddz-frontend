@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type EventVisibility = "public" | "members_only" | "invite_only";
@@ -300,6 +300,7 @@ export default function AdminEventsPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EventRecord | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState<EventForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [members, setMembers] = useState<MemberOption[]>([]);
@@ -353,6 +354,14 @@ export default function AdminEventsPage() {
   useEffect(() => {
     void fetchEvents();
   }, [fetchEvents]);
+
+  useEffect(() => {
+    if (!showForm) return;
+    formRef.current?.scrollIntoView({ block: "start" });
+    formRef.current?.querySelector<HTMLInputElement>("#event-title")?.focus({
+      preventScroll: true,
+    });
+  }, [showForm]);
 
   const loadMembers = useCallback(async () => {
     if (members.length > 0) return;
@@ -597,9 +606,14 @@ export default function AdminEventsPage() {
       ) : null}
 
       {showForm ? (
-        <form onSubmit={handleSave} className="space-y-5 border-y border-slate-200 py-5">
+        <form
+          ref={formRef}
+          onSubmit={handleSave}
+          className="scroll-mt-24 space-y-5 border-y border-slate-200 py-5"
+          aria-labelledby="event-form-heading"
+        >
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-950">
+            <h2 id="event-form-heading" className="text-lg font-semibold text-slate-950">
               {editing ? "Edit event" : "Create event"}
             </h2>
             <button
@@ -614,6 +628,7 @@ export default function AdminEventsPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Input
+              id="event-title"
               label="Event title"
               value={form.title}
               onChange={(event) => setForm({ ...form, title: event.target.value })}
@@ -1149,7 +1164,7 @@ export default function AdminEventsPage() {
         </form>
       ) : null}
 
-      {events.length === 0 && !showForm ? (
+      {!showForm && (events.length === 0 ? (
         <div className="border-y border-slate-200 py-14 text-center">
           <CalendarDays className="mx-auto h-10 w-10 text-slate-400" />
           <h2 className="mt-3 font-semibold text-slate-900">No events have been scheduled</h2>
@@ -1221,7 +1236,7 @@ export default function AdminEventsPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex shrink-0 gap-1">
+                  <div className="flex shrink-0 flex-wrap items-center gap-1">
                     {sessionLinksAvailable &&
                     event.participation_mode !== "unavailable" &&
                     event.event_type === "community_swim" &&
@@ -1240,11 +1255,6 @@ export default function AdminEventsPage() {
                         Add swim session
                       </Link>
                     ) : null}
-                    {linkedSessions.map((session) => (
-                      <div key={`guest-${session.id}`} className="w-full">
-                        <GuestSessionAdminCard sessionId={session.id} />
-                      </div>
-                    ))}
                     {linkedSessions.map((session, index) => (
                       <Link
                         key={session.id}
@@ -1257,7 +1267,7 @@ export default function AdminEventsPage() {
                     <button
                       type="button"
                       onClick={() => void openEdit(event)}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                       aria-label={`Edit ${event.title}`}
                       title="Edit"
                     >
@@ -1266,7 +1276,7 @@ export default function AdminEventsPage() {
                     <button
                       type="button"
                       onClick={() => void handleDelete(event.id)}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md text-red-600 hover:bg-red-50"
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-red-600 hover:bg-red-50"
                       aria-label={`Delete ${event.title}`}
                       title="Delete"
                     >
@@ -1274,11 +1284,16 @@ export default function AdminEventsPage() {
                     </button>
                   </div>
                 </div>
+                {linkedSessions.map((session) => (
+                  <div key={`guest-${session.id}`} className="mt-4">
+                    <GuestSessionAdminCard sessionId={session.id} />
+                  </div>
+                ))}
               </Card>
             );
           })}
         </div>
-      )}
+      ))}
     </div>
   );
 }
