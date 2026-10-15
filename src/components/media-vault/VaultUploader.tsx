@@ -33,13 +33,14 @@ import { VaultFilePicker } from "./VaultFilePicker";
 type Props = {
   vault: MediaVault | GuestVault;
   scope: UploadScope;
+  associatedSessionId?: string | null;
 };
 
 function isGuestVault(vault: MediaVault | GuestVault): vault is GuestVault {
   return "remaining_bytes" in vault;
 }
 
-export function VaultUploader({ vault, scope }: Props) {
+export function VaultUploader({ vault, scope, associatedSessionId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const nextStepRef = useRef<HTMLDivElement>(null);
   const selectionReceivedRef = useRef(false);
@@ -196,6 +197,7 @@ export function VaultUploader({ vault, scope }: Props) {
           captured_at: new Date(entry.file.lastModified).toISOString(),
           client_fingerprint: fingerprint,
           labels: uploadLabels,
+          session_id: associatedSessionId || null,
         },
         { auth }
       );
