@@ -34,13 +34,14 @@ type Props = {
   vault: MediaVault | GuestVault;
   scope: UploadScope;
   associatedSessionId?: string | null;
+  onUploadingChange?: (uploading: boolean) => void;
 };
 
 function isGuestVault(vault: MediaVault | GuestVault): vault is GuestVault {
   return "remaining_bytes" in vault;
 }
 
-export function VaultUploader({ vault, scope, associatedSessionId }: Props) {
+export function VaultUploader({ vault, scope, associatedSessionId, onUploadingChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const nextStepRef = useRef<HTMLDivElement>(null);
   const selectionReceivedRef = useRef(false);
@@ -51,6 +52,7 @@ export function VaultUploader({ vault, scope, associatedSessionId }: Props) {
   const [uploadLabels, setUploadLabels] = useState<string[]>([]);
   const quickLabels = ["Academy", "Club", "Community", "Event", "Progress", "Drills", "Highlights"];
   const [uploading, setUploading] = useState(false);
+  useEffect(() => onUploadingChange?.(uploading), [uploading, onUploadingChange]);
   const [online, setOnline] = useState(true);
   const [choosingFiles, setChoosingFiles] = useState(false);
   const [selectionHelp, setSelectionHelp] = useState(false);
