@@ -8,6 +8,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AcademySection } from "./_billing/AcademySection";
+import { FinancialOverview } from "./_billing/FinancialOverview";
+import type { ServerFinancialOverview } from "./_billing/serverFinancialOverview";
 import { ClubCard } from "./_billing/ClubCard";
 import { CommunityCard } from "./_billing/CommunityCard";
 import { MembershipHistoryCard } from "./_billing/MembershipHistoryCard";
@@ -23,6 +25,8 @@ import type {
   MembershipHistory,
   PaymentRecord,
   PricingConfig,
+  StoreCreditSummary,
+  BubbleWallet,
 } from "./types";
 import { formatDate } from "./utils";
 
@@ -50,6 +54,11 @@ export default function BillingPage() {
   const [pendingTransfers, setPendingTransfers] = useState<PaymentRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [membershipHistory, setMembershipHistory] = useState<MembershipHistory | null>(null);
+  const [storeCredits, setStoreCredits] = useState<StoreCreditSummary | null>(null);
+  const [bubblesWallet, setBubblesWallet] = useState<BubbleWallet | null>(null);
+  const [serverOverview, setServerOverview] = useState<ServerFinancialOverview | null>(null);
+  const [obligationError, setObligationError] = useState(false);
+  const [obligationRefreshing, setObligationRefreshing] = useState(false);
 
   // Load member, pricing, payments. Stable identity (empty deps) so children
   // and hooks can call it without thrash.
@@ -172,6 +181,36 @@ export default function BillingPage() {
     }
   }, [returnedPayment?.status, returnedPayment?.entitlement_applied_at, fetchEnrollments]);
 
+  // Optional financial sources are deliberately isolated; a failed source never
+  // becomes a fabricated zero balance or blocks another payment method.
+  const refreshFinancialSources = useCallback(async () => {
+    setObligationRefreshing(true);
+    try {
+      const [credits, wallet, obligations] = await Promise.allSettled([
+        apiGet<StoreCreditSummary>("/api/v1/store/credits/me", { auth: true }),
+        apiGet<BubbleWallet>("/api/v1/wallet/me", { auth: true }),
+        apiGet<ServerFinancialOverview>("/api/v1/payments/me/obligations", { auth: true }),
+      ]);
+      setStoreCredits(credits.status === "fulfilled" ? credits.value : null);
+      setBubblesWallet(wallet.status === "fulfilled" ? wallet.value : null);
+      setServerOverview(obligations.status === "fulfilled" ? obligations.value : null);
+      setObligationError(obligations.status === "rejected");
+    } finally {
+      setObligationRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { void refreshFinancialSources(); }, [refreshFinancialSources]);
+  useEffect(() => {
+    if (returnedPayment?.status === "paid" && returnedPayment.entitlement_applied_at) {
+      void refreshFinancialSources();
+    }
+  }, [returnedPayment?.status, returnedPayment?.entitlement_applied_at, refreshFinancialSources]);
+
+  const refreshOverview = () => {
+    void Promise.all([fetchEnrollments(), refreshFinancialSources(), load()]);
+  };
+
   // Computed membership status
   const communityActive = useMemo(() => {
     return isTierPaid(member, "community");
@@ -278,10 +317,27 @@ export default function BillingPage() {
         </div>
       )}
 
-      <OutstandingSessionFeesCard />
+      <FinancialOverview
+        credits={storeCredits}
+        wallet={bubblesWallet}
+        serverOverview={serverOverview}
+        incomplete={!!academyLoadError || obligationError || academyRefreshing}
+        onRefresh={refreshOverview}
+        refreshing={obligationRefreshing || academyRefreshing}
+      />
+
+      <details className="rounded-xl border border-slate-200 p-4">
+        <summary className="cursor-pointer font-semibold text-slate-900">Session fees and existing payment options</summary>
+        <div className="mt-4 space-y-4">
+          <OutstandingSessionFeesCard />
+        </div>
+      </details>
 
       <PendingTransfersCard pendingTransfers={pendingTransfers} onReload={load} />
 
+      <details className="rounded-xl border border-slate-200 p-4">
+        <summary className="cursor-pointer font-semibold text-slate-900">Memberships and renewal options</summary>
+        <div className="mt-4 space-y-4">
       <CommunityCard
         member={member}
         communityActive={communityActive}
@@ -296,8 +352,18 @@ export default function BillingPage() {
       />
 
       <MembershipHistoryCard history={membershipHistory} />
-      <ProductPaymentReceipts payments={payments} />
+        </div>
+      </details>
+      <details className="rounded-xl border border-slate-200 p-4">
+        <summary className="cursor-pointer font-semibold text-slate-900">Payment receipts and history</summary>
+        <div className="mt-4">
+          <ProductPaymentReceipts payments={payments} />
+        </div>
+      </details>
 
+      <details className="rounded-xl border border-slate-200 p-4">
+        <summary className="cursor-pointer font-semibold text-slate-900">Academy payment schedules and enrolments</summary>
+        <div className="mt-4 space-y-4">
       {academyLoadError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">{academyLoadError} <button type="button" className="font-semibold underline" onClick={() => void fetchEnrollments()}>Retry</button></div>}
       <AcademySection
         loading={academyRefreshing}
@@ -307,6 +373,8 @@ export default function BillingPage() {
         communityActive={communityActive}
         member={member}
       />
+        </div>
+      </details>
     </div>
   );
 }
