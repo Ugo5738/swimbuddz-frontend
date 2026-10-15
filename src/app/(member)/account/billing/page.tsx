@@ -25,10 +25,8 @@ import type {
   MembershipHistory,
   PaymentRecord,
   PricingConfig,
-  UnpaidBooking,
   StoreCreditSummary,
   BubbleWallet,
-  MemberStoreOrder,
 } from "./types";
 import { formatDate } from "./utils";
 
@@ -56,10 +54,8 @@ export default function BillingPage() {
   const [pendingTransfers, setPendingTransfers] = useState<PaymentRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [membershipHistory, setMembershipHistory] = useState<MembershipHistory | null>(null);
-  const [unpaidBookings, setUnpaidBookings] = useState<UnpaidBooking[] | null>(null);
   const [storeCredits, setStoreCredits] = useState<StoreCreditSummary | null>(null);
   const [bubblesWallet, setBubblesWallet] = useState<BubbleWallet | null>(null);
-  const [storeOrders, setStoreOrders] = useState<MemberStoreOrder[] | null>(null);
   const [serverOverview, setServerOverview] = useState<ServerFinancialOverview | null>(null);
   const [obligationError, setObligationError] = useState(false);
   const [obligationRefreshing, setObligationRefreshing] = useState(false);
@@ -190,19 +186,15 @@ export default function BillingPage() {
   const refreshFinancialSources = useCallback(async () => {
     setObligationRefreshing(true);
     try {
-      const [sessions, credits, wallet, orders, obligations] = await Promise.allSettled([
-        apiGet<UnpaidBooking[]>("/api/v1/sessions/bookings/me/unpaid", { auth: true }),
+      const [credits, wallet, obligations] = await Promise.allSettled([
         apiGet<StoreCreditSummary>("/api/v1/store/credits/me", { auth: true }),
         apiGet<BubbleWallet>("/api/v1/wallet/me", { auth: true }),
-        apiGet<MemberStoreOrder[]>("/api/v1/store/orders", { auth: true }),
         apiGet<ServerFinancialOverview>("/api/v1/payments/me/obligations", { auth: true }),
       ]);
-      setUnpaidBookings(sessions.status === "fulfilled" ? sessions.value : null);
       setStoreCredits(credits.status === "fulfilled" ? credits.value : null);
       setBubblesWallet(wallet.status === "fulfilled" ? wallet.value : null);
-      setStoreOrders(orders.status === "fulfilled" ? orders.value : null);
       setServerOverview(obligations.status === "fulfilled" ? obligations.value : null);
-      setObligationError(sessions.status === "rejected");
+      setObligationError(obligations.status === "rejected");
     } finally {
       setObligationRefreshing(false);
     }
@@ -327,11 +319,9 @@ export default function BillingPage() {
 
       <FinancialOverview
         enrollments={myEnrollments}
-        sessions={unpaidBookings}
         transfers={pendingTransfers}
         credits={storeCredits}
         wallet={bubblesWallet}
-        orders={storeOrders}
         serverOverview={serverOverview}
         incomplete={!!academyLoadError || obligationError || academyRefreshing}
         onRefresh={refreshOverview}
