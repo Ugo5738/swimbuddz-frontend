@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { buildFinancialOverview } from "./financialOverview";
+import type { ServerFinancialOverview } from "./serverFinancialOverview";
 import type { Enrollment, PaymentRecord, UnpaidBooking, StoreCreditSummary, BubbleWallet, MemberStoreOrder } from "../types";
 import { formatCurrency, formatDate } from "../utils";
 
@@ -13,6 +14,7 @@ type Props = {
   credits: StoreCreditSummary | null;
   wallet: BubbleWallet | null;
   orders: MemberStoreOrder[] | null;
+  serverOverview: ServerFinancialOverview | null;
   incomplete: boolean;
   onRefresh: () => void;
   refreshing: boolean;
@@ -20,9 +22,17 @@ type Props = {
 
 const money = (kobo: number) => formatCurrency(kobo / 100);
 
-export function FinancialOverview({ enrollments, sessions, transfers, credits, wallet, orders, incomplete, onRefresh, refreshing }: Props) {
-  const overview = buildFinancialOverview(enrollments, sessions ?? [], transfers);
-  const incompleteTotal = incomplete || sessions === null || overview.needsQuote.length > 0;
+export function FinancialOverview({ enrollments, sessions, transfers, credits, wallet, orders, serverOverview, incomplete, onRefresh, refreshing }: Props) {
+  const overview = serverOverview ? {
+    due: serverOverview.items.filter(item => item.status === "due" || item.status === "overdue").map(item => ({ ...item, amountKobo: item.amount_kobo, date: item.due_at })),
+    upcoming: serverOverview.items.filter(item => item.status === "upcoming").map(item => ({ ...item, amountKobo: item.amount_kobo, date: item.due_at })),
+    checking: serverOverview.items.filter(item => item.status === "checking").map(item => ({ ...item, amountKobo: item.amount_kobo, date: item.due_at })),
+    needsQuote: serverOverview.unpriced,
+    dueKobo: serverOverview.due_kobo,
+    upcomingKobo: serverOverview.upcoming_kobo,
+  } : buildFinancialOverview([], [], []);
+
+  const incompleteTotal = incomplete || !serverOverview || !serverOverview.complete;
   const groups = [
     { title: "Needs payment", subtitle: "Payments due now or past their due date", items: overview.due, accent: "amber" },
     { title: "Coming up", subtitle: "You can pay early, but these are not late", items: overview.upcoming, accent: "slate" },
@@ -50,7 +60,7 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
         </div>
       </div>
       {incompleteTotal && <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Some payment records could not be confirmed. These totals are partial, not your full account balance. Please refresh or check your enrolment details.</p>}
-      <p className="text-xs text-slate-500">Figures are from Academy instalments and confirmed unpaid session bookings. Other purchases and renewals are shown separately, not counted as debt.</p>
+      <p className="text-xs text-slate-500">Figures cover Academy instalments and confirmed unpaid sessions. Optional purchases and renewals are not included. If a source is unavailable, the total is incomplete.</p>
     </Card>
     {groups.map((group) => <Card key={group.title} className="space-y-3 p-4 md:p-6">
       <div>
@@ -78,10 +88,10 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
       <p className="text-sm text-slate-600">We couldn't confirm an exact amount for these enrolments. They are not included in the totals above.</p>
       {overview.needsQuote.map(item => <Link key={item.id} href={item.href} className="block py-2 text-sm font-medium text-cyan-700 underline">{item.title} — View details</Link>)}
     </Card>}
-    {orders?.some(order => ["pending_payment", "payment_failed"].includes(order.status)) && <Card className="space-y-3 p-4 md:p-6">
+    {(serverOverview?.optional_purchases.length || orders?.some(order => ["pending_payment", "payment_failed"].includes(order.status))) && <Card className="space-y-3 p-4 md:p-6">
       <h3 className="font-semibold text-slate-900">Unfinished store purchases</h3>
       <p className="text-sm text-slate-600">These are orders you started, not automatic debts. You can review each order without paying twice.</p>
-      {orders.filter(order => ["pending_payment", "payment_failed"].includes(order.status)).map(order => <div key={order.id} className="flex items-center justify-between gap-3 border-t border-slate-100 py-3">
+      {(serverOverview ? serverOverview.optional_purchases.map(order => ({ id: order.id, order_number: order.href.split("/").pop() ?? "", status: order.status, total_ngn: order.amount_kobo / 100 })) : (orders ?? []).filter(order => ["pending_payment", "payment_failed"].includes(order.status))).map(order => <div key={order.id} className="flex items-center justify-between gap-3 border-t border-slate-100 py-3">
         <div>
           <p className="font-medium text-slate-900">Order {order.order_number}</p>
           <p className="text-sm text-slate-600">{formatCurrency(Number(order.total_ngn))} · {order.status === "payment_failed" ? "Payment unsuccessful" : "Checkout unfinished"}</p>
