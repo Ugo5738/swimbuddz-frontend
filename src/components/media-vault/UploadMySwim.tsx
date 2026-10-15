@@ -1,0 +1,45 @@
+"use client";
+
+import { useState } from "react";
+import { apiPost } from "@/lib/api";
+import type { MediaVault } from "@/lib/media-vault";
+import { VaultUploader } from "./VaultUploader";
+import { CloudUpload, LockKeyhole } from "lucide-react";
+
+export function UploadMySwim() {
+  const [vault, setVault] = useState<MediaVault | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const open = async () => {
+    setBusy(true); setError("");
+    try {
+      setVault(await apiPost<MediaVault>("/api/v1/media/vaults/my-swim-vault", {}, { auth: true }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not prepare your upload");
+    } finally { setBusy(false); }
+  };
+  return (
+    <section className="space-y-5">
+      <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <CloudUpload className="h-5 w-5" /> Upload My Swim
+        </h2>
+        <p className="mt-2 text-sm text-slate-700">
+          Add your swimming practice, lessons or personal progress videos. They are private
+          by default, not automatically shared with session participants or published.
+        </p>
+        <p className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+          <LockKeyhole className="h-4 w-4" /> SwimBuddz administrators can review your submitted recordings.
+        </p>
+        {!vault && (
+          <button type="button" disabled={busy} onClick={() => void open()}
+            className="mt-4 rounded-lg bg-cyan-700 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
+            {busy ? "Preparing…" : "Choose photos or videos"}
+          </button>
+        )}
+      </div>
+      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {vault && <VaultUploader vault={vault} scope={{ kind: "member", vaultId: vault.id }} />}
+    </section>
+  );
+}
