@@ -15,9 +15,11 @@ type Props = {
   openCohorts: Cohort[];
   communityActive: boolean;
   member: Member | null;
+  loading?: boolean;
+  unavailable?: boolean;
 };
 
-export function AcademySection({ myEnrollments, openCohorts, communityActive, member }: Props) {
+export function AcademySection({ myEnrollments, openCohorts, communityActive, member, loading, unavailable }: Props) {
   const router = useRouter();
   const [selectedCounts, setSelectedCounts] = useState<Record<string, number>>({});
   const [loadingCheckout, setLoadingCheckout] = useState<string | null>(null);
@@ -45,6 +47,10 @@ export function AcademySection({ myEnrollments, openCohorts, communityActive, me
     academyAccess?.effective_until ||
     academyAccess?.paid_until ||
     member?.membership?.academy_paid_until;
+
+  if (unavailable || (loading && myEnrollments.length === 0)) {
+    return <Card className="p-4 text-sm text-slate-600">{unavailable ? "Academy payment information is temporarily unavailable. Use Retry above." : "Loading Academy payment schedules…"}</Card>;
+  }
 
   return (
     <>
