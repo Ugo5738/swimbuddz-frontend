@@ -87,6 +87,7 @@ describe("Admin actual-session quarter drafts", () => {
   });
   it("derives prices from actual selected sessions and saves without publishing", async () => {
     render(<ClubPlansAdminPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(screen.getByRole("button", { name: "Review draft" }));
     expect(await screen.findByText(/recommended ₦12,000/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: /Island visit/ }));
@@ -108,6 +109,7 @@ describe("Admin actual-session quarter drafts", () => {
   });
   it("generates the next quarter as a reviewable draft, not an automatic publication", async () => {
     render(<ClubPlansAdminPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(screen.getByRole("button", { name: "Generate next quarter" }));
     await waitFor(() =>
       expect(mocks.post).toHaveBeenCalledWith(
@@ -121,6 +123,7 @@ describe("Admin actual-session quarter drafts", () => {
   });
   it("requires explicit publish after the reviewed draft is saved", async () => {
     render(<ClubPlansAdminPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(screen.getByRole("button", { name: "Review draft" }));
     await screen.findByText(/recommended ₦12,000/);
     fireEvent.click(screen.getByRole("button", { name: "Save and publish reviewed quarter" }));
@@ -222,6 +225,7 @@ describe("Admin actual-session quarter drafts", () => {
     fireEvent.change(screen.getByLabelText("Margin (₦)"), { target: { value: "1500" } });
     fireEvent.click(screen.getByRole("button", { name: "Generate reviewable quarter" }));
     expect(await screen.findByText(/A draft already exists/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     expect(screen.getByRole("button", { name: "Review draft" })).toBeInTheDocument();
     expect(mocks.get).not.toHaveBeenCalled();
     expect(mocks.put).not.toHaveBeenCalled();
