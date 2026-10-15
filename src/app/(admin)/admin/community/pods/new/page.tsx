@@ -128,6 +128,7 @@ export default function NewPodPage() {
 
     if (!form.club_id) return setError("Please pick a club.");
     if (!form.pod_lead_id) return setError("Please pick a Pod Lead.");
+    if (form.pod_lead_id === form.assistant_pod_lead_id) return setError("Pod Lead and Assistant must be different members.");
     if (form.max_size < form.min_size) {
       return setError("Max size must be ≥ min size.");
     }
@@ -177,8 +178,8 @@ export default function NewPodPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-semibold text-gray-900">Create pod</h1>
         <p className="mt-1 text-sm text-gray-500">
-          A pod is a 2–5 member training crew. Schedule fields default to the
-          parent club's defaults.
+          Create a small swimming crew inside a Club. Pick a Lead and capacity;
+          the Pod will inherit its Club's normal swimming schedule.
         </p>
       </div>
 
@@ -188,10 +189,15 @@ export default function NewPodPage() {
         </Card>
       )}
 
+      <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
+        <p className="font-semibold">How a Pod works</p>
+        <p className="mt-1">Pods are small peer-led training groups within one home Club. Creating a Pod doesn't enroll swimmers into the Club or create paid sessions.</p>
+        <p className="mt-1">1. Select the location · 2. Name your crew · 3. Assign a Lead · 4. Confirm capacity · 5. Create.</p>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Club */}
         <Card className="space-y-3 p-5">
-          <h2 className="font-semibold text-gray-900">Where</h2>
+          <h2 className="font-semibold text-gray-900">1. Club location</h2>
           <Select
             label="Club"
             required
@@ -209,7 +215,7 @@ export default function NewPodPage() {
 
         {/* Identity */}
         <Card className="space-y-3 p-5">
-          <h2 className="font-semibold text-gray-900">Identity</h2>
+          <h2 className="font-semibold text-gray-900">2. Name the crew</h2>
           <Input
             label="Handle"
             placeholder="dolphins"
@@ -236,7 +242,7 @@ export default function NewPodPage() {
 
         {/* Leadership */}
         <Card className="space-y-3 p-5">
-          <h2 className="font-semibold text-gray-900">Leadership</h2>
+          <h2 className="font-semibold text-gray-900">3. Choose Pod Leads</h2>
           <p className="text-xs text-gray-500">
             Pods are peer-led — no coaches. The Pod Lead is a Member who runs
             sessions and keeps the chat alive.
@@ -263,7 +269,8 @@ export default function NewPodPage() {
 
         {/* Sizing & visibility */}
         <Card className="space-y-3 p-5">
-          <h2 className="font-semibold text-gray-900">Capacity & visibility</h2>
+          <h2 className="font-semibold text-gray-900">4. Capacity and visibility</h2>
+          <p className="text-sm text-slate-600">A crew of five is the normal SwimBuddz setup. Smaller groups are okay while the location is growing.</p>
           <div className="grid gap-3 sm:grid-cols-3">
             <Input
               label="Min size"
@@ -299,8 +306,9 @@ export default function NewPodPage() {
         </Card>
 
         {/* Schedule (optional, defaults from club) */}
-        <Card className="space-y-3 p-5">
-          <h2 className="font-semibold text-gray-900">Default session schedule</h2>
+        <details className="rounded-xl border border-slate-200 bg-white p-5">
+          <summary className="cursor-pointer font-semibold text-slate-900">Advanced: different Pod meeting time</summary>
+          <div className="mt-4 space-y-3">
           <p className="text-xs text-gray-500">
             Leave blank to inherit from the parent club. Override per pod for
             crews that meet on a different day or time.
@@ -347,11 +355,12 @@ export default function NewPodPage() {
               }
             />
           </div>
-        </Card>
+          </div>
+        </details>
 
         {/* Submit */}
         <div className="flex justify-end gap-2">
-          <Link href="/admin/community/pods">
+          <Link href={form.club_id ? `/admin/community/clubs/${form.club_id}` : "/admin/community/pods"}>
             <Button variant="secondary" type="button" disabled={submitting}>
               Cancel
             </Button>
