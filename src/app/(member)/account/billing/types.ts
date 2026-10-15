@@ -103,6 +103,9 @@ export type Enrollment = {
   payment_status: string;
   total_installments?: number;
   paid_installments_count?: number;
+  uses_installments?: boolean;
+  price_snapshot_amount?: number | null;
+  access_suspended?: boolean;
   cohort?: {
     name: string;
     start_date?: string;

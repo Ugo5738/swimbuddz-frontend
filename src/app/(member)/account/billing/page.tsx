@@ -45,6 +45,8 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [openCohorts, setOpenCohorts] = useState<Cohort[]>([]);
   const [myEnrollments, setMyEnrollments] = useState<Enrollment[]>([]);
+  const [academyLoadError, setAcademyLoadError] = useState<string | null>(null);
+  const [academyRefreshing, setAcademyRefreshing] = useState(false);
   const [pendingTransfers, setPendingTransfers] = useState<PaymentRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [membershipHistory, setMembershipHistory] = useState<MembershipHistory | null>(null);
@@ -128,40 +130,47 @@ export default function BillingPage() {
     fetchCohorts();
   }, []);
 
-  // Load my enrollments for Academy section (with installments for paid ones)
-  useEffect(() => {
-    const fetchEnrollments = async () => {
-      try {
-        const enrollments = await apiGet<Enrollment[]>("/api/v1/academy/my-enrollments", {
-          auth: true,
-        });
-        // Fetch installments for paid enrollments that have them
-        const enriched = await Promise.all(
-          enrollments.map(async (e) => {
-            if (
-              (e.payment_status === "paid" || e.status === "enrolled") &&
-              e.total_installments &&
-              e.total_installments > 1
-            ) {
-              try {
-                const detail = await apiGet<Enrollment>(`/api/v1/academy/my-enrollments/${e.id}`, {
-                  auth: true,
-                });
-                return { ...e, installments: detail.installments };
-              } catch {
-                return e;
-              }
+  // Refresh Academy balances independently of membership billing and when a
+  // Paystack return completes. Never interpret an API error as zero debt.
+  const fetchEnrollments = useCallback(async () => {
+    setAcademyRefreshing(true);
+    setAcademyLoadError(null);
+    try {
+      const enrollments = await apiGet<Enrollment[]>("/api/v1/academy/my-enrollments", {
+        auth: true,
+      });
+      // The list endpoint includes frozen installments; fetch individual
+      // details only when an existing plan unexpectedly lacks its rows.
+      const enriched = await Promise.all(
+        enrollments.map(async (enrollment) => {
+          if (!enrollment.installments?.length &&
+              ((enrollment.total_installments ?? 0) > 0 || enrollment.uses_installments)) {
+            try {
+              return await apiGet<Enrollment>(
+                `/api/v1/academy/my-enrollments/${enrollment.id}`, { auth: true }
+              );
+            } catch {
+              // Never provide a payment action against incomplete installment data.
+              return enrollment;
             }
-            return e;
-          })
-        );
-        setMyEnrollments(enriched);
-      } catch {
-        setMyEnrollments([]);
-      }
-    };
-    fetchEnrollments();
+          }
+          return enrollment;
+        })
+      );
+      setMyEnrollments(enriched);
+    } catch {
+      setAcademyLoadError("Could not refresh your Academy installments. Please try again.");
+    } finally {
+      setAcademyRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => { void fetchEnrollments(); }, [fetchEnrollments]);
+  useEffect(() => {
+    if (returnedPayment?.status === "paid" && returnedPayment.entitlement_applied_at) {
+      void fetchEnrollments();
+    }
+  }, [returnedPayment?.status, returnedPayment?.entitlement_applied_at, fetchEnrollments]);
 
   // Computed membership status
   const communityActive = useMemo(() => {
@@ -289,7 +298,10 @@ export default function BillingPage() {
       <MembershipHistoryCard history={membershipHistory} />
       <ProductPaymentReceipts payments={payments} />
 
+      {academyLoadError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">{academyLoadError} <button type="button" className="font-semibold underline" onClick={() => void fetchEnrollments()}>Retry</button></div>}
       <AcademySection
+        loading={academyRefreshing}
+        unavailable={!!academyLoadError && myEnrollments.length === 0}
         myEnrollments={myEnrollments}
         openCohorts={openCohorts}
         communityActive={communityActive}
