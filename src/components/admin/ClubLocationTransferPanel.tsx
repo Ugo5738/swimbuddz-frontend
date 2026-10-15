@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
+import { ClubCommercialTerms } from "@/components/admin/ClubCommercialTerms";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -93,7 +94,7 @@ export function ClubLocationTransferPanel({ memberId }: { memberId: string }) {
     setEnrollments(memberEnrollments);
     setPlans(allPlans);
     const current = memberEnrollments.find(activeNow);
-    if (current) setSourceId((existing) => existing || current.id);
+    if (current) setSourceId(current.id);
   }, [memberId]);
 
   useEffect(() => {
@@ -211,6 +212,14 @@ export function ClubLocationTransferPanel({ memberId }: { memberId: string }) {
               </option>
             ))}
           </Select>
+
+          {source?.payment_mode === "transition_per_session" && (
+            <ClubCommercialTerms
+              key={source.id}
+              enrollmentId={source.id}
+              endsAt={source.ends_at}
+            />
+          )}
 
           <Select
             label="Move home Club to"
