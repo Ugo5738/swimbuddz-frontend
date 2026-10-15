@@ -21,23 +21,14 @@ export type FinancialOverviewData = {
   upcomingKobo: number;
 };
 
-const lagosDay = (value: Date): string =>
-  new Intl.DateTimeFormat("en-CA", {
+const lagosDay = (value: Date): string => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Africa/Lagos",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  })
-    .formatToParts(value)
-    .reduce<Record<string, string>>((parts, item) => {
-      parts[item.type] = item.value;
-      return parts;
-    }, {})
-    .year +
-  "-" +
-  new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos", month: "2-digit" }).format(value) +
-  "-" +
-  new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos", day: "2-digit" }).format(value);
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(value);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+};
 
 export function installmentDay(dueAt: string): string | null {
   if (/^\d{4}-\d{2}-\d{2}$/.test(dueAt)) return dueAt;
