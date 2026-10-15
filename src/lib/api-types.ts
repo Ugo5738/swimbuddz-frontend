@@ -19123,6 +19123,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/vaults/my-swim-uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Swim Uploads
+         * @description Member's own private videos, including submissions awaiting review.
+         */
+        get: operations["list_my_swim_uploads_media_vaults_my_swim_uploads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/my-swim-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Swim Sessions
+         * @description Sessions the member actually attended; for attributing personal uploads.
+         */
+        get: operations["list_my_swim_sessions_media_vaults_my_swim_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/my-swim-vault": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Or Create My Swim Vault
+         * @description Private member-owned collection for unsolicited swim progress uploads.
+         */
+        post: operations["get_or_create_my_swim_vault_media_vaults_my_swim_vault_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/vaults/my-videos": {
         parameters: {
             query?: never;
@@ -19380,6 +19440,63 @@ export interface paths {
         head?: never;
         /** Bulk Review Items */
         patch: operations["bulk_review_items_media_vaults__vault_id__items_patch"];
+        trace?: never;
+    };
+    "/api/v1/media/vaults/my-videos/{media_item_id}/clips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Member Clip
+         * @description Queue a short derivative from an existing private playback proxy.
+         */
+        post: operations["request_member_clip_media_vaults_my_videos__media_item_id__clips_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/my-videos/clips/{clip_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get My Member Clip */
+        get: operations["get_my_member_clip_media_vaults_my_videos_clips__clip_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/{vault_id}/items/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change Session Media Visibility
+         * @description Admins decide whether reviewed footage may be seen by attendees.
+         */
+        patch: operations["change_session_media_visibility_media_vaults__vault_id__items_visibility_patch"];
         trace?: never;
     };
     "/api/v1/media/vaults/{vault_id}/items/shares": {
@@ -46394,6 +46511,34 @@ export interface components {
             /** Vault Ids */
             vault_ids: string[];
         };
+        /** ClipCreate */
+        ClipCreate: {
+            /** Start Ms */
+            start_ms: number;
+            /** End Ms */
+            end_ms: number;
+        };
+        /** ClipResponse */
+        ClipResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+            /** Start Ms */
+            start_ms: number;
+            /** End Ms */
+            end_ms: number;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Download Url */
+            download_url?: string | null;
+        };
         /** CompletedPart */
         CompletedPart: {
             /** Part Number */
@@ -46812,6 +46957,14 @@ export interface components {
             capture_date: string;
             /** Session Id */
             session_id: string | null;
+            /** Session Title */
+            session_title?: string | null;
+            /** Session Starts At */
+            session_starts_at?: string | null;
+            /** Location Name */
+            location_name?: string | null;
+            /** Session Type */
+            session_type?: string | null;
         };
         /**
          * MemberVideoShareRequest
@@ -46864,6 +47017,8 @@ export interface components {
             client_fingerprint?: string | null;
             /** Checksum Sha256 */
             checksum_sha256?: string | null;
+            /** Session Id */
+            session_id?: string | null;
             /** Labels */
             labels?: string[];
         };
@@ -46925,6 +47080,21 @@ export interface components {
             rejection_reason?: string | null;
             /** Labels */
             labels?: string[] | null;
+        };
+        /** SessionMediaPolicyUpdate */
+        SessionMediaPolicyUpdate: {
+            /** Media Item Ids */
+            media_item_ids: string[];
+            /**
+             * Session Visibility
+             * @enum {string}
+             */
+            session_visibility: "private" | "selected_members" | "session_participants";
+            /**
+             * Allow Member Clips
+             * @default false
+             */
+            allow_member_clips: boolean;
         };
         /** SignedUploadPart */
         SignedUploadPart: {
@@ -47299,6 +47469,8 @@ export interface components {
              * Format: uuid
              */
             vault_id: string;
+            /** Source Session Id */
+            source_session_id?: string | null;
             /** Upload Batch Id */
             upload_batch_id: string | null;
             /** Media Type */
@@ -47325,6 +47497,16 @@ export interface components {
             rejection_reason: string | null;
             /** Labels */
             labels?: string[];
+            /**
+             * Session Visibility
+             * @default selected_members
+             */
+            session_visibility: string;
+            /**
+             * Allow Member Clips
+             * @default false
+             */
+            allow_member_clips: boolean;
             /** Duplicate Of Id */
             duplicate_of_id: string | null;
             /** Published Media Id */
@@ -47362,6 +47544,8 @@ export interface components {
             session_id: string | null;
             /** Event Id */
             event_id: string | null;
+            /** Owner Member Id */
+            owner_member_id?: string | null;
             /** Title */
             title: string;
             /** Description */
@@ -83433,6 +83617,80 @@ export interface operations {
             };
         };
     };
+    list_my_swim_uploads_media_vaults_my_swim_uploads_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultMediaListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_swim_sessions_media_vaults_my_swim_sessions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+        };
+    };
+    get_or_create_my_swim_vault_media_vaults_my_swim_vault_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultResponse"];
+                };
+            };
+        };
+    };
     my_session_videos_media_vaults_my_videos_get: {
         parameters: {
             query?: {
@@ -84088,6 +84346,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultMediaResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_member_clip_media_vaults_my_videos__media_item_id__clips_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClipCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClipResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_member_clip_media_vaults_my_videos_clips__clip_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClipResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_session_media_visibility_media_vaults__vault_id__items_visibility_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vault_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionMediaPolicyUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
