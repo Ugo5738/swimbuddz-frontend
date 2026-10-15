@@ -33,6 +33,7 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
   } : buildFinancialOverview([], [], []);
 
   const incompleteTotal = incomplete || !serverOverview || !serverOverview.complete;
+  const canDisplayTotals = !!serverOverview;
   const groups = [
     { title: "Needs payment", subtitle: "Payments due now or past their due date", items: overview.due, accent: "amber" },
     { title: "Coming up", subtitle: "You can pay early, but these are not late", items: overview.upcoming, accent: "slate" },
@@ -50,12 +51,12 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl bg-slate-900 p-4 text-white">
           <p className="text-sm text-slate-200">Due now or overdue</p>
-          <p className="mt-1 text-3xl font-semibold tabular-nums">{money(overview.dueKobo)}</p>
+          <p className="mt-1 text-3xl font-semibold tabular-nums">{canDisplayTotals ? money(overview.dueKobo) : "Not available"}</p>
           <p className="mt-2 text-xs text-slate-200">{overview.due.length} recorded payment{overview.due.length === 1 ? "" : "s"}</p>
         </div>
         <div className="rounded-xl bg-slate-50 p-4">
           <p className="text-sm text-slate-600">Upcoming instalments</p>
-          <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">{money(overview.upcomingKobo)}</p>
+          <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">{canDisplayTotals ? money(overview.upcomingKobo) : "Not available"}</p>
           <p className="mt-2 text-xs text-slate-500">Not overdue · pay ahead if you prefer</p>
         </div>
       </div>
@@ -67,7 +68,7 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
         <h3 className="font-semibold text-slate-900">{group.title}</h3>
         <p className="text-sm text-slate-600">{group.subtitle}</p>
       </div>
-      {group.items.length === 0 ? <p className="text-sm text-slate-500">Nothing here right now.</p> :
+      {group.items.length === 0 ? <p className="text-sm text-slate-500">{!serverOverview ? "We couldn’t confirm these payments. Please refresh." : "Nothing here right now."}</p> :
         <div className="divide-y divide-slate-100">
           {group.items.map((item) => <div key={item.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
@@ -88,7 +89,7 @@ export function FinancialOverview({ enrollments, sessions, transfers, credits, w
       <p className="text-sm text-slate-600">We couldn't confirm an exact amount for these enrolments. They are not included in the totals above.</p>
       {overview.needsQuote.map(item => <Link key={item.id} href={item.href} className="block py-2 text-sm font-medium text-cyan-700 underline">{item.title} — View details</Link>)}
     </Card>}
-    {(serverOverview?.optional_purchases.length || orders?.some(order => ["pending_payment", "payment_failed"].includes(order.status))) && <Card className="space-y-3 p-4 md:p-6">
+    {(serverOverview ? serverOverview.optional_purchases.length > 0 : orders?.some(order => ["pending_payment", "payment_failed"].includes(order.status))) && <Card className="space-y-3 p-4 md:p-6">
       <h3 className="font-semibold text-slate-900">Unfinished store purchases</h3>
       <p className="text-sm text-slate-600">These are orders you started, not automatic debts. You can review each order without paying twice.</p>
       {(serverOverview ? serverOverview.optional_purchases.map(order => ({ id: order.id, order_number: order.href.split("/").pop() ?? "", status: order.status, total_ngn: order.amount_kobo / 100 })) : (orders ?? []).filter(order => ["pending_payment", "payment_failed"].includes(order.status))).map(order => <div key={order.id} className="flex items-center justify-between gap-3 border-t border-slate-100 py-3">
