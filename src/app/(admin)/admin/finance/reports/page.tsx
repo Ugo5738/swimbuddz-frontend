@@ -19,6 +19,11 @@ export default function FinanceReportsPage() {
         <p className="mt-1 text-sm text-slate-600">Compare enrolment list values with negotiated cash obligations. This is an operational contract view, not recognized revenue.</p>
         <Link href="/admin/finance/reports/academy-contracts" className="mt-3 inline-block text-sm font-medium text-cyan-700 underline">View Academy contracts and concessions</Link>
       </div>
+      <div className="rounded-xl border border-slate-200 p-4">
+        <h2 className="font-semibold">Club approved commercial terms</h2>
+        <p className="mt-1 text-sm text-slate-600">Audit per-session agreements separately from regular Club prices and ledger revenue.</p>
+        <Link href="/admin/finance/reports/club-terms" className="mt-3 inline-block text-sm font-medium text-cyan-700 underline">View Club pricing agreements</Link>
+      </div>
       <TrialBalanceSection />
       <ProfitLossSection />
       <BalanceSheetSection />
