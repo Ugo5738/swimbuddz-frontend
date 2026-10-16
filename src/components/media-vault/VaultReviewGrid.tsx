@@ -51,6 +51,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
   const [visibilityOpen, setVisibilityOpen] = useState(false);
   const [visibility, setVisibility] = useState<"private" | "selected_members" | "session_participants">("selected_members");
   const [canClip, setCanClip] = useState(false);
+  const [canDownload, setCanDownload] = useState(false);
   const [labelInput, setLabelInput] = useState("");
   const [deleteMode, setDeleteMode] = useState<"vault" | "storage" | null>(null);
   const [viewingVideoId, setViewingVideoId] = useState<string | null>(null);
@@ -518,6 +519,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
                   <Status value={item.review_status} />
                   <Status value={item.consent_status} />
                   {item.session_visibility === "session_participants" && <span className="rounded bg-cyan-50 px-2 py-0.5 text-[10px] text-cyan-800">Session attendees</span>}
+                  {item.allow_member_downloads && <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] text-amber-800">Full downloads allowed</span>}
                   {item.allow_member_clips && <span className="rounded bg-teal-50 px-2 py-0.5 text-[10px] text-teal-800">Clips allowed</span>}
                 </div>
                 <VaultMediaLabels labels={item.labels ?? []} />
@@ -560,7 +562,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
                 setActing(true);
                 try {
                   await apiPatch(`/api/v1/media/vaults/${vaultId}/items/visibility`, {
-                    media_item_ids: [...selected], session_visibility: visibility, allow_member_clips: canClip,
+                    media_item_ids: [...selected], session_visibility: visibility, allow_member_clips: canClip, allow_member_downloads: canDownload,
                   }, { auth: true });
                   toast.success("Visibility updated");
                   setVisibilityOpen(false);

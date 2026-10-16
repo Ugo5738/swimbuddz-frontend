@@ -19593,6 +19593,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/vaults/my-videos/{media_item_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Authorize Member Video Download
+         * @description Download only an individually allowed, consent-cleared original recording.
+         */
+        post: operations["authorize_member_video_download_media_vaults_my_videos__media_item_id__download_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/vaults/{vault_id}/items/{item_id}/download": {
         parameters: {
             query?: never;
@@ -47095,6 +47115,11 @@ export interface components {
              * @default false
              */
             allow_member_clips: boolean;
+            /**
+             * Allow Member Downloads
+             * @default false
+             */
+            allow_member_downloads: boolean;
         };
         /** SignedUploadPart */
         SignedUploadPart: {
@@ -47345,6 +47370,22 @@ export interface components {
             consent_notice?: string | null;
             /** Shot Checklist */
             shot_checklist?: string[];
+            /**
+             * Default Session Visibility
+             * @default selected_members
+             * @enum {string}
+             */
+            default_session_visibility: "private" | "selected_members" | "session_participants";
+            /**
+             * Default Allow Member Clips
+             * @default false
+             */
+            default_allow_member_clips: boolean;
+            /**
+             * Default Allow Member Downloads
+             * @default false
+             */
+            default_allow_member_downloads: boolean;
         };
         /** VaultGrantCreate */
         VaultGrantCreate: {
@@ -47507,6 +47548,11 @@ export interface components {
              * @default false
              */
             allow_member_clips: boolean;
+            /**
+             * Allow Member Downloads
+             * @default false
+             */
+            allow_member_downloads: boolean;
             /** Duplicate Of Id */
             duplicate_of_id: string | null;
             /** Published Media Id */
@@ -47595,6 +47641,21 @@ export interface components {
             settings_json: {
                 [key: string]: unknown;
             };
+            /**
+             * Default Session Visibility
+             * @default selected_members
+             */
+            default_session_visibility: string;
+            /**
+             * Default Allow Member Clips
+             * @default false
+             */
+            default_allow_member_clips: boolean;
+            /**
+             * Default Allow Member Downloads
+             * @default false
+             */
+            default_allow_member_downloads: boolean;
             /** Published Album Id */
             published_album_id: string | null;
             /**
@@ -47650,6 +47711,17 @@ export interface components {
             settings_json?: {
                 [key: string]: unknown;
             } | null;
+            /** Default Session Visibility */
+            default_session_visibility?: ("private" | "selected_members" | "session_participants") | null;
+            /** Default Allow Member Clips */
+            default_allow_member_clips?: boolean | null;
+            /** Default Allow Member Downloads */
+            default_allow_member_downloads?: boolean | null;
+            /**
+             * Apply Defaults To Existing
+             * @default false
+             */
+            apply_defaults_to_existing: boolean;
         };
         /** AdminMemberRoleUpdateRequest */
         AdminMemberRoleUpdateRequest: {
@@ -84624,6 +84696,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    authorize_member_video_download_media_vaults_my_videos__media_item_id__download_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadAuthorizationResponse"];
                 };
             };
             /** @description Validation Error */

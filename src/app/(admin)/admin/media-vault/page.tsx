@@ -47,6 +47,9 @@ export default function AdminMediaVaultPage() {
     }).format(new Date())
   );
   const [submitting, setSubmitting] = useState(false);
+  const [defaultVisibility, setDefaultVisibility] = useState<"private" | "selected_members" | "session_participants">("session_participants");
+  const [defaultClips, setDefaultClips] = useState(true);
+  const [defaultDownloads, setDefaultDownloads] = useState(false);
 
   useEffect(() => {
     SessionsApi.listAllSessions({ include_drafts: true })
@@ -116,6 +119,9 @@ export default function AdminMediaVaultPage() {
       const created = await mediaVaultApi.create({
         ...payload,
         retention_days: 730,
+        default_session_visibility: vaultKind === "standalone" ? "private" : defaultVisibility,
+        default_allow_member_clips: vaultKind !== "standalone" && defaultVisibility !== "private" && defaultClips,
+        default_allow_member_downloads: vaultKind !== "standalone" && defaultVisibility !== "private" && defaultDownloads,
         consent_notice:
           "Confirm participants have not opted out of photography and flag any safeguarding concern in the upload notes.",
         shot_checklist: DEFAULT_MEDIA_VAULT_CHECKLIST,
@@ -341,6 +347,21 @@ export default function AdminMediaVaultPage() {
                 </label>
               </div>
             )}
+            <fieldset className="mt-5 space-y-3 rounded-xl border border-slate-200 p-4">
+              <legend className="px-1 font-semibold text-slate-900">Media access defaults</legend>
+              {vaultKind === "session" ? (
+                <label className="block text-sm text-slate-700">Audience after approval and consent clearance
+                  <select value={defaultVisibility} onChange={(event) => setDefaultVisibility(event.target.value as typeof defaultVisibility)} className="mt-2 w-full rounded-lg border border-slate-300 bg-white p-2.5">
+                    <option value="session_participants">Verified session participants</option>
+                    <option value="selected_members">Individually selected members</option>
+                    <option value="private">Admins only</option>
+                  </select>
+                </label>
+              ) : <p className="text-sm text-slate-600">Standalone collections start private. Audience settings require a linked scheduled session or individually approved members.</p>}
+              <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={defaultClips && defaultVisibility !== "private" && vaultKind === "session"} onChange={(e) => setDefaultClips(e.target.checked)} disabled={defaultVisibility === "private" || vaultKind !== "session"} /> Allow short clip downloads</label>
+              <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={defaultDownloads && defaultVisibility !== "private" && vaultKind === "session"} onChange={(e) => setDefaultDownloads(e.target.checked)} disabled={defaultVisibility === "private" || vaultKind !== "session"} /> Allow full video downloads (up to 512 MiB)</label>
+              <p className="text-xs text-slate-500">New uploads stay unavailable to members until individually approved and consent-cleared. These defaults never publish media to the public gallery.</p>
+            </fieldset>
             {vaultKind === "session" && selectedSession && (
               <div className="mt-4 rounded-xl bg-cyan-50 p-4 text-sm text-cyan-900">
                 Uploads open 4 hours before the session and close 72 hours after. Originals retain
