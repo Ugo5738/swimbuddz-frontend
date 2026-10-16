@@ -68,7 +68,7 @@ export function MySessionVideos() {
     return () => { active = false; };
   }, [page, refreshIndex]);
   useEffect(() => {
-    if (!selected || selected.media.media_type !== "VIDEO" || selected.media.preview_url) return;
+    if (!selected || selected.media.preview_url || selected.media.preview_status === "failed") return;
     const timer = window.setInterval(() => setRefreshIndex(v => v + 1), 6000);
     return () => window.clearInterval(timer);
   }, [selected?.media.id, selected?.media.preview_url]);
@@ -168,7 +168,12 @@ export function MySessionVideos() {
               selected.media.preview_url || selected.media.thumbnail_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={selected.media.preview_url || selected.media.thumbnail_url || ""} alt={selected.media.original_filename || "Shared swim photo"} className="mx-auto max-h-[75vh] max-w-full rounded-lg object-contain" />
-              ) : <p className="rounded-lg bg-slate-100 p-8 text-center">Photo preview is being prepared.</p>
+              ) : <div className="rounded-lg bg-slate-100 p-8 text-center">
+                <p>Photo preview is being prepared.</p>
+                <button type="button" onClick={() => void retryPlayback(selected.media.id)} disabled={previewWorking}
+                  className="mt-3 rounded-lg bg-cyan-700 px-4 py-2 text-sm text-white disabled:opacity-50">Prepare photo preview</button>
+                {previewError && <p role="alert" className="mt-2 text-sm text-red-600">{previewError}</p>}
+              </div>
             ) : selected.media.preview_url ? (
               <video controls playsInline preload="metadata" onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} poster={selected.media.thumbnail_url ?? undefined} src={selected.media.preview_url}
                 className="max-h-[75vh] w-full rounded-lg bg-black" />
