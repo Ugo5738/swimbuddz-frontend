@@ -30,6 +30,7 @@ import {
 } from "./VaultMediaDialogs";
 import { VaultVideoDialog, VaultVideoThumbnail } from "./VaultVideoDialog";
 import { MemberVideoShareDialog } from "./MemberVideoShareDialog";
+import { MediaAssignmentDialog } from "./MediaAssignmentDialog";
 
 type Props = { vaultId: string; admin?: boolean };
 
@@ -48,6 +49,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
   const [acting, setActing] = useState(false);
   const [editingLabels, setEditingLabels] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [associating, setAssociating] = useState(false);
   const [visibilityOpen, setVisibilityOpen] = useState(false);
   const [visibility, setVisibility] = useState<"private" | "selected_members" | "session_participants">("selected_members");
   const [canClip, setCanClip] = useState(false);
@@ -395,6 +397,9 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
             <Action label="Visibility" icon={ShieldCheck} onClick={() => setVisibilityOpen(true)} disabled={acting || !selectionReady} />
           )}
           {admin && (
+            <Action label="Associate swimmers / session" icon={Share2} onClick={() => setAssociating(true)} disabled={acting || !selectionReady} />
+          )}
+          {admin && (
             <Action
               label="Share with member"
               icon={Share2}
@@ -573,6 +578,9 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
             </div>
           </div>
         </div>
+      )}
+      {associating && (
+        <MediaAssignmentDialog vaultId={vaultId} items={chosen} onClose={() => setAssociating(false)} onSaved={() => loadItems()} />
       )}
       {sharing && (
         <MemberVideoShareDialog vaultId={vaultId} videos={chosen} onClose={() => setSharing(false)} />
