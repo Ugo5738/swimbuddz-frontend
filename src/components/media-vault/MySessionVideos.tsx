@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api";
+import { mediaVaultApi } from "@/lib/media-vault";
 import { type VaultMedia } from "@/lib/media-vault";
 import { CalendarDays, FileVideo, Play, Video } from "lucide-react";
 import { MemberClipTool } from "./MemberClipTool";
@@ -30,6 +31,20 @@ export function MySessionVideos() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<SharedVideo | null>(null);
   const [duration, setDuration] = useState(0);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const downloadOriginal = async (item: VaultMedia) => {
+    setDownloading(true); setDownloadError(null);
+    try {
+      const result = await mediaVaultApi.authorizeMemberDownload(item.id);
+      const link = document.createElement("a");
+      link.href = result.url;
+      link.download = result.filename;
+      link.rel = "noopener";
+      link.click();
+    } catch (e) { setDownloadError(e instanceof Error ? e.message : "Download unavailable"); }
+    finally { setDownloading(false); }
+  };
   const [filter, setFilter] = useState<"all" | "academy" | "club" | "community">("all");
 
   useEffect(() => {
@@ -139,6 +154,10 @@ export function MySessionVideos() {
             {selected.media.allow_member_clips && selected.media.preview_url && (
               <div className="mt-4"><MemberClipTool videoId={selected.media.id} duration={duration} /></div>
             )}
+            {selected.media.allow_member_downloads && (
+              <div className="mt-3"><button type="button" disabled={downloading} onClick={() => void downloadOriginal(selected.media)} className="rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-800 disabled:opacity-40">{downloading ? "Preparing download…" : "Download full recording"}</button></div>
+            )}
+            {downloadError && <p role="alert" className="mt-2 text-sm text-red-600">{downloadError}</p>}
             <p className="mt-3 text-xs text-slate-500">
               For your personal viewing. Sharing or publishing videos of other swimmers requires their consent.
             </p>
