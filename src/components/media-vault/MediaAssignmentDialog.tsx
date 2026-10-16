@@ -70,7 +70,7 @@ export function MediaAssignmentDialog({
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4">
       <div className="w-full max-w-xl space-y-4 rounded-2xl bg-white p-6 shadow-xl">
         <h2 className="text-lg font-semibold text-slate-900">Associate {items.length} files</h2>
-        <p className="text-sm text-slate-600">Tag the swimmers featured or link recordings to a real session, without reuploading the originals. This does not automatically share the recordings.</p>
+        <p className="text-sm text-slate-600">Tag swimmers featured in these files or link the media to a scheduled session, without reuploading the originals. Viewing access is a separate optional step below.</p>
         <label className="block text-sm font-medium text-slate-700">
           Swimmers featured
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members by name or email"
