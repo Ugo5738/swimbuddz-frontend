@@ -20,6 +20,13 @@ export function MediaAssignmentDialog({
   const [sessionId, setSessionId] = useState("");
   const [changeSession, setChangeSession] = useState(false);
   const [replaceFeatured, setReplaceFeatured] = useState(false);
+  const [grantAccess, setGrantAccess] = useState(false);
+  const shareEligible = items.every(item =>
+    item.processing_status === "ready" &&
+    ["approved", "published"].includes(item.review_status) &&
+    item.consent_status === "cleared" &&
+    item.session_visibility !== "session_participants"
+  );
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     SessionsApi.listAllSessions({ include_drafts: false })
@@ -47,10 +54,11 @@ export function MediaAssignmentDialog({
           member_ids: members.map(member => member.id),
           session_id: changeSession ? sessionId || null : null,
           replace_featured: replaceFeatured,
+          grant_access_to_featured: grantAccess,
         },
         { auth: true }
       );
-      toast.success("Media associations saved. This does not automatically grant access.");
+      toast.success(grantAccess ? "Media assigned and privately shared with selected swimmers" : "Media associations saved; viewing access remains unchanged");
       await onSaved();
       onClose();
     } catch (error) {
@@ -83,6 +91,14 @@ export function MediaAssignmentDialog({
             {member.first_name} {member.last_name} ×
           </button>)}
         </div>
+        <label className="flex items-start gap-2 rounded-lg bg-cyan-50 p-3 text-sm text-slate-800">
+          <input type="checkbox" checked={grantAccess} disabled={!shareEligible || !members.length}
+            onChange={e => setGrantAccess(e.target.checked)} className="mt-0.5" />
+          <span><strong>Also let these swimmers view the selected files</strong>
+            <span className="mt-1 block text-xs text-slate-600">Only approved, consent-cleared photos or videos can be shared. This is separate from identifying people featured in the media.</span>
+          </span>
+        </label>
+        {!shareEligible && <p className="text-xs text-amber-800">To grant access now, first approve the files, clear consent, and use Private or Selected Members visibility in Review.</p>}
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={replaceFeatured} onChange={e => setReplaceFeatured(e.target.checked)} />
           Replace existing featured-member associations instead of adding to them
