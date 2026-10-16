@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { mediaVaultApi } from "@/lib/media-vault";
 import { type VaultMedia } from "@/lib/media-vault";
 import { CalendarDays, FileVideo, Play, Video } from "lucide-react";
@@ -31,6 +31,17 @@ export function MySessionVideos() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<SharedVideo | null>(null);
   const [duration, setDuration] = useState(0);
+  const [previewWorking, setPreviewWorking] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [refreshIndex, setRefreshIndex] = useState(0);
+  const retryPlayback = async (id: string) => {
+    setPreviewWorking(true); setPreviewError(null);
+    try {
+      await apiPost(`/api/v1/media/vaults/my-media/${id}/preview`, {}, { auth: true });
+      setRefreshIndex((value) => value + 1);
+    } catch(e) { setPreviewError(e instanceof Error ? e.message : "Could not prepare playback"); }
+    finally { setPreviewWorking(false); }
+  };
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const downloadOriginal = async (item: VaultMedia) => {
@@ -55,7 +66,17 @@ export function MySessionVideos() {
       .catch((failure) => { if (active) setError(failure instanceof Error ? failure.message : "Videos could not be loaded"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [page]);
+  }, [page, refreshIndex]);
+  useEffect(() => {
+    if (!selected || selected.media.media_type !== "VIDEO" || selected.media.preview_url) return;
+    const timer = window.setInterval(() => setRefreshIndex(v => v + 1), 6000);
+    return () => window.clearInterval(timer);
+  }, [selected?.media.id, selected?.media.preview_url]);
+  useEffect(() => {
+    if (!selected || !data) return;
+    const updated = data.items.find((entry) => entry.media.id === selected.media.id);
+    if (updated && updated.media.preview_url !== selected.media.preview_url) setSelected(updated);
+  }, [data, selected?.media.id, selected?.media.preview_url]);
 
   const pages = Math.max(1, Math.ceil((data?.total ?? 0) / 24));
   const category = (video: SharedVideo): "academy" | "club" | "community" => {
@@ -73,7 +94,7 @@ export function MySessionVideos() {
   return (
     <section className="space-y-5" aria-label="My session videos">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">My session videos</h2>
+        <h2 className="text-lg font-semibold text-slate-900">My Media</h2>
         <p className="mt-1 text-sm text-slate-600">
           Videos shared with you from Academy, Club and Community sessions. Your historical videos remain here after a cohort closes.
         </p>
@@ -83,7 +104,7 @@ export function MySessionVideos() {
       {!loading && !error && !data?.items.length && (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-600">
           <FileVideo className="mx-auto mb-3 h-9 w-9 text-slate-400" />
-          No personal videos have been shared with you yet. Your instructors or the media team can add them after review.
+          No media has been shared with you yet. Your instructors or the media team can add it after review.
         </div>
       )}
       <label className="block text-sm font-medium text-slate-700">Show videos from
@@ -143,13 +164,23 @@ export function MySessionVideos() {
               <h2 className="truncate font-semibold text-slate-900">{selected.session_title || selected.vault_title}</h2>
               <button type="button" onClick={() => setSelected(null)} className="rounded-lg px-3 py-2 text-sm">Close</button>
             </div>
-            {selected.media.preview_url ? (
+            {selected.media.media_type === "IMAGE" ? (
+              selected.media.preview_url || selected.media.thumbnail_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={selected.media.preview_url || selected.media.thumbnail_url || ""} alt={selected.media.original_filename || "Shared swim photo"} className="mx-auto max-h-[75vh] max-w-full rounded-lg object-contain" />
+              ) : <p className="rounded-lg bg-slate-100 p-8 text-center">Photo preview is being prepared.</p>
+            ) : selected.media.preview_url ? (
               <video controls playsInline preload="metadata" onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} poster={selected.media.thumbnail_url ?? undefined} src={selected.media.preview_url}
                 className="max-h-[75vh] w-full rounded-lg bg-black" />
             ) : (
-              <p className="rounded-lg bg-slate-100 p-10 text-center text-slate-600">
-                This video has not yet been prepared for streaming. Please ask the media team to generate its review preview.
-              </p>
+              <div className="rounded-lg bg-slate-100 p-8 text-center text-slate-700">
+                <p>{previewWorking ? "Requesting your preview…" : "A playable copy is being prepared. You can request a retry here without contacting an administrator."}</p>
+                <button type="button" onClick={() => void retryPlayback(selected.media.id)} disabled={previewWorking}
+                  className="mt-3 rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                  {previewWorking ? "Preparing…" : "Prepare or retry playback"}
+                </button>
+                {previewError && <p role="alert" className="mt-2 text-sm text-red-600">{previewError}</p>}
+              </div>
             )}
             {selected.media.allow_member_clips && selected.media.preview_url && (
               <div className="mt-4"><MemberClipTool videoId={selected.media.id} duration={duration} /></div>
