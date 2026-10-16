@@ -19499,6 +19499,46 @@ export interface paths {
         patch: operations["change_session_media_visibility_media_vaults__vault_id__items_visibility_patch"];
         trace?: never;
     };
+    "/api/v1/media/vaults/my-media/{media_item_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request My Shared Preview
+         * @description Allow an authorised member to retry playback preparation, once per window.
+         */
+        post: operations["request_my_shared_preview_media_vaults_my_media__media_item_id__preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/{vault_id}/items/assignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Assign Media To Swimmers Or Session
+         * @description Associate existing media; optionally grant explicitly approved access.
+         */
+        patch: operations["assign_media_to_swimmers_or_session_media_vaults__vault_id__items_assignment_patch"];
+        trace?: never;
+    };
     "/api/v1/media/vaults/{vault_id}/items/shares": {
         parameters: {
             query?: never;
@@ -46849,6 +46889,30 @@ export interface components {
             session_id?: string | null;
             /** Event Id */
             event_id?: string | null;
+        };
+        /** MediaAssignmentRequest */
+        MediaAssignmentRequest: {
+            /** Media Item Ids */
+            media_item_ids: string[];
+            /** Member Ids */
+            member_ids?: string[];
+            /** Session Id */
+            session_id?: string | null;
+            /**
+             * Replace Featured
+             * @default false
+             */
+            replace_featured: boolean;
+            /**
+             * Grant Access To Featured
+             * @default false
+             */
+            grant_access_to_featured: boolean;
+        };
+        /** MediaAssignmentResponse */
+        MediaAssignmentResponse: {
+            /** Updated Count */
+            updated_count: number;
         };
         /**
          * MediaDownloadResponse
@@ -84521,6 +84585,72 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_my_shared_preview_media_vaults_my_media__media_item_id__preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_media_to_swimmers_or_session_media_vaults__vault_id__items_assignment_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vault_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAssignmentResponse"];
                 };
             };
             /** @description Validation Error */

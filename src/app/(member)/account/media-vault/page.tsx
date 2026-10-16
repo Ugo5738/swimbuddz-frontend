@@ -23,15 +23,15 @@ export default function MemberMediaVaultPage() {
             <CloudUpload className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-950">My videos & media assignments</h1>
+            <h1 className="text-2xl font-bold text-slate-950">My Media & volunteer assignments</h1>
             <p className="text-sm text-slate-600">
-              See your personal session videos and any volunteer media assignments.
+              See your shared swim videos and photos, personal uploads, and media assignments.
             </p>
           </div>
         </div>
       </div>
 
-      <FilterTabs options={[{ value: "videos", label: "My session videos" }, { value: "upload", label: "Upload My Swim" }, { value: "all", label: "Volunteer media" }, { value: "vaults", label: "My assigned vaults" }]} value={view} onChange={setView} />
+      <FilterTabs options={[{ value: "videos", label: "My Media" }, { value: "upload", label: "Upload My Swim" }, { value: "all", label: "Volunteer media" }, { value: "vaults", label: "My assigned vaults" }]} value={view} onChange={setView} />
       {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
       {loading && (
         <div className="grid gap-4 md:grid-cols-2">
