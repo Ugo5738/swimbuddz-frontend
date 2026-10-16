@@ -19499,6 +19499,46 @@ export interface paths {
         patch: operations["change_session_media_visibility_media_vaults__vault_id__items_visibility_patch"];
         trace?: never;
     };
+    "/api/v1/media/vaults/my-media/{media_item_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request My Shared Preview
+         * @description Allow an authorised member to retry playback preparation, once per window.
+         */
+        post: operations["request_my_shared_preview_media_vaults_my_media__media_item_id__preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/{vault_id}/items/assignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Assign Media To Swimmers Or Session
+         * @description Associate existing media; optionally grant explicitly approved access.
+         */
+        patch: operations["assign_media_to_swimmers_or_session_media_vaults__vault_id__items_assignment_patch"];
+        trace?: never;
+    };
     "/api/v1/media/vaults/{vault_id}/items/shares": {
         parameters: {
             query?: never;
@@ -19587,6 +19627,26 @@ export interface paths {
          * @description Queue an optional review derivative; never touches the original object.
          */
         post: operations["request_item_preview_media_vaults__vault_id__items__item_id__preview_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/my-videos/{media_item_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Authorize Member Video Download
+         * @description Download only an individually allowed, consent-cleared original recording.
+         */
+        post: operations["authorize_member_video_download_media_vaults_my_videos__media_item_id__download_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -22485,6 +22545,26 @@ export interface components {
             revoked_by?: string | null;
             /** Revoke Note */
             revoke_note?: string | null;
+            /** Rewards Distributed At */
+            rewards_distributed_at?: string | null;
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+            /** Result Data */
+            result_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Proof Media */
+            proof_media?: components["schemas"]["ChallengeSubmissionMediaResponse"][];
+            /** Members */
+            members?: components["schemas"]["ChallengeSubmissionMemberResponse"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * ChallengeSubmissionReview
@@ -22509,26 +22589,6 @@ export interface components {
         ChallengeSubmissionRevokeRequest: {
             /** Revoke Note */
             revoke_note: string;
-            /** Rewards Distributed At */
-            rewards_distributed_at?: string | null;
-            /**
-             * Completed At
-             * Format: date-time
-             */
-            completed_at: string;
-            /** Result Data */
-            result_data?: {
-                [key: string]: unknown;
-            } | null;
-            /** Proof Media */
-            proof_media?: components["schemas"]["ChallengeSubmissionMediaResponse"][];
-            /** Members */
-            members?: components["schemas"]["ChallengeSubmissionMemberResponse"][];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
         };
         /**
          * ChallengeWinnerPublicInfo
@@ -46830,6 +46890,30 @@ export interface components {
             /** Event Id */
             event_id?: string | null;
         };
+        /** MediaAssignmentRequest */
+        MediaAssignmentRequest: {
+            /** Media Item Ids */
+            media_item_ids: string[];
+            /** Member Ids */
+            member_ids?: string[];
+            /** Session Id */
+            session_id?: string | null;
+            /**
+             * Replace Featured
+             * @default false
+             */
+            replace_featured: boolean;
+            /**
+             * Grant Access To Featured
+             * @default false
+             */
+            grant_access_to_featured: boolean;
+        };
+        /** MediaAssignmentResponse */
+        MediaAssignmentResponse: {
+            /** Updated Count */
+            updated_count: number;
+        };
         /**
          * MediaDownloadResponse
          * @description Response from the admin download endpoint.
@@ -47095,6 +47179,11 @@ export interface components {
              * @default false
              */
             allow_member_clips: boolean;
+            /**
+             * Allow Member Downloads
+             * @default false
+             */
+            allow_member_downloads: boolean;
         };
         /** SignedUploadPart */
         SignedUploadPart: {
@@ -47345,6 +47434,22 @@ export interface components {
             consent_notice?: string | null;
             /** Shot Checklist */
             shot_checklist?: string[];
+            /**
+             * Default Session Visibility
+             * @default selected_members
+             * @enum {string}
+             */
+            default_session_visibility: "private" | "selected_members" | "session_participants";
+            /**
+             * Default Allow Member Clips
+             * @default false
+             */
+            default_allow_member_clips: boolean;
+            /**
+             * Default Allow Member Downloads
+             * @default false
+             */
+            default_allow_member_downloads: boolean;
         };
         /** VaultGrantCreate */
         VaultGrantCreate: {
@@ -47507,6 +47612,11 @@ export interface components {
              * @default false
              */
             allow_member_clips: boolean;
+            /**
+             * Allow Member Downloads
+             * @default false
+             */
+            allow_member_downloads: boolean;
             /** Duplicate Of Id */
             duplicate_of_id: string | null;
             /** Published Media Id */
@@ -47595,6 +47705,21 @@ export interface components {
             settings_json: {
                 [key: string]: unknown;
             };
+            /**
+             * Default Session Visibility
+             * @default selected_members
+             */
+            default_session_visibility: string;
+            /**
+             * Default Allow Member Clips
+             * @default false
+             */
+            default_allow_member_clips: boolean;
+            /**
+             * Default Allow Member Downloads
+             * @default false
+             */
+            default_allow_member_downloads: boolean;
             /** Published Album Id */
             published_album_id: string | null;
             /**
@@ -47650,6 +47775,17 @@ export interface components {
             settings_json?: {
                 [key: string]: unknown;
             } | null;
+            /** Default Session Visibility */
+            default_session_visibility?: ("private" | "selected_members" | "session_participants") | null;
+            /** Default Allow Member Clips */
+            default_allow_member_clips?: boolean | null;
+            /** Default Allow Member Downloads */
+            default_allow_member_downloads?: boolean | null;
+            /**
+             * Apply Defaults To Existing
+             * @default false
+             */
+            apply_defaults_to_existing: boolean;
         };
         /** AdminMemberRoleUpdateRequest */
         AdminMemberRoleUpdateRequest: {
@@ -84462,6 +84598,72 @@ export interface operations {
             };
         };
     };
+    request_my_shared_preview_media_vaults_my_media__media_item_id__preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_media_to_swimmers_or_session_media_vaults__vault_id__items_assignment_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vault_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAssignmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     share_vault_videos_with_members_media_vaults__vault_id__items_shares_post: {
         parameters: {
             query?: never;
@@ -84624,6 +84826,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    authorize_member_video_download_media_vaults_my_videos__media_item_id__download_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadAuthorizationResponse"];
                 };
             };
             /** @description Validation Error */

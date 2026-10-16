@@ -26,6 +26,9 @@ export type MediaVault = {
   opt_out_count: number;
   shot_checklist: string[];
   settings_json: Record<string, unknown>;
+  default_session_visibility: "private" | "selected_members" | "session_participants";
+  default_allow_member_clips: boolean;
+  default_allow_member_downloads: boolean;
   published_album_id: string | null;
   created_at: string;
   updated_at: string;
@@ -74,6 +77,7 @@ export type VaultMedia = {
   labels: string[];
   session_visibility?: "private" | "selected_members" | "session_participants";
   allow_member_clips?: boolean;
+  allow_member_downloads?: boolean;
 };
 
 export type VaultList = { items: MediaVault[]; total: number };
@@ -261,6 +265,10 @@ export const mediaVaultApi = {
         make_album_public: makePublic,
       },
       { auth: true }
+    ),
+  authorizeMemberDownload: (itemId: string) =>
+    apiPost<{ url: string; filename: string; expires_in_seconds: number }>(
+      `/api/v1/media/vaults/my-videos/${itemId}/download`, {}, { auth: true }
     ),
   authorizeDownload: (vaultId: string, itemId: string) =>
     apiPost<{

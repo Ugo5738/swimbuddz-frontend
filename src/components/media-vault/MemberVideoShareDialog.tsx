@@ -21,7 +21,7 @@ export function MemberVideoShareDialog({
   const [saving, setSaving] = useState(false);
   const [action, setAction] = useState<"grant" | "revoke">("grant");
   const eligible = videos.every(
-    (video) => video.media_type === "VIDEO" &&
+    (video) => ["VIDEO", "IMAGE"].includes(video.media_type) &&
       video.processing_status === "ready" &&
       video.consent_status === "cleared" &&
       ["approved", "published"].includes(video.review_status)
@@ -64,11 +64,11 @@ export function MemberVideoShareDialog({
           <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-sm">Close</button>
         </div>
         <p className="text-sm text-slate-600">
-          Change access to {videos.length} selected file(s). Only approved, consent-cleared videos can become visible in a member's My Videos gallery.
+          Change access to {videos.length} selected file(s). Only approved, consent-cleared media can become visible in a member's My Videos gallery.
         </p>
         {!eligible && (
           <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-            One or more selected files are not approved, consent-cleared, ready videos.
+            One or more selected files are not approved, consent-cleared, ready photos or videos.
             Resolve review and consent before granting access. Revocation is still available.
           </p>
         )}

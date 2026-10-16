@@ -27,6 +27,10 @@ export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSa
   const [retentionDays, setRetentionDays] = useState(vault.retention_days);
   const [consentNotice, setConsentNotice] = useState(vault.consent_notice ?? "");
   const [checklist, setChecklist] = useState(vault.shot_checklist.join("\n"));
+  const [defaultAudience, setDefaultAudience] = useState(vault.default_session_visibility);
+  const [defaultClips, setDefaultClips] = useState(vault.default_allow_member_clips);
+  const [defaultDownloads, setDefaultDownloads] = useState(vault.default_allow_member_downloads);
+  const [applyExisting, setApplyExisting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -70,6 +74,10 @@ export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSa
     try {
       await mediaVaultApi.update(vault.id, {
         status,
+        default_session_visibility: defaultAudience,
+        default_allow_member_clips: defaultAudience !== "private" && defaultClips,
+        default_allow_member_downloads: defaultAudience !== "private" && defaultDownloads,
+        apply_defaults_to_existing: applyExisting,
         location_name: location.trim() || null,
         upload_opens_at: new Date(opensAt).toISOString(),
         upload_closes_at: new Date(closesAt).toISOString(),
@@ -82,7 +90,8 @@ export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSa
           .map((item) => item.trim())
           .filter(Boolean),
       });
-      toast.success("Vault settings saved");
+      toast.success(applyExisting ? "Vault defaults and existing videos updated" : "Vault defaults updated for future uploads");
+      setApplyExisting(false);
       onSaved();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save settings");
@@ -166,6 +175,21 @@ export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSa
               className={INPUT_CLASS}
             />
           </Field>
+        </div>
+        <div className="mt-6 rounded-xl border border-cyan-200 bg-cyan-50 p-4 sm:col-span-2">
+          <h3 className="font-semibold text-slate-900">Member viewing and download defaults</h3>
+          <p className="mt-1 text-xs text-slate-600">These defaults apply to future uploads. Existing recordings keep their permissions unless you explicitly update them.</p>
+          <label className="mt-4 block text-sm font-medium text-slate-700">Who can watch cleared and approved recordings?
+            <select value={defaultAudience} onChange={(e) => setDefaultAudience(e.target.value as typeof defaultAudience)} className={`${INPUT_CLASS} mt-2`}>
+              <option value="private">Admins only</option>
+              <option value="selected_members">Selected members</option>
+              {vault.session_id && <option value="session_participants">Verified session participants</option>}
+            </select>
+          </label>
+          <label className="mt-3 flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" disabled={defaultAudience === "private"} checked={defaultAudience !== "private" && defaultClips} onChange={(e) => setDefaultClips(e.target.checked)} /> Allow short clips</label>
+          <label className="mt-3 flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" disabled={defaultAudience === "private"} checked={defaultAudience !== "private" && defaultDownloads} onChange={(e) => setDefaultDownloads(e.target.checked)} /> Allow full video downloads (maximum 512 MiB per file)</label>
+          <label className="mt-4 flex items-start gap-2 text-sm font-medium text-slate-800"><input type="checkbox" checked={applyExisting} onChange={(e) => setApplyExisting(e.target.checked)} className="mt-1" /> Also update existing recordings in this Vault</label>
+          {applyExisting && <p className="mt-2 text-xs text-amber-800">This changes the audience for every existing ready video. Broadening access requires every affected recording to be approved and consent-cleared. Otherwise saving will be rejected. Use the Review tab for individual exceptions.</p>}
         </div>
         <Field label="Consent and safeguarding notice" wide>
           <textarea
