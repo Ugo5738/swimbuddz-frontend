@@ -57,7 +57,7 @@ export function MySessionVideos() {
     } catch (e) { setDownloadError(e instanceof Error ? e.message : "Download unavailable"); }
     finally { setDownloading(false); }
   };
-  const [filter, setFilter] = useState<"all" | "academy" | "club" | "community">("all");
+  const [filter, setFilter] = useState<"all" | "academy" | "club" | "community" | "personal">("all");
 
   useEffect(() => {
     let active = true;
@@ -80,10 +80,12 @@ export function MySessionVideos() {
   }, [data, selected?.media.id, selected?.media.preview_url]);
 
   const pages = Math.max(1, Math.ceil((data?.total ?? 0) / 24));
-  const category = (video: SharedVideo): "academy" | "club" | "community" => {
+  const category = (video: SharedVideo): "academy" | "club" | "community" | "personal" => {
     const type = (video.session_type || "").toLowerCase();
-    if (type.includes("cohort") || type.includes("academy")) return "academy";
-    if (type.includes("club")) return "club";
+    const labels = video.media.labels.map(label => label.toLowerCase());
+    if (type.includes("cohort") || type.includes("academy") || labels.includes("academy")) return "academy";
+    if (type.includes("club") || labels.includes("club")) return "club";
+    if (!video.session_id) return "personal";
     return "community";
   };
   const videos = (data?.items ?? []).filter((entry) => filter === "all" || category(entry) === filter);
@@ -112,7 +114,7 @@ export function MySessionVideos() {
       <label className="block text-sm font-medium text-slate-700">Show videos from
         <select value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} className="ml-3 rounded-lg border border-slate-300 bg-white px-3 py-2">
           <option value="all">All swims</option><option value="academy">Academy</option>
-          <option value="club">Club</option><option value="community">Community</option>
+          <option value="club">Club</option><option value="community">Community</option><option value="personal">Personal / standalone</option>
         </select>
       </label>
       <div className="space-y-6">
