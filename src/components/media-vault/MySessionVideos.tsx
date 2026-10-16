@@ -6,6 +6,7 @@ import { mediaVaultApi } from "@/lib/media-vault";
 import { type VaultMedia } from "@/lib/media-vault";
 import { CalendarDays, FileVideo, Play, Video } from "lucide-react";
 import { MemberClipTool } from "./MemberClipTool";
+import { MySwimUploads } from "./MySwimUploads";
 
 type SharedVideo = {
   media: VaultMedia;
@@ -96,7 +97,8 @@ export function MySessionVideos() {
       <div>
         <h2 className="text-lg font-semibold text-slate-900">My Media</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Videos shared with you from Academy, Club and Community sessions. Your historical videos remain here after a cohort closes.
+          Approved photos and videos shared with you from Academy, Club, Community or personal practice.
+          Your private uploads are organised below.
         </p>
       </div>
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -156,6 +158,7 @@ export function MySessionVideos() {
           </div>
         </nav>
       )}
+      <MySwimUploads />
       {selected && (
         <div role="dialog" aria-modal="true" aria-label="Session video" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-3"
           onClick={() => setSelected(null)}>
