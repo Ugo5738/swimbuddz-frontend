@@ -22485,6 +22485,26 @@ export interface components {
             revoked_by?: string | null;
             /** Revoke Note */
             revoke_note?: string | null;
+            /** Rewards Distributed At */
+            rewards_distributed_at?: string | null;
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+            /** Result Data */
+            result_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Proof Media */
+            proof_media?: components["schemas"]["ChallengeSubmissionMediaResponse"][];
+            /** Members */
+            members?: components["schemas"]["ChallengeSubmissionMemberResponse"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * ChallengeSubmissionReview
@@ -22509,26 +22529,6 @@ export interface components {
         ChallengeSubmissionRevokeRequest: {
             /** Revoke Note */
             revoke_note: string;
-            /** Rewards Distributed At */
-            rewards_distributed_at?: string | null;
-            /**
-             * Completed At
-             * Format: date-time
-             */
-            completed_at: string;
-            /** Result Data */
-            result_data?: {
-                [key: string]: unknown;
-            } | null;
-            /** Proof Media */
-            proof_media?: components["schemas"]["ChallengeSubmissionMediaResponse"][];
-            /** Members */
-            members?: components["schemas"]["ChallengeSubmissionMemberResponse"][];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
         };
         /**
          * ChallengeWinnerPublicInfo

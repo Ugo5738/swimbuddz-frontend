@@ -107,7 +107,7 @@ export default function MemberChallengeDetailPage() {
   // the submit modal. The backend blocks "pending or approved" anyway, but
   // hiding the button is a kinder UX.
   const newestSub = mySubs.length
-    ? [...mySubs].sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
+    ? [...mySubs].sort(newestFirst)[0]
     : null;
   const hasPendingOrApproved =
     newestSub?.status === "pending" || newestSub?.status === "approved";
@@ -253,7 +253,7 @@ export default function MemberChallengeDetailPage() {
           <Card className="space-y-3 p-4">
             {mySubs
               .slice()
-              .sort((a, b) => b.created_at.localeCompare(a.created_at))
+              .sort(newestFirst)
               .map((sub, idx) => (
                 <PastAttemptRow key={sub.id} sub={sub} isLatest={idx === 0} />
               ))}
@@ -301,6 +301,14 @@ export default function MemberChallengeDetailPage() {
   );
 }
 
+// Older API responses omitted dates and proof media. Preserve their server
+// order when dates are unavailable so an existing attempt still renders.
+function newestFirst(a: ChallengeSubmission, b: ChallengeSubmission) {
+  return (b.created_at ?? b.completed_at ?? "").localeCompare(
+    a.created_at ?? a.completed_at ?? "",
+  );
+}
+
 function PastAttemptRow({
   sub,
   isLatest,
@@ -308,6 +316,7 @@ function PastAttemptRow({
   sub: ChallengeSubmission;
   isLatest: boolean;
 }) {
+  const submittedAt = sub.created_at ?? sub.completed_at;
   const statusPalette: Record<string, string> = {
     pending: "bg-amber-100 text-amber-700",
     approved: "bg-emerald-100 text-emerald-700",
@@ -340,7 +349,9 @@ function PastAttemptRow({
           )}
         </div>
         <p className="text-xs text-slate-500">
-          Submitted {new Date(sub.created_at).toLocaleString()}
+          {submittedAt
+            ? `Submitted ${new Date(submittedAt).toLocaleString()}`
+            : "Submission date unavailable"}
           {sub.reviewed_at && (
             <>
               {" · "}reviewed {new Date(sub.reviewed_at).toLocaleString()}
@@ -354,7 +365,7 @@ function PastAttemptRow({
           </p>
         )}
       </div>
-      {sub.proof_media[0]?.thumbnail_url && (
+      {sub.proof_media?.[0]?.thumbnail_url && (
         <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded">
           {isVideoUrl(sub.proof_media[0].file_url) ? (
             <video

@@ -220,8 +220,8 @@ export function SubmitForm({ challenge, onSuccess }: SubmitFormProps) {
       )}
 
       <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Submitting…" : "Submit attempt"}
+        <Button type="submit" disabled={submitting || uploadingCount > 0}>
+          {submitting ? "Submitting…" : uploadingCount > 0 ? "Uploading proof…" : "Submit attempt"}
         </Button>
       </div>
     </form>
