@@ -2,6 +2,7 @@
 
 import { VaultReviewGrid } from "@/components/media-vault/VaultReviewGrid";
 import { VaultUploader } from "@/components/media-vault/VaultUploader";
+import { VaultLibrary } from "@/components/media-vault/VaultLibrary";
 import { useApi } from "@/hooks/useApi";
 import { type MediaVault } from "@/lib/media-vault";
 import { ArrowLeft, CalendarDays, Images, LockKeyhole, MapPin, UploadCloud } from "lucide-react";
@@ -89,7 +90,11 @@ export default function MemberMediaVaultDetailPage() {
           )}
         </div>
       ) : (
-        <VaultUploader vault={data} scope={{ kind: "member", vaultId: data.id }} />
+        <div className="space-y-5">
+          <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">You can browse approved, consent-cleared media from this assigned Vault and upload your own contributions. Unreviewed media from other contributors remains private.</div>
+          <VaultLibrary vaults={[data]} />
+          <VaultUploader vault={data} scope={{ kind: "member", vaultId: data.id }} />
+        </div>
       )}
     </div>
   );
