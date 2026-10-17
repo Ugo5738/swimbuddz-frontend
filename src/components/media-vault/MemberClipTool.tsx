@@ -11,6 +11,7 @@ type Clip = {
   end_ms: number;
   expires_at: string;
   download_url: string | null;
+  error_message?: string | null;
 };
 
 const display = (sec: number) => {
@@ -25,6 +26,10 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [lastClipId, setLastClipId] = useState<string | null>(null);
+  const storageKey = `swimbuddz:member-clip:${videoId}`;
+  useEffect(() => {
+    try { const saved = window.sessionStorage.getItem(storageKey); if (saved) { setLastClipId(saved); apiGet<Clip>(`/api/v1/media/vaults/my-videos/clips/${saved}`, { auth: true }).then(setClip).catch(() => window.sessionStorage.removeItem(storageKey)); } } catch { /* private mode */ }
+  }, [storageKey]);
   const total = Math.floor(duration);
 
   useEffect(() => {
@@ -48,6 +53,7 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
       );
       setClip(result);
       setLastClipId(result.id);
+      try { window.sessionStorage.setItem(storageKey, result.id); } catch { /* private browsing */ }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not prepare clip");
     } finally { setWorking(false); }
@@ -91,7 +97,7 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
         {working ? "Requesting…" : "Create clip"}
       </button>
       {clip && ["pending", "processing"].includes(clip.status) && (
-        <p role="status" className="text-sm text-slate-600">Your clip is being prepared. Keep this view open for the download.</p>
+        <p role="status" className="rounded-lg bg-cyan-50 p-3 text-sm text-cyan-900">Clip {clip.status === "pending" ? "queued" : "processing"} — your selection has been saved. You can close this viewer and return later.</p>
       )}
       {clip?.status === "ready" && clip.download_url && (
         <a href={clip.download_url} download="my-swim-clip.mp4" target="_blank" rel="noreferrer"
@@ -99,8 +105,8 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
           <Download className="h-4 w-4" /> Download my clip
         </a>
       )}
-      {clip?.status === "failed" && <p role="alert" className="text-sm text-red-600">Clip processing failed. Please try a shorter selection or contact the media team.</p>}
-      {lastClipId && !clip && <p className="text-xs text-slate-500">Your request was created: {lastClipId}. You can retry status using a fresh request.</p>}
+      {clip?.status === "failed" && <p role="alert" className="text-sm text-red-600">Clip processing failed: {clip.error_message || "Try again or contact the media team."}</p>}
+      {lastClipId && !clip && <p className="text-xs text-slate-500">Your previous clip request is being recovered. Request ID: {lastClipId}</p>}
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
     </section>
   );
