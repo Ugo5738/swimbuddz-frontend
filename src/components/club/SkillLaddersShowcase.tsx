@@ -22,6 +22,7 @@
 import { Card } from "@/components/ui/Card";
 import {
   Challenge,
+  getChallengePreview,
   isVideoUrl,
   listChallengesBySeries,
 } from "@/lib/challenges";
@@ -191,8 +192,7 @@ function SkillStepTile({
   earned: boolean;
   locked: boolean;
 }) {
-  const lead = step.example_media[0];
-  const previewUrl = lead?.thumbnail_url || lead?.file_url || null;
+  const { url: previewUrl, isBadge } = getChallengePreview(step);
 
   // Locked tiles still link to the detail page so users can read about
   // a step and the prerequisite — but the visual treatment is muted.
@@ -230,7 +230,7 @@ function SkillStepTile({
               alt=""
               fill
               sizes="260px"
-              className="object-cover"
+              className={isBadge ? "object-contain p-4" : "object-cover"}
             />
           )
         ) : (

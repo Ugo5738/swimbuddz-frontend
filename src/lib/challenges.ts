@@ -443,6 +443,17 @@ export async function getPublicChallenge(id: string): Promise<PublicChallenge> {
 // Display helpers
 // ---------------------------------------------------------------------------
 
+/** Use example media for previews, then the badge artwork saved in Admin. */
+export function getChallengePreview(
+  challenge: Pick<Challenge, "example_media" | "badge_image_url">,
+) {
+  const lead = challenge.example_media[0];
+  const exampleUrl = lead?.thumbnail_url || lead?.file_url;
+  return exampleUrl
+    ? { url: exampleUrl, isBadge: false }
+    : { url: challenge.badge_image_url, isBadge: true };
+}
+
 const VIDEO_EXTENSIONS = [
   ".mp4",
   ".mov",
