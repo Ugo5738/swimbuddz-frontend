@@ -24,6 +24,7 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
   const [clip, setClip] = useState<Clip | null>(null);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const [lastClipId, setLastClipId] = useState<string | null>(null);
   const total = Math.floor(duration);
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
         { auth: true }
       );
       setClip(result);
+      setLastClipId(result.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not prepare clip");
     } finally { setWorking(false); }
@@ -60,7 +62,7 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
         <Scissors className="h-4 w-4" /> Save a short clip
       </h3>
       <p className="text-xs text-slate-600">
-        Choose 1–90 seconds from the lighter playback copy. Your full recording stays unchanged.
+        Choose any portion of the recording from the lighter playback copy. Your full recording stays unchanged.
         Up to five clips per day; download link expires after 24 hours.
       </p>
       <div className="grid grid-cols-2 gap-4">
@@ -70,7 +72,7 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
             value={start} onChange={(e) => {
               const next = Number(e.target.value);
               setStart(next);
-              setEnd(Math.max(next + 1, Math.min(next + 90, end, total)));
+              setEnd(Math.max(next + 1, Math.min(end, total)));
             }} className="mt-2 w-full" />
         </label>
         <label className="text-xs font-medium text-slate-700">
@@ -84,7 +86,7 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
         </label>
       </div>
       <button type="button" onClick={() => void makeClip()}
-        disabled={working || end - start < 1 || end - start > 90 || end > total}
+        disabled={working || end - start < 1 || end > total}
         className="rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
         {working ? "Requesting…" : "Create clip"}
       </button>
@@ -97,7 +99,8 @@ export function MemberClipTool({ videoId, duration }: { videoId: string; duratio
           <Download className="h-4 w-4" /> Download my clip
         </a>
       )}
-      {clip?.status === "failed" && <p className="text-sm text-red-600">Clip processing failed. Please try again later.</p>}
+      {clip?.status === "failed" && <p role="alert" className="text-sm text-red-600">Clip processing failed. Please try a shorter selection or contact the media team.</p>}
+      {lastClipId && !clip && <p className="text-xs text-slate-500">Your request was created: {lastClipId}. You can retry status using a fresh request.</p>}
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
     </section>
   );
