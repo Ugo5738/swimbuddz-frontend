@@ -194,7 +194,7 @@ export function MySessionVideos() {
               </div>
             )}
             {selected.media.allow_member_clips && selected.media.preview_url && (
-              <div className="mt-4"><MemberClipTool videoId={selected.media.id} duration={duration} /></div>
+              <div className="mt-4"><MemberClipTool key={selected.media.id} videoId={selected.media.id} duration={duration} /></div>
             )}
             {selected.media.allow_member_downloads && (
               <div className="mt-3"><button type="button" disabled={downloading} onClick={() => void downloadOriginal(selected.media)} className="rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-800 disabled:opacity-40">{downloading ? "Preparing download…" : "Download full recording"}</button></div>
