@@ -12,6 +12,7 @@ import {
   type VaultMediaList,
 } from "@/lib/media-vault";
 import { FilterTabs } from "@/components/ui/FilterTabs";
+import { apiPost } from "@/lib/api";
 import { VaultMediaLabels } from "./VaultMediaDialogs";
 import { VaultVideoDialog } from "./VaultVideoDialog";
 
@@ -40,13 +41,17 @@ export function VaultLibrary({ vaults, admin = false }: { vaults: MediaVault[]; 
   const editButton = useRef<HTMLButtonElement | null>(null);
   const viewingVideo = data?.items.find((item) => item.id === viewingVideoId);
   const viewingVault = vaults.find((vault) => vault.id === viewingVideo?.vault_id);
-  const canRequestVideo =
-    admin || viewingVault?.effective_role === "curator" || viewingVault?.effective_role === "admin";
+  const canRequestVideo = admin || Boolean(viewingVault?.effective_role);
 
   const requestVideoPreview = async (item: VaultMedia, force = false) => {
     setVideoWorking(true);
     try {
-      await mediaVaultApi.requestPreview(item.vault_id, item.id, force);
+      const target = vaults.find((vault) => vault.id === item.vault_id);
+      if (!admin && target?.effective_role === "contributor") {
+        await apiPost(`/api/v1/media/vaults/my-media/${item.id}/preview`, {}, { auth: true });
+      } else {
+        await mediaVaultApi.requestPreview(item.vault_id, item.id, force);
+      }
       setVideoError(false);
       setRevision((value) => value + 1);
     } catch (failure) {
@@ -339,10 +344,10 @@ export function VaultLibrary({ vaults, admin = false }: { vaults: MediaVault[]; 
                       {vault?.title ?? "Open vault"} →
                     </Link>
                     <VaultMediaLabels labels={item.labels ?? []} />
-                    {item.media_type === "VIDEO" && (item.preview_url || canTag) && (
+                    {item.media_type === "VIDEO" && (item.preview_url || vault?.effective_role || canTag) && (
                       <button
                         type="button"
-                        onClick={() => openVideo(item, canTag)}
+                        onClick={() => openVideo(item, Boolean(vault?.effective_role) || canTag)}
                         className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-cyan-200 px-3 text-sm font-semibold text-cyan-800"
                       >
                         <Play className="h-4 w-4" /> Watch video
