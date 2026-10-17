@@ -162,17 +162,18 @@ export function MySessionVideos() {
       )}
       <MySwimUploads />
       {selected && (
-        <div role="dialog" aria-modal="true" aria-label="Session video" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-3"
+        <div role="dialog" aria-modal="true" aria-label="Session video" className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-slate-950/85 p-2 sm:p-4"
           onClick={() => setSelected(null)}>
-          <div className="w-full max-w-4xl rounded-xl bg-white p-4" onClick={(event) => event.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between gap-4">
+          <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl sm:max-h-[calc(100dvh-2rem)]" onClick={(event) => event.stopPropagation()}>
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 p-3 sm:p-4">
               <h2 className="truncate font-semibold text-slate-900">{selected.session_title || selected.vault_title}</h2>
               <button type="button" onClick={() => setSelected(null)} className="rounded-lg px-3 py-2 text-sm">Close</button>
             </div>
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 pb-8 sm:p-4">
             {selected.media.media_type === "IMAGE" ? (
               selected.media.preview_url || selected.media.thumbnail_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={selected.media.preview_url || selected.media.thumbnail_url || ""} alt={selected.media.original_filename || "Shared swim photo"} className="mx-auto max-h-[75vh] max-w-full rounded-lg object-contain" />
+                <img src={selected.media.preview_url || selected.media.thumbnail_url || ""} alt={selected.media.original_filename || "Shared swim photo"} className="mx-auto max-h-[55dvh] max-w-full rounded-lg object-contain" />
               ) : <div className="rounded-lg bg-slate-100 p-8 text-center">
                 <p>Photo preview is being prepared.</p>
                 <button type="button" onClick={() => void retryPlayback(selected.media.id)} disabled={previewWorking}
@@ -181,7 +182,7 @@ export function MySessionVideos() {
               </div>
             ) : selected.media.preview_url ? (
               <video controls playsInline preload="metadata" onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} poster={selected.media.thumbnail_url ?? undefined} src={selected.media.preview_url}
-                className="max-h-[75vh] w-full rounded-lg bg-black" />
+                className="mx-auto max-h-[48dvh] w-full rounded-lg bg-black object-contain sm:max-h-[58dvh]" />
             ) : (
               <div className="rounded-lg bg-slate-100 p-8 text-center text-slate-700">
                 <p>{previewWorking ? "Requesting your preview…" : "A playable copy is being prepared. You can request a retry here without contacting an administrator."}</p>
@@ -202,6 +203,7 @@ export function MySessionVideos() {
             <p className="mt-3 text-xs text-slate-500">
               For your personal viewing. Sharing or publishing videos of other swimmers requires their consent.
             </p>
+            </div>
           </div>
         </div>
       )}
