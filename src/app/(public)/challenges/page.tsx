@@ -14,6 +14,7 @@
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import {
+  getChallengePreview,
   isVideoUrl,
   listPublicChallenges,
   PublicChallenge,
@@ -136,8 +137,7 @@ function FilterTabs({
 }
 
 function PublicChallengeTile({ challenge }: { challenge: PublicChallenge }) {
-  const lead = challenge.example_media[0];
-  const previewUrl = lead?.thumbnail_url || lead?.file_url || null;
+  const { url: previewUrl, isBadge } = getChallengePreview(challenge);
   const finishedWithWinner = challenge.is_finished && challenge.winner;
 
   return (
@@ -162,7 +162,7 @@ function PublicChallengeTile({ challenge }: { challenge: PublicChallenge }) {
                 alt={challenge.title}
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-cover"
+                className={isBadge ? "object-contain p-4" : "object-cover"}
               />
             )
           ) : (

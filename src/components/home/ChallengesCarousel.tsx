@@ -18,6 +18,7 @@
 
 import { Card } from "@/components/ui/Card";
 import {
+  getChallengePreview,
   isVideoUrl,
   listPublicChallenges,
   PublicChallenge,
@@ -212,8 +213,7 @@ const TILE_BASE =
   "relative flex w-[260px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 transition-shadow hover:shadow-lg sm:w-[280px] md:w-[300px]";
 
 function ChallengeTile({ challenge }: { challenge: PublicChallenge }) {
-  const lead = challenge.example_media[0];
-  const previewUrl = lead?.thumbnail_url || lead?.file_url || null;
+  const { url: previewUrl, isBadge } = getChallengePreview(challenge);
   const finishedWithWinner = challenge.is_finished && challenge.winner;
 
   return (
@@ -240,7 +240,7 @@ function ChallengeTile({ challenge }: { challenge: PublicChallenge }) {
               alt={challenge.title}
               fill
               sizes="(max-width: 640px) 100vw, 320px"
-              className="object-cover transition-transform group-hover:scale-105"
+              className={isBadge ? "object-contain p-4" : "object-cover transition-transform group-hover:scale-105"}
             />
           )
         ) : (
@@ -335,8 +335,7 @@ function BrowseAllTile() {
 // ---------------------------------------------------------------------------
 
 function SingleChallengeHero({ challenge }: { challenge: PublicChallenge }) {
-  const lead = challenge.example_media[0];
-  const previewUrl = lead?.thumbnail_url || lead?.file_url || null;
+  const { url: previewUrl, isBadge } = getChallengePreview(challenge);
   const finishedWithWinner = challenge.is_finished && challenge.winner;
 
   return (
@@ -361,7 +360,7 @@ function SingleChallengeHero({ challenge }: { challenge: PublicChallenge }) {
                   alt={challenge.title}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
+                  className={isBadge ? "object-contain p-4" : "object-cover"}
                 />
               )
             ) : (

@@ -6,6 +6,7 @@ import {
   Challenge,
   ChallengeSubmission,
   ChallengeType,
+  getChallengePreview,
   isVideoUrl,
   listChallenges,
   listMySubmissions,
@@ -195,8 +196,7 @@ function ChallengeTile({
   challenge: Challenge;
   myStatus: SubmissionStatus | null;
 }) {
-  const lead = challenge.example_media[0];
-  const previewUrl = lead?.thumbnail_url || lead?.file_url || null;
+  const { url: previewUrl, isBadge } = getChallengePreview(challenge);
   const isFinished = challenge.ends_at
     ? new Date(challenge.ends_at) < new Date()
     : false;
@@ -207,8 +207,7 @@ function ChallengeTile({
       className="group block h-full"
     >
       <Card className="flex h-full flex-col overflow-hidden p-0 ring-1 ring-white/5 transition-all group-hover:ring-cyan-500/40 group-hover:shadow-lg">
-        {/* Media preview area — when no example media is uploaded we render
-            a richer themed placeholder rather than just a tiny icon. */}
+        {/* Show saved badge artwork when there is no example photo/video. */}
         <div className="relative aspect-video overflow-hidden bg-slate-100">
           {previewUrl ? (
             isVideoUrl(previewUrl) ? (
@@ -225,7 +224,7 @@ function ChallengeTile({
                 alt={challenge.title}
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-cover"
+                className={isBadge ? "object-contain p-4" : "object-cover"}
               />
             )
           ) : (
