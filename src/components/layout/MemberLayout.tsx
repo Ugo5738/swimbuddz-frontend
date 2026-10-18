@@ -439,7 +439,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           ...section,
           items: section.items.filter((item) => {
             if (item.href === "/account/academy/browse") return true;
-            if (item.href === "/account/makeups") return academyEntitled;
+            if (item.href === "/account/makeups") return academyEntitled || academyActive || Boolean(member?.membership?.academy_paid_until);
             return academyEntitled || wantsAcademy;
           }),
         };
