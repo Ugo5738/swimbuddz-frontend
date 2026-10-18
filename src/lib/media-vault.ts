@@ -1,6 +1,6 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 
-export type VaultRole = "contributor" | "curator" | "admin";
+export type VaultRole = "viewer" | "contributor" | "curator" | "admin";
 
 export type MediaVault = {
   id: string;
@@ -26,7 +26,7 @@ export type MediaVault = {
   opt_out_count: number;
   shot_checklist: string[];
   settings_json: Record<string, unknown>;
-  default_session_visibility: "private" | "selected_members" | "session_participants";
+  default_session_visibility: "private" | "selected_members" | "session_participants" | "community";
   attendee_can_view: boolean;
   attendee_can_contribute: boolean;
   default_allow_member_clips: boolean;
