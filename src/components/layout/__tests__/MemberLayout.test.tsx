@@ -113,6 +113,19 @@ describe("MemberLayout desktop navigation", () => {
     );
   });
 
+  it("allows an active sidebar section to collapse and expand", async () => {
+    window.history.replaceState({}, "", "/account/bookings");
+    render(<MemberLayout><div>Content</div></MemberLayout>);
+    const toggle = await screen.findByRole("button", { name: "My Swims" });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: "Upcoming, Calendar & History" })).not.toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    window.history.replaceState({}, "", "/");
+  });
+
   it("restores a previously collapsed sidebar", async () => {
     localStorage.setItem("swimbuddz-member-sidebar-collapsed", "true");
 
