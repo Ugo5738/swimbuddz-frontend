@@ -1,0 +1,39 @@
+name: Temporary Attendee Media Client Contract
+on:
+  push:
+    branches:
+      - feature/attendee-media-collections-20261018
+    paths:
+      - .github/workflows/temp-attendee-media-client-20261018.yml
+permissions:
+  contents: write
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/attendee-media-collections-20261018
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: Ugo5738/swimbuddz-backend
+          ref: feature/attendee-media-collections-20261018
+          path: swimbuddz-backend
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: |
+          npm ci
+          npx openapi-typescript swimbuddz-backend/openapi.json -o src/lib/api-types.ts
+          cp swimbuddz-backend/openapi.json src/lib/openapi.json
+      - run: |
+          git config user.name "swimbuddz-ci"
+          git config user.email "swimbuddz-ci@users.noreply.github.com"
+          git add src/lib/api-types.ts src/lib/openapi.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync media attendee and collection API types"
+            git push origin HEAD:feature/attendee-media-collections-20261018
+          fi
