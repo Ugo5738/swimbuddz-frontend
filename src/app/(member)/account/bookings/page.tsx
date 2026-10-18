@@ -1,58 +1,209 @@
 "use client";
-import { apiGet } from "@/lib/api";
+
+import { PoolVisitActions } from "@/components/swims/PoolVisitActions";
+import { TierCalendar } from "@/components/calendar/TierCalendar";
+import { apiGet, apiPost } from "@/lib/api";
+import {
+  buildSwimActivities, categorizeActivities, formatSwimDate,
+  type SessionBooking, type SwimSession, type ClubQuarterSwim,
+  type PoolVisitBooking, type PoolVisitOffer, type SwimActivity,
+} from "@/lib/my-swims";
+import { CalendarDays, Clock3, History, Waves } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-type SessionBooking={id?:string;session_id:string;status?:string};
-type Session={id:string;title?:string;name?:string;start_time?:string;starts_at?:string;location_name?:string};
-type PoolBooking={id:string;status:string;headcount:number;offer_id:string};
-type Enrollment={id:string;cohort_id?:string;status:string;payment_status?:string;cohort?:{name?:string}};
-type Item={id:string;type:string;title:string;subtitle:string;href:string;date?:string};
+type View = "upcoming" | "calendar" | "history";
+type AttendanceRecord = {
+  id: string;
+  session_id: string;
+  status: string;
+  session?: { title?: string; start_time?: string; location_name?: string };
+};
 
-export default function MyBookings(){
- const [sessionBookings,setSessionBookings]=useState<SessionBooking[]>([]);
- const [sessions,setSessions]=useState<Session[]>([]);
- const [poolBookings,setPoolBookings]=useState<PoolBooking[]>([]);
- const [enrollments,setEnrollments]=useState<Enrollment[]>([]);
- const [loading,setLoading]=useState(true);
- const [error,setError]=useState("");
- useEffect(()=>{
-  Promise.allSettled([
-   apiGet<SessionBooking[]>("/api/v1/sessions/bookings/me?status_filter=confirmed",{auth:true}).then(setSessionBookings),
-   apiGet<Session[]>("/api/v1/sessions?limit=100",{auth:true}).then(setSessions),
-   apiGet<PoolBooking[]>("/api/v1/pools/access/bookings/me",{auth:true}).then(setPoolBookings),
-   apiGet<Enrollment[]>("/api/v1/academy/my-enrollments",{auth:true}).then(setEnrollments),
-  ]).then(results=>{
-   if(results.every(r=>r.status==="rejected"))setError("Bookings could not be loaded. Please retry.");
-   setLoading(false);
-  })
- },[]);
- const items=useMemo(()=>{
-  const lookup=new Map(sessions.map(x=>[x.id,x]));
-  const booked:Item[]=sessionBookings.map(b=>{
-    const s=lookup.get(b.session_id);
-    return {id:b.id||b.session_id,type:"Organised session",title:s?.title||s?.name||"SwimBuddz session",
-     subtitle:s?.location_name||"Your session booking",href:"/sessions",date:s?.starts_at||s?.start_time};
-  });
-  const access:Item[]=poolBookings.map(b=>({id:b.id,type:"Pool Access",title:"Independent pool visit",
-   subtitle:b.headcount+" swimmer(s) · "+b.status.replace("_"," "),href:"/account/pool-access"}));
-  const academy:Item[]=enrollments.map(e=>({id:e.id,type:"Academy enrollment",title:e.cohort?.name||"Academy programme",
-   subtitle:e.payment_status||e.status,href:"/account/academy/enrollments/"+e.id}));
-  return [...booked,...access,...academy].sort((a,b)=>String(a.type).localeCompare(b.type));
- },[sessionBookings,sessions,poolBookings,enrollments]);
- return <main className="mx-auto max-w-5xl space-y-6 p-6">
-  <header className="space-y-2"><h1 className="text-3xl font-bold text-slate-900">My Bookings</h1>
-   <p className="text-slate-600">Manage Pool Access, your Academy journey and organised SwimBuddz sessions in one place.</p>
-   <Link className="text-cyan-700 underline" href="/find-a-swim">Find your next swim</Link></header>
-  {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
-  {loading?<p>Loading your swim activity…</p>:items.length?<div className="grid gap-3">
-   {items.map(item=><Link key={item.type+item.id} href={item.href} className="block rounded-xl border bg-white p-5 hover:border-cyan-300">
-    <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">{item.type}</p>
-    <h2 className="mt-1 text-lg font-semibold text-slate-900">{item.title}</h2>
-    <p className="text-sm text-slate-600">{item.subtitle}</p>
-    {item.date&&<p className="mt-2 text-xs text-slate-500">{new Date(item.date).toLocaleString()}</p>}
-   </Link>)}</div>:<div className="rounded-xl border p-8 text-center">
-    <p className="font-medium">You do not have any bookings yet.</p><Link className="mt-3 inline-block text-cyan-700 underline" href="/find-a-swim">Explore experiences</Link>
-   </div>}
- </main>;
+function isView(input: string | null): input is View {
+  return input === "upcoming" || input === "calendar" || input === "history";
+}
+
+function statusText(status: string): string {
+  const labels: Record<string, string> = {
+    confirmed: "Booked", pending: "Awaiting confirmation", pending_payment: "Payment pending",
+    cancelled: "Attendance cancelled", session_cancelled: "Session cancelled",
+  };
+  return labels[status] || status.replace(/_/g, " ");
+}
+
+function kindText(kind: SwimActivity["kind"]): string {
+  const labels = { club: "Club", academy: "Academy", community: "Community",
+    session: "SwimBuddz", pool: "Independent pool visit" };
+  return labels[kind];
+}
+
+export default function MySwimsPage() {
+  const [view, setView] = useState<View>("upcoming");
+  const [activities, setActivities] = useState<SwimActivity[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
+
+  useEffect(() => {
+    const selected = new URLSearchParams(window.location.search).get("view");
+    if (isView(selected)) setView(selected);
+  }, []);
+
+  const load = useCallback(async () => {
+    const requests = await Promise.allSettled([
+      apiGet<SessionBooking[]>("/api/v1/sessions/bookings/me", { auth: true }),
+      apiGet<SwimSession[]>("/api/v1/sessions?limit=100", { auth: true }),
+      apiGet<ClubQuarterSwim[]>("/api/v1/sessions/bookings/me/club-quarter", { auth: true }),
+      apiGet<PoolVisitBooking[]>("/api/v1/pools/access/bookings/me", { auth: true }),
+      apiGet<PoolVisitOffer[]>("/api/v1/pools/access/offers"),
+      apiGet<AttendanceRecord[]>("/api/v1/attendance/me", { auth: true }),
+    ]);
+    const value = <T,>(index: number): T[] =>
+      requests[index].status === "fulfilled" ? (requests[index] as PromiseFulfilledResult<T[]>).value : [];
+    setActivities(buildSwimActivities(
+      value<SessionBooking>(0), value<SwimSession>(1), value<ClubQuarterSwim>(2),
+      value<PoolVisitBooking>(3), value<PoolVisitOffer>(4)
+    ));
+    setAttendance(value<AttendanceRecord>(5));
+    setErrors(requests.flatMap((item, index) => item.status === "rejected" ?
+      [["Session bookings", "Session dates", "Club reservations", "Pool visits", "Pool visit dates", "Attendance"][index]] : []));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+  const sections = useMemo(() => categorizeActivities(activities), [activities]);
+
+  const cancelClub = async (item: SwimActivity) => {
+    if (!window.confirm("Cancel your attendance for this Club swim? This frees your seat and does not refund your quarterly payment.")) return;
+    setBusy(item.bookingId);
+    setActionError("");
+    try {
+      await apiPost(`/api/v1/sessions/bookings/${item.bookingId}/cancel`, {}, { auth: true });
+      await load();
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : "Unable to cancel Club attendance.");
+    } finally { setBusy(null); }
+  };
+
+  const changeView = (next: View) => {
+    setView(next);
+    window.history.replaceState(null, "", `/account/bookings?view=${next}`);
+  };
+
+  const activityCard = (activity: SwimActivity) => {
+    const dateMissing = !activity.date;
+    const cancelled = ["cancelled", "session_cancelled"].includes(activity.status);
+    return (
+      <article key={activity.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-cyan-700">{kindText(activity.kind)}</span>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${cancelled ? "bg-slate-100 text-slate-600" : activity.status === "confirmed" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-800"}`}>
+            {statusText(activity.status)}
+          </span>
+        </div>
+        <h3 className="mt-2 text-base font-semibold text-slate-900">{activity.title}</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          {formatSwimDate(activity.date)}
+          {activity.location ? ` · ${activity.location}` : ""}
+        </p>
+        {dateMissing && <p className="mt-1 text-xs text-amber-800">We could not confirm the date for this booking. Open its details for the latest information.</p>}
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          {activity.sessionId && (
+            <Link href={`/sessions/${activity.sessionId}`} className="text-sm font-semibold text-cyan-700 hover:underline">View swim details</Link>
+          )}
+          {activity.club?.status === "confirmed" && activity.club.session_status === "scheduled" &&
+            activity.date && new Date(activity.date).getTime() >= Date.now() && (
+              <button type="button" disabled={busy !== null} onClick={() => void cancelClub(activity)}
+                className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-medium text-slate-700 disabled:opacity-50">
+                {busy === activity.bookingId ? "Cancelling…" : "Can't attend? Cancel"}
+              </button>
+          )}
+          {activity.club?.status === "cancelled" && activity.club.session_status === "scheduled" &&
+            activity.date && new Date(activity.date).getTime() >= Date.now() && (
+              <Link href={`/sessions/${activity.sessionId}/book`} className="text-sm font-semibold text-cyan-700 hover:underline">Reserve again if space is available</Link>
+          )}
+        </div>
+        {activity.club && <p className="mt-2 text-xs text-slate-500">Included in your Club quarter. Cancelling attendance does not refund the quarter.</p>}
+        {activity.pool && <div className="mt-3 border-t border-slate-100 pt-3">
+          <PoolVisitActions booking={activity.pool} onChanged={load} />
+        </div>}
+      </article>
+    );
+  };
+
+  return (
+    <main className="mx-auto max-w-5xl space-y-6 px-3 py-4 sm:p-6">
+      <header className="space-y-2">
+        <h1 className="text-3xl font-bold text-slate-900">My Swims</h1>
+        <p className="text-sm text-slate-600">Your booked sessions, Club reservations and pool visits in one place. Academy enrollments and programme payments stay under My Academy.</p>
+        <Link href="/find-a-swim" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-cyan-700 hover:underline">
+          <Waves className="h-4 w-4" /> Find a Swim
+        </Link>
+      </header>
+
+      <div role="tablist" aria-label="My Swims views" className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+        {([
+          ["upcoming", "Upcoming", Clock3],
+          ["calendar", "Calendar", CalendarDays],
+          ["history", "History", History],
+        ] as const).map(([key, label, Icon]) => (
+          <button type="button" role="tab" aria-selected={view === key} key={key} onClick={() => changeView(key)}
+            className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition ${view === key ? "bg-white text-cyan-800 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
+            <Icon className="h-4 w-4" /> {label}
+          </button>
+        ))}
+      </div>
+
+      {errors.length > 0 && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        Some swim information could not be loaded ({errors.join(", ")}). This view may be incomplete.
+        <button type="button" onClick={() => void load()} className="ml-2 font-semibold underline">Retry</button>
+      </div>}
+      {actionError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{actionError}</p>}
+
+      {view === "calendar" ? (
+        <TierCalendar authenticated title="SwimBuddz calendar"
+          subtitle="Explore the dates of Community activities, Club sessions and Academy classes. The calendar includes activities you have not booked." />
+      ) : loading ? <p className="py-8 text-center text-sm text-slate-600" role="status">Loading your swims…</p>
+        : view === "upcoming" ? (
+          <div className="space-y-6">
+            {sections.upcoming.length ? <section aria-label="Upcoming booked swims" className="space-y-3">
+              {sections.upcoming.map(activityCard)}
+            </section> : <div className="rounded-2xl border bg-white p-8 text-center">
+              <h2 className="font-semibold text-slate-900">No upcoming swims booked</h2>
+              <p className="mt-1 text-sm text-slate-600">When you reserve a swim it will appear here.</p>
+              <Link href="/find-a-swim" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Find your next swim</Link>
+            </div>}
+            {sections.attention.length > 0 && <section className="space-y-3" aria-label="Bookings needing attention">
+              <h2 className="text-lg font-semibold text-slate-900">Bookings needing attention</h2>
+              {sections.attention.map(activityCard)}
+            </section>}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {sections.past.length > 0 && <section aria-label="Past bookings" className="space-y-3">
+              <h2 className="text-lg font-semibold text-slate-900">Previous bookings</h2>
+              <p className="text-sm text-slate-600">A past booking does not necessarily mean you attended.</p>
+              {sections.past.map(activityCard)}
+            </section>}
+            <section aria-label="Attendance history" className="space-y-3">
+              <h2 className="text-lg font-semibold text-slate-900">Recorded attendance</h2>
+              {attendance.length ? <div className="space-y-2">
+                {attendance.filter(record => record.session?.start_time &&
+                  new Date(record.session.start_time).getTime() < Date.now())
+                  .sort((a,b) => new Date(b.session?.start_time || 0).getTime() - new Date(a.session?.start_time || 0).getTime())
+                  .map(record => <article key={record.id} className="rounded-xl border bg-white p-4">
+                    <h3 className="font-semibold text-slate-900">{record.session?.title || "SwimBuddz session"}</h3>
+                    <p className="text-sm text-slate-600">{formatSwimDate(record.session?.start_time || null)} · {record.session?.location_name || "Location unavailable"}</p>
+                    <p className="mt-1 text-xs capitalize text-cyan-800">Attendance: {record.status.replace(/_/g, " ")}</p>
+                  </article>)}
+              </div> : <p className="rounded-xl border bg-white p-5 text-sm text-slate-600">No attendance records have been loaded.</p>}
+              <Link href="/account/attendance/history" className="inline-block text-sm font-semibold text-cyan-700 underline">Full attendance record</Link>
+            </section>
+          </div>
+        )}
+    </main>
+  );
 }
