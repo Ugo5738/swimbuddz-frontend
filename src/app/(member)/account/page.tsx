@@ -8,7 +8,6 @@ import { NextSessionCard } from "@/components/dashboard/NextSessionCard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { SwimCalendar } from "@/components/dashboard/SwimCalendar";
 import { YTDStatsOverview } from "@/components/dashboard/YTDStatsOverview";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { apiGet } from "@/lib/api";
@@ -34,6 +33,8 @@ import {
 import {
   ArrowRight,
   Bell,
+  Megaphone,
+  Trophy,
   Calendar,
   CheckCircle,
   Circle,
@@ -53,18 +54,6 @@ type AttendanceRecord = {
   session_ends_at?: string;
   session_location?: string;
   status: string;
-};
-
-const CATEGORY_BADGE_VARIANT: Record<
-  string,
-  "warning" | "danger" | "info" | "default" | "success"
-> = {
-  rain_update: "warning",
-  schedule_change: "danger",
-  academy_update: "info",
-  event: "success",
-  competition: "info",
-  general: "default",
 };
 
 export default function MemberDashboardPage() {
@@ -119,10 +108,12 @@ export default function MemberDashboardPage() {
     // Fetch recent announcements
     apiGet<Announcement[]>("/api/v1/communications/announcements/", { auth: true })
       .then((data) => {
+        const now = Date.now();
         const recent = data
-          .filter((a) => a.status === "published")
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 3);
+          .filter((a) => a.status === "published" && (!a.expires_at || new Date(a.expires_at).getTime() > now))
+          .sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned) ||
+            new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
+          .slice(0, 2);
         setAnnouncements(recent);
       })
       .catch(() => setAnnouncements([]));
@@ -466,9 +457,7 @@ export default function MemberDashboardPage() {
         streakLongest={ytdStats?.streak_longest}
       />
 
-      {/* ── Section 3: YTD Stats Overview ── */}
-      {ytdStats && <YTDStatsOverview stats={ytdStats} year={currentYear} />}
-
+      {/* Next swim is the primary action; progress follows rather than obscuring it. */}
       {/* ── Section 4: Next Session ── */}
       <NextSessionCard
         session={nextSession}
@@ -480,6 +469,9 @@ export default function MemberDashboardPage() {
         }
         signInEligible={upcomingBookings.length > 0 ? bookedSessionSignInEligible : false}
       />
+
+      {/* Key activity metrics are secondary to the next booking. */}
+      {ytdStats && <YTDStatsOverview stats={ytdStats} year={currentYear} />}
 
       {/* ── Section 4b: My Pod (Club members only — see docs/club/POD_OPERATIONS.md) ── */}
       {isClubMember && <MyPodCard pod={myPod} showJoinCta={!myPod} />}
@@ -533,85 +525,77 @@ export default function MemberDashboardPage() {
       {/* ── Section 6: Quick Actions ── */}
       <QuickActions leaderboardSlug={leaderboardSlug} showAcademy={showAcademy} />
 
-      {/* ── Section 7: Swim Activity Heatmap ── */}
-      <SwimCalendar records={allRecords} />
-
-      {/* ── Section 8: Quarterly Report Widget ── */}
-      <QuarterlyReportWidget />
-
-      {/* ── Section 9: Recent Announcements ── */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
-            Announcements
-          </h2>
-          <Link
-            href="/account/notifications"
-            className="text-sm font-medium text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
-          >
-            View all <ArrowRight className="h-4 w-4" />
+      {/* Community engagement must be discoverable without scrolling past reports and heatmaps. */}
+      <section aria-labelledby="community-highlights-heading" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 id="community-highlights-heading" className="text-base font-semibold text-slate-900">Your SwimBuddz community</h2>
+          <Link href="/community/events" className="text-sm font-medium text-cyan-700 hover:underline">Explore community</Link>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link href={`/account/reports/${leaderboardSlug}/leaderboard`} className="group block">
+            <Card className="flex h-full items-start gap-3 border-amber-200 bg-amber-50/70 p-4 transition hover:border-amber-400 hover:shadow-sm">
+              <span className="rounded-xl bg-amber-100 p-2.5"><Trophy className="h-5 w-5 text-amber-700" /></span>
+              <div className="flex-1">
+                <h3 className="font-semibold text-slate-900">Community leaderboard</h3>
+                <p className="mt-1 text-sm text-slate-600">Explore this quarter's swimmers, milestones and volunteering.</p>
+                <p className="mt-2 text-sm font-medium text-amber-800 group-hover:underline">View rankings →</p>
+              </div>
+            </Card>
+          </Link>
+          <Link href="/community/events" className="group block">
+            <Card className="flex h-full items-start gap-3 p-4 transition hover:border-cyan-300 hover:shadow-sm">
+              <span className="rounded-xl bg-cyan-100 p-2.5"><Calendar className="h-5 w-5 text-cyan-700" /></span>
+              <div className="flex-1">
+                <h3 className="font-semibold text-slate-900">Events & experiences</h3>
+                <p className="mt-1 text-sm text-slate-600">Discover upcoming swims, activities and ways to connect.</p>
+                <p className="mt-2 text-sm font-medium text-cyan-700 group-hover:underline">See what's on →</p>
+              </div>
+            </Card>
           </Link>
         </div>
-        {announcements.length > 0 ? (
-          <div className="space-y-2">
-            {announcements.map((a) => (
-              <Card key={a.id} className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 rounded-full bg-cyan-100 p-2">
-                    <Bell className="h-4 w-4 text-cyan-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium text-slate-900 text-sm">{a.title}</p>
-                      <Badge
-                        variant={CATEGORY_BADGE_VARIANT[a.category] || "default"}
-                        className="text-[9px] px-2 py-0.5"
-                      >
-                        {formatAnnouncementCategory(a.category)}
-                      </Badge>
-                      {a.is_pinned && (
-                        <span className="text-[10px] font-semibold text-amber-600">Pinned</span>
-                      )}
-                    </div>
-                    {a.summary && (
-                      <p className="text-sm text-slate-600 mt-0.5 line-clamp-2">{a.summary}</p>
-                    )}
-                    <p className="text-xs text-slate-400 mt-1">
-                      {new Date(a.published_at || a.created_at).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="p-6 text-center">
-            <Bell className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm text-slate-500">No announcements yet</p>
-          </Card>
-        )}
-      </div>
+      </section>
 
-      {/* ── Section 10: Community Leaderboard ── */}
-      <Link href={`/account/reports/${leaderboardSlug}/leaderboard`} className="block">
-        <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-amber-100 p-2">
-                <TrendingUp className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900">Community Leaderboard</h3>
-                <p className="text-xs text-slate-500">See how you rank among other swimmers</p>
-              </div>
-            </div>
-            <ArrowRight className="h-5 w-5 text-amber-400" />
-          </div>
-        </Card>
-      </Link>
+      {/* Announcements are a compact feed; urgent pinned items stay visually distinct. */}
+      <section aria-labelledby="member-updates-heading" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 id="member-updates-heading" className="flex items-center gap-2 text-base font-semibold text-slate-900">
+            <Megaphone className="h-5 w-5 text-cyan-700" /> Latest updates
+          </h2>
+          <Link href="/account/notifications?filter=announcements" className="text-sm font-medium text-cyan-700 hover:underline">All announcements →</Link>
+        </div>
+        {announcements.length ? (
+          <Card className="divide-y divide-slate-100 overflow-hidden">
+            {announcements.map((a) => (
+              <Link key={a.id} href={`/announcements/${a.id}`} className={`flex items-start gap-3 p-4 transition hover:bg-slate-50 ${a.is_pinned ? "bg-amber-50/60" : ""}`}>
+                <Bell className={`mt-1 h-4 w-4 shrink-0 ${a.is_pinned ? "text-amber-600" : "text-slate-400"}`} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-900">{a.title}</p>
+                    {a.is_pinned && <span className="text-xs font-semibold text-amber-800">Pinned</span>}
+                  </div>
+                  {a.summary && <p className="mt-1 line-clamp-2 text-sm text-slate-600">{a.summary}</p>}
+                  <p className="mt-1 text-xs text-slate-500">{formatAnnouncementCategory(a.category)}</p>
+                </div>
+                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+              </Link>
+            ))}
+          </Card>
+        ) : (
+          <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">No new announcements at the moment.</p>
+        )}
+      </section>
+
+      {/* Rich reporting remains available, but no longer blocks the primary experience. */}
+      <details className="group rounded-xl border border-slate-200 bg-white p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500">
+          Activity history & detailed reports
+          <span className="ml-2 text-xs font-normal text-slate-500">Your swimming patterns and quarterly summary</span>
+        </summary>
+        <div className="mt-4 space-y-4">
+          <SwimCalendar records={allRecords} />
+          <QuarterlyReportWidget />
+        </div>
+      </details>
 
       {/* ── Section 11: Coach Card (conditional) ── */}
       {member?.coach_profile && (
