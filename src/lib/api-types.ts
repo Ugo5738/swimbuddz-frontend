@@ -367,6 +367,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/members/club-session-roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Club Session Roster */
+        get: operations["get_club_session_roster_members_club_session_roster_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/members/": {
         parameters: {
             query?: never;
@@ -23737,6 +23754,30 @@ export interface components {
              */
             updated_at: string;
         };
+        /** ClubSessionRosterMember */
+        ClubSessionRosterMember: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Access Source */
+            access_source: string;
+        };
+        /** ClubSessionRosterResponse */
+        ClubSessionRosterResponse: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Members */
+            members: components["schemas"]["ClubSessionRosterMember"][];
+        };
         /** ClubTermsApproval */
         ClubTermsApproval: {
             /**
@@ -46598,6 +46639,8 @@ export interface components {
             expires_at: string;
             /** Download Url */
             download_url?: string | null;
+            /** Error Message */
+            error_message?: string | null;
         };
         /** CompletedPart */
         CompletedPart: {
@@ -50759,6 +50802,43 @@ export interface operations {
                     "application/json": {
                         [key: string]: components["schemas"]["MemberBasicResponse"];
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_club_session_roster_members_club_session_roster_get: {
+        parameters: {
+            query: {
+                session_id: string;
+                at: string;
+                club_id?: string | null;
+                pool_id?: string | null;
+                pod_id?: string | null;
+                club_access_mode?: "plan_included" | "active_club" | "paid_addon";
+                allows_visiting_club_members?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubSessionRosterResponse"];
                 };
             };
             /** @description Validation Error */

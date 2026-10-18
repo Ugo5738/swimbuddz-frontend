@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AcademySection } from "./_billing/AcademySection";
-import { FinancialOverview } from "./_billing/FinancialOverview";
+import { FinancialOverview } from "./_billing/FinancialOverviewCard";
 import type { ServerFinancialOverview } from "./_billing/serverFinancialOverview";
 import { ClubCard } from "./_billing/ClubCard";
 import { CommunityCard } from "./_billing/CommunityCard";

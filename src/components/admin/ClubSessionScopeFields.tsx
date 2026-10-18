@@ -77,6 +77,10 @@ export function ClubSessionScopeFields({
             Pod-specific
           </button>
         </div>
+        <p className="mt-2 text-xs text-slate-500">
+          General Club is open to active Club members from every location. Pod-specific sessions
+          are restricted to the selected Pod. Academy enrollment alone does not grant Club access.
+        </p>
       </div>
 
       {scope === "pod" && (

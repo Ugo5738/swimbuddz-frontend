@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import type { jsPDF as JsPDFType } from "jspdf";
 import { ReceiptText, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useClubSessionRoster, type ClubSessionScope } from "./useClubSessionRoster";
 
 type SessionBookingResponse = components["schemas"]["SessionBookingResponse"];
 type EnrollmentResponse = components["schemas"]["EnrollmentResponse"];
@@ -34,7 +35,7 @@ function statusBadgeClass(status: string): string {
   return "bg-slate-100 text-slate-800";
 }
 
-type Session = {
+type Session = ClubSessionScope & {
   id: string;
   starts_at: string;
   location: string | null;
@@ -118,29 +119,6 @@ type RideConfig = {
   }>;
 };
 
-type ClubRosterMember = {
-  member_id: string;
-  name: string;
-  email: string;
-};
-
-type ClubMemberListItem = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  is_active: boolean;
-  approval_status: string;
-  active_tiers?: string[] | null;
-  club_paid_until?: string | null;
-  academy_paid_until?: string | null;
-  post_academy_club_until?: string | null;
-};
-
-type PodDetailResponse = {
-  members?: Array<{ member_id: string }>;
-};
-
 type RosterSource = "cohort" | "club" | "booking" | "walkin";
 
 // Unified roster row: every member who matters for this session, regardless
@@ -175,63 +153,12 @@ function hasSessionStarted(startsAt: string | null | undefined): boolean {
   return d.getTime() <= Date.now();
 }
 
-function isFuture(value: string | null | undefined) {
-  return Boolean(value && new Date(value).getTime() > Date.now());
-}
-
-async function loadClubRoster(session: Session): Promise<ClubRosterMember[]> {
-  if (session.session_type?.toLowerCase() !== "club") return [];
-
-  if (session.pod_id) {
-    const pod = await apiGet<PodDetailResponse>(`/api/v1/admin/members/pods/${session.pod_id}`, {
-      auth: true,
-    });
-    const memberIds = (pod.members ?? []).map((member) => member.member_id);
-    if (memberIds.length === 0) return [];
-    const basic = await apiPost<Record<string, MemberBasicResponse>>(
-      "/api/v1/members/bulk-basic",
-      memberIds,
-      { auth: true }
-    );
-    return memberIds.map((memberId) => {
-      const member = basic[memberId];
-      return {
-        member_id: memberId,
-        name: member
-          ? `${member.first_name ?? ""} ${member.last_name ?? ""}`.trim() || "(unknown)"
-          : "(unknown)",
-        email: member?.email ?? "",
-      };
-    });
-  }
-
-  const members = await apiGet<ClubMemberListItem[]>("/api/v1/members/?skip=0&limit=500", {
-    auth: true,
-  });
-  return members
-    .filter(
-      (member) =>
-        member.is_active &&
-        member.approval_status === "approved" &&
-        (member.active_tiers?.some((tier) => tier === "club" || tier === "academy") ||
-          isFuture(member.club_paid_until) ||
-          isFuture(member.academy_paid_until) ||
-          isFuture(member.post_academy_club_until))
-    )
-    .map((member) => ({
-      member_id: member.id,
-      name: `${member.first_name} ${member.last_name}`.trim(),
-      email: member.email,
-    }));
-}
-
 export default function AdminAttendancePage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [cohortNames, setCohortNames] = useState<Map<string, string>>(() => new Map());
   const [attendanceList, setAttendanceList] = useState<Attendance[]>([]);
   const [bookings, setBookings] = useState<SessionBookingResponse[]>([]);
   const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
-  const [clubRosterMembers, setClubRosterMembers] = useState<ClubRosterMember[]>([]);
   const [memberLookup, setMemberLookup] = useState<Map<string, { name: string; email: string }>>(
     () => new Map()
   );
@@ -362,6 +289,9 @@ export default function AdminAttendancePage() {
   const isCohortSession = Boolean(selectedSession?.cohort_id);
   const isClubSession = selectedSession?.session_type?.toLowerCase() === "club";
   const sessionStarted = hasSessionStarted(selectedSession?.starts_at);
+  const clubRoster = useClubSessionRoster(selectedSession);
+  const clubRosterMembers = clubRoster.members;
+  const loadingRoster = loadingAttendance || clubRoster.loading;
 
   // Reset draft edits whenever the selected session changes.
   useEffect(() => {
@@ -443,7 +373,6 @@ export default function AdminAttendancePage() {
           rideConfigs,
           sessionBookings,
           cohortEnrollments,
-          clubMembers,
         ] = await Promise.all([
           apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, {
             auth: true,
@@ -474,12 +403,6 @@ export default function AdminAttendancePage() {
                 return [] as EnrollmentResponse[];
               })
             : Promise.resolve([] as EnrollmentResponse[]),
-          session
-            ? loadClubRoster(session).catch((err) => {
-                console.warn("Failed to fetch Club roster", err);
-                return [] as ClubRosterMember[];
-              })
-            : Promise.resolve([] as ClubRosterMember[]),
         ]);
         const bookingsData = rideBookingsData;
 
@@ -537,7 +460,6 @@ export default function AdminAttendancePage() {
         setAttendanceList(mergedAttendance);
         setBookings(sessionBookings);
         setEnrollments(cohortEnrollments);
-        setClubRosterMembers(clubMembers);
 
         // Build a member_id -> {name, email} lookup, merging known sources.
         // Only seed entries when we actually have a name — otherwise leave the
@@ -559,12 +481,6 @@ export default function AdminAttendancePage() {
             });
           }
         }
-        for (const member of clubMembers) {
-          if (!lookup.has(member.member_id)) {
-            lookup.set(member.member_id, { name: member.name, email: member.email });
-          }
-        }
-
         // Fill in any remaining booking members via /members/bulk-basic.
         // Also include cohort enrollees who came back without a name so the
         // mark-exceptions dropdown is never littered with "(unknown)".
@@ -1224,9 +1140,9 @@ export default function AdminAttendancePage() {
         </div>
       </div>
 
-      {error && (
+      {(error || clubRoster.error) && (
         <Alert variant="error" title="Error">
-          {error}
+          {error || clubRoster.error}
         </Alert>
       )}
 
@@ -1293,7 +1209,7 @@ export default function AdminAttendancePage() {
             />
           </>
         )}
-        {!loadingAttendance && selectedSessionId ? (
+        {!loadingRoster && selectedSessionId ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:hidden">
             <ReconciliationStat label="Confirmed bookings" value={confirmedBookings.length} />
             <ReconciliationStat
@@ -1321,7 +1237,7 @@ export default function AdminAttendancePage() {
         ) : null}
 
         {/* Print-only header */}
-        {!loadingAttendance && selectedSessionId && sessionStarted && (
+        {!loadingRoster && selectedSessionId && sessionStarted && (
           <RecordSessionWalkIn
             key={selectedSessionId}
             defaultFee={
@@ -1331,6 +1247,9 @@ export default function AdminAttendancePage() {
             }
             defaultGuestFee={selectedSession?.guest_fee ?? selectedSession?.pool_fee ?? 0}
             disabled={submittingMark}
+            eligibleMembers={isClubSession ? clubRosterMembers.map((member) => ({
+              id: member.member_id, first_name: member.name, last_name: "", email: member.email,
+            })) : undefined}
             onRecord={handleMarkWalkIn}
             onRecordGuest={handleRecordGuestWalkIn}
           />
@@ -1350,7 +1269,7 @@ export default function AdminAttendancePage() {
             })()}
         </div>
 
-        {!loadingAttendance && selectedSessionId ? (
+        {!loadingRoster && selectedSessionId ? (
           <div className="space-y-3">
             <div className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 print:hidden sm:grid-cols-[minmax(0,1fr)_11rem_11rem]">
               <label className="relative block">
@@ -1428,7 +1347,7 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
-        {loadingAttendance && <LoadingPage text="Loading attendance..." />}
+        {loadingRoster && <LoadingPage text="Loading attendance..." />}
       </div>
 
       {payLinkModal && <PayLinkModal modal={payLinkModal} onClose={() => setPayLinkModal(null)} />}
