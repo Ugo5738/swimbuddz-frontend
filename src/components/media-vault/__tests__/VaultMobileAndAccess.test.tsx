@@ -52,6 +52,8 @@ const vault: MediaVault = {
   opt_out_count: 0,
   settings_json: {},
   default_session_visibility: "selected_members",
+  attendee_can_view: true,
+  attendee_can_contribute: true,
   default_allow_member_clips: false,
   default_allow_member_downloads: false,
   published_album_id: null,
