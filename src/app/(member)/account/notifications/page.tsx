@@ -112,6 +112,14 @@ export default function NotificationsPage() {
   const [memberId, setMemberId] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
 
+  // Direct links from the dashboard should open the intended inbox filter.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("filter") === "announcements") {
+      setFilter("announcements");
+      setPage(1);
+    }
+  }, []);
+
   // Fetch member ID
   useEffect(() => {
     (async () => {

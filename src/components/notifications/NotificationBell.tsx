@@ -109,11 +109,12 @@ export function NotificationBell({
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch unified unread count (announcements + notifications)
   const fetchUnreadCount = useCallback(async () => {
-    if (!memberId) return;
+    if (!memberId) { setUnreadCount(0); return; }
     try {
       const [annRes, notifRes] = await Promise.all([
         apiGet<{ unread_count: number }>(
@@ -288,10 +289,34 @@ export function NotificationBell({
     }
   };
 
+  // The bell previews eight items, but the action must clear the full inbox.
+  // Do not claim all announcements were read: the existing API supports
+  // marking an announcement individually, not marking every announcement globally.
   const markAllAsRead = async () => {
-    if (!memberId) return;
-    const unreadItems = items.filter((i) => !i.isRead);
-    await Promise.all(unreadItems.map((i) => markAsRead(i)));
+    if (!memberId || markingAll) return;
+    setMarkingAll(true);
+    try {
+      await apiPost(
+        `/api/v1/communications/notifications/read-all?member_id=${memberId}`,
+        {},
+        { auth: true }
+      );
+      const visibleAnnouncements = items.filter((item) => item.source === "announcement" && !item.isRead);
+      await Promise.all(visibleAnnouncements.map((item) =>
+        apiPost(
+          `/api/v1/communications/announcements/${item.id}/read?member_id=${memberId}`,
+          {},
+          { auth: true }
+        )
+      ));
+      await fetchItems();
+      await fetchUnreadCount();
+    } catch {
+      // Keep the current count if the server cannot complete the operation.
+      await fetchUnreadCount();
+    } finally {
+      setMarkingAll(false);
+    }
   };
 
   const timeAgo = (dateStr: string) => {
@@ -357,10 +382,11 @@ export function NotificationBell({
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="flex items-center gap-1 text-xs font-medium text-cyan-600 hover:text-cyan-700 transition"
+                  disabled={markingAll}
+                  className="flex items-center gap-1 text-xs font-medium text-cyan-600 hover:text-cyan-700 transition disabled:opacity-50"
                 >
                   <Check className="h-3.5 w-3.5" />
-                  Mark all read
+                  Mark notifications & visible updates read
                 </button>
               )}
               <button
