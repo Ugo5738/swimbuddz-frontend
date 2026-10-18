@@ -178,7 +178,7 @@ export const MEDIA_RECORDING_STANDARDS = [
 
 export function accessWindowForRole(
   vault: Pick<MediaVault, "upload_opens_at" | "upload_closes_at">,
-  role: "contributor" | "curator",
+  role: "viewer" | "contributor" | "curator",
   now = new Date()
 ) {
   const opensAt = new Date(vault.upload_opens_at);
@@ -189,7 +189,7 @@ export function accessWindowForRole(
   return {
     startsAt: new Date(Math.min(opensAt.getTime(), now.getTime())).toISOString(),
     expiresAt:
-      role === "curator"
+      role === "curator" || role === "viewer"
         ? new Date(closesAt.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
         : new Date(Math.max(closesAt.getTime(), contributorMinimum.getTime())).toISOString(),
   };
