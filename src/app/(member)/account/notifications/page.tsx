@@ -20,7 +20,6 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -104,10 +103,9 @@ const PAGE_SIZE = 20;
 // ── Component ─────────────────────────────────────────────────────────
 
 export default function NotificationsPage() {
-  const searchParams = useSearchParams();
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState(() => searchParams.get("filter") === "announcements" ? "announcements" : "all");
+  const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -116,11 +114,11 @@ export default function NotificationsPage() {
 
   // Direct links from the dashboard should open the intended inbox filter.
   useEffect(() => {
-    if (searchParams.get("filter") === "announcements") {
+    if (new URLSearchParams(window.location.search).get("filter") === "announcements") {
       setFilter("announcements");
       setPage(1);
     }
-  }, [searchParams]);
+  }, []);
 
   // Fetch member ID
   useEffect(() => {
