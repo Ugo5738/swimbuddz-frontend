@@ -591,6 +591,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
               aria-expanded={accountOpen}
               aria-controls="member-account-actions"
               title={`My Account — ${memberName}`}
+              aria-label={`My Account — ${memberName}`}
               className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center" : ""}`}
             >
               {member?.profile_photo_url ? (
