@@ -27,6 +27,8 @@ export type MediaVault = {
   shot_checklist: string[];
   settings_json: Record<string, unknown>;
   default_session_visibility: "private" | "selected_members" | "session_participants";
+  attendee_can_view: boolean;
+  attendee_can_contribute: boolean;
   default_allow_member_clips: boolean;
   default_allow_member_downloads: boolean;
   published_album_id: string | null;
@@ -75,7 +77,7 @@ export type VaultMedia = {
   thumbnail_url: string | null;
   preview_status: "pending" | "processing" | "thumbnail_ready" | "ready" | "failed" | "unavailable";
   labels: string[];
-  session_visibility?: "private" | "selected_members" | "session_participants";
+  session_visibility?: "private" | "selected_members" | "session_participants" | "community";
   allow_member_clips?: boolean;
   allow_member_downloads?: boolean;
 };
