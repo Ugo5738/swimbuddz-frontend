@@ -4,6 +4,7 @@ import { useState } from "react";
 import { VaultLibrary } from "@/components/media-vault/VaultLibrary";
 import { MySessionVideos } from "@/components/media-vault/MySessionVideos";
 import { UploadMySwim } from "@/components/media-vault/UploadMySwim";
+import { MyCollections } from "@/components/media-vault/MyCollections";
 import { FilterTabs } from "@/components/ui/FilterTabs";
 
 import { useApi } from "@/hooks/useApi";
@@ -31,8 +32,8 @@ export default function MemberMediaVaultPage() {
         </div>
       </div>
 
-      <FilterTabs options={[{ value: "videos", label: "My Media" }, { value: "upload", label: "Upload My Swim" }, { value: "all", label: "Volunteer media" }, { value: "vaults", label: "My assigned vaults" }]} value={view} onChange={setView} />
-      {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
+      <FilterTabs options={[{ value: "videos", label: "My Media" }, { value: "upload", label: "Upload My Swim" }, { value: "collections", label: "My Collections" }, { value: "all", label: "Volunteer media" }, { value: "vaults", label: "My assigned vaults" }]} value={view} onChange={setView} />
+      {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "collections" ? <MyCollections /> : view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
       {loading && (
         <div className="grid gap-4 md:grid-cols-2">
           {[0, 1, 2].map((item) => (
