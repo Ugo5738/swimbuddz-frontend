@@ -13,6 +13,14 @@ export function MySwimUploads({ refreshKey }: { refreshKey?: number }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [playing, setPlaying] = useState<string | null>(null);
+  const share = async (item: VaultMedia) => {
+    setBusy(true); setError("");
+    try {
+      await apiPost(`/api/v1/media/vaults/my-media/${item.id}/share-community`, {share_with_community:item.session_visibility !== "community"}, {auth:true});
+      await refresh();
+    } catch(e) {setError(e instanceof Error?e.message:"Could not change sharing");}
+    finally {setBusy(false);}
+  };
   const refresh = async () => {
     setBusy(true); setError("");
     try {
@@ -62,6 +70,7 @@ export function MySwimUploads({ refreshKey }: { refreshKey?: number }) {
             <p className="truncate text-sm font-semibold">{item.original_filename || "My swim video"}</p>
             <p className="mt-1 text-xs text-slate-500">Admin review: {item.review_status.replaceAll("_", " ")}</p>
             {item.source_session_id && <p className="mt-1 text-xs text-cyan-700">Linked to a swimming session</p>}
+            {["approved","published"].includes(item.review_status) && item.consent_status === "cleared" && <button type="button" disabled={busy} onClick={()=>void share(item)} className="mt-3 block text-sm font-medium text-cyan-700 underline disabled:opacity-40">{item.session_visibility === "community" ? "Keep personal again" : "Share with SwimBuddz members"}</button>}
             {item.media_type === "VIDEO" && (
               <button type="button" disabled={busy} onClick={() => {
                 if (item.preview_url) setPlaying((old) => old === item.id ? null : item.id);
