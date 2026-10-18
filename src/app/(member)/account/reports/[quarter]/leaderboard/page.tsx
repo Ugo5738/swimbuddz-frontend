@@ -42,6 +42,7 @@ interface LeaderboardResponse {
 }
 
 interface CommunityHighlights {
+  computed_at?: string;
   total_pool_hours: number;
   total_active_members: number;
   total_sessions_held: number;
@@ -132,6 +133,8 @@ export default function LeaderboardPage() {
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [highlights, setHighlights] = useState<CommunityHighlights | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Fetch community highlights once per quarter
   useEffect(() => {
@@ -142,19 +145,23 @@ export default function LeaderboardPage() {
     )
       .then(setHighlights)
       .catch(() => setHighlights(null));
-  }, [parsed]);
+  }, [parsed, refreshKey]);
 
   useEffect(() => {
     if (!parsed) return;
     setLoading(true);
+    setLoadError(null);
     apiGet<LeaderboardResponse>(
       `/api/v1/reports/community/leaderboards?year=${parsed.year}&quarter=${parsed.quarter}&category=${activeCategory}`,
       { auth: true }
     )
       .then(setData)
-      .catch(() => setData(null))
+      .catch((error: unknown) => {
+        setData(null);
+        setLoadError(error instanceof Error ? error.message : "Leaderboard unavailable.");
+      })
       .finally(() => setLoading(false));
-  }, [parsed, activeCategory]);
+  }, [parsed, activeCategory, refreshKey]);
 
   if (!parsed) {
     return <Card className="p-6 text-center text-slate-600">Invalid quarter format</Card>;
@@ -174,7 +181,12 @@ export default function LeaderboardPage() {
           &larr; Back to {label} Report
         </Link>
         <h1 className="text-2xl font-bold text-slate-900 mt-2">Community Leaderboard</h1>
-        <p className="text-sm text-slate-500">{label}</p>
+        <p className="text-sm text-slate-500">{label} · Verified SwimBuddz records</p>
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          {highlights?.computed_at && <span>Last data refresh: {new Date(highlights.computed_at).toLocaleString("en-NG")}</span>}
+          <button type="button" onClick={() => setRefreshKey((n) => n + 1)}
+            className="font-semibold text-cyan-700 underline">Refresh standings</button>
+        </div>
       </div>
 
       {data && !data.current_user_eligible && (
@@ -291,7 +303,9 @@ export default function LeaderboardPage() {
       ) : !data || data.entries.length === 0 ? (
         <Card className="p-8 text-center">
           <Trophy className="mx-auto h-12 w-12 text-slate-300 mb-4" />
-          <p className="text-slate-600">No leaderboard data available yet</p>
+          <p className="text-slate-600">{loadError ? "Leaderboard could not be loaded" : "No eligible swimmers in this category yet"}</p>
+          {loadError && <p role="alert" className="mt-2 text-sm text-red-700">{loadError}</p>}
+          {!loadError && <p className="mt-2 text-sm text-slate-500">Swimmers appear after {data?.minimum_attendance ?? 3} verified sessions this quarter. Current-quarter records refresh hourly.</p>}
         </Card>
       ) : (
         <Card className="overflow-hidden">

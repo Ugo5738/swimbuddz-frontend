@@ -44,6 +44,7 @@ export default function QuarterlyReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [communityMilestones, setCommunityMilestones] = useState<{ icon: string; text: string }[]>(
     []
   );
@@ -66,7 +67,7 @@ export default function QuarterlyReportPage() {
     )
       .then((data) => setCommunityMilestones(data.community_milestones || []))
       .catch(() => {});
-  }, [parsed]);
+  }, [parsed, refreshKey]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -184,6 +185,11 @@ export default function QuarterlyReportPage() {
         Pool hours estimate scheduled swim time, rather than measured time in the water.
       </Card>
 
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
+        <span>Calculated {new Date(report.computed_at).toLocaleString("en-NG")} · The current quarter updates when viewed.</span>
+        <button type="button" onClick={() => { setLoading(true); setError(null); setRefreshKey((n) => n + 1); }}
+          className="font-semibold text-cyan-700 underline">Refresh report</button>
+      </div>
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {activity?.attendance.all_sessions_attended != null && <StatsCard label="All Recorded Swims" value={activity.attendance.all_sessions_attended} icon={<Waves className="h-6 w-6" />} color="cyan" />}
