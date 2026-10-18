@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { VaultLibrary } from "@/components/media-vault/VaultLibrary";
 import { MySessionVideos } from "@/components/media-vault/MySessionVideos";
 import { UploadMySwim } from "@/components/media-vault/UploadMySwim";
 import { MyCollections } from "@/components/media-vault/MyCollections";
+import { SessionMediaWorkspace } from "@/components/media-vault/SessionMediaWorkspace";
 import { FilterTabs } from "@/components/ui/FilterTabs";
 
 import { useApi } from "@/hooks/useApi";
@@ -14,6 +15,17 @@ import Link from "next/link";
 
 export default function MemberMediaVaultPage() {
   const [view, setView] = useState("videos");
+  const [session, setSession] = useState("");
+  const [sessionAction, setSessionAction] = useState<"view" | "contribute">("view");
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session") || "";
+    if (/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(sessionId)) {
+      setSession(sessionId);
+      setSessionAction(params.get("action") === "contribute" ? "contribute" : "view");
+      setView("session");
+    }
+  },[]);
   const { data, loading, error } = useApi<VaultList>("/api/v1/media/vaults");
 
   return (
@@ -32,8 +44,8 @@ export default function MemberMediaVaultPage() {
         </div>
       </div>
 
-      <FilterTabs options={[{ value: "videos", label: "My Media" }, { value: "upload", label: "Upload My Swim" }, { value: "collections", label: "My Collections" }, { value: "all", label: "Volunteer media" }, { value: "vaults", label: "My assigned vaults" }]} value={view} onChange={setView} />
-      {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "collections" ? <MyCollections /> : view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
+      <FilterTabs options={[{ value: "videos", label: "My Media" }, { value: "upload", label: "Upload My Swim" }, { value: "collections", label: "My Collections" }, { value: "session", label: "Session Media" }, { value: "all", label: "Volunteer media" }, { value: "vaults", label: "My assigned vaults" }]} value={view} onChange={setView} />
+      {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "collections" ? <MyCollections /> : view === "session" ? (session ? <SessionMediaWorkspace sessionId={session} action={sessionAction}/> : <div className="rounded-xl border bg-white p-5 text-sm">Open a session from My Swims → History to view or contribute its media.</div>) : view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
       {loading && (
         <div className="grid gap-4 md:grid-cols-2">
           {[0, 1, 2].map((item) => (
