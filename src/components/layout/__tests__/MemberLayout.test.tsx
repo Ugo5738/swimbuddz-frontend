@@ -80,6 +80,7 @@ describe("MemberLayout desktop navigation", () => {
     );
     await screen.findAllByText("Amara Emrey");
     expect(screen.queryByRole("link", { name: "Make-up Classes" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Progress & Media" }));
     expect(screen.getByRole("link", { name: "Stroke Lab" })).toHaveAttribute(
       "href",
       "https://analyzer.swimbuddz.com"
@@ -96,6 +97,8 @@ describe("MemberLayout desktop navigation", () => {
         <div>Content</div>
       </MemberLayout>
     );
+    await screen.findByRole("button", { name: "My Academy" });
+    fireEvent.click(screen.getByRole("button", { name: "My Academy" }));
     expect(await screen.findByRole("link", { name: "Make-up Classes" })).toHaveAttribute(
       "href",
       "/account/makeups"
@@ -106,7 +109,7 @@ describe("MemberLayout desktop navigation", () => {
     render(<MemberLayout><div>Content</div></MemberLayout>);
     expect(await screen.findByRole("link", { name: "Leaderboard" })).toHaveAttribute(
       "href",
-      expect.stringMatching(/^\\/account\\/reports\\/q[1-4]-\\d{4}\\/leaderboard$/)
+      expect.stringMatching(/^\/account\/reports\/q[1-4]-\d{4}\/leaderboard$/)
     );
   });
 
