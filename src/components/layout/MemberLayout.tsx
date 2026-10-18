@@ -20,7 +20,9 @@ import {
   Calendar,
   CalendarDays,
   CheckCircle,
+  ChevronDown,
   ChevronRight,
+  ExternalLink,
   ClipboardCheck,
   CloudUpload,
   CreditCard,
@@ -62,7 +64,7 @@ type NavItem = {
 type NavSection = {
   title: string;
   items: NavItem[];
-  showFor?: ("community" | "club" | "academy")[];
+  icon?: React.ComponentType<{ className?: string }>;
 };
 
 const MEMBER_SIDEBAR_COLLAPSED_KEY = "swimbuddz-member-sidebar-collapsed";
@@ -113,87 +115,89 @@ type MemberInfo = {
   };
 };
 
+const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
+const leaderboardHref = `/account/reports/q${currentQuarter}-${new Date().getFullYear()}/leaderboard`;
+
+/** Organize navigation by the task a member is trying to complete, not the backend feature. */
 const navSections: NavSection[] = [
   {
     title: "",
     items: [
       { href: "/account", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/find-a-swim", label: "Find a Swim", icon: Waves },
       { href: "/account/onboarding", label: "Complete Setup", icon: CheckCircle },
     ],
   },
   {
-    title: "Swim",
+    title: "My Swims",
+    icon: CalendarDays,
     items: [
-      { href: "/find-a-swim", label: "Find a Swim", icon: Waves },
-      { href: "/account/bookings", label: "My Bookings", icon: CalendarDays },
-      { href: "/account/pool-access", label: "My Pool Access", icon: Calendar },
-      { href: "/account/calendar", label: "Calendar", icon: CalendarDays },
-      { href: "/sessions", label: "Sessions", icon: Calendar },
-      { href: "/account/club", label: "My Club swims", icon: Calendar },
-      {
-        href: "/account/attendance/history",
-        label: "My Attendance",
-        icon: ClipboardCheck,
-      },
-      { href: "/account/makeups", label: "Make-ups", icon: Calendar },
-      { href: "/account/media-vault", label: "My Videos", icon: CloudUpload },
-      { href: "https://analyzer.swimbuddz.com", label: "Stroke Lab", icon: Activity },
+      { href: "/account/bookings", label: "Bookings & Upcoming", icon: CalendarDays },
+      { href: "/account/calendar", label: "Swim Calendar", icon: Calendar },
+      { href: "/account/club", label: "Club Reservations", icon: Waves },
+      { href: "/account/pool-access", label: "Pool Access Tickets", icon: ClipboardCheck },
+      { href: "/account/attendance/history", label: "Attendance History", icon: CheckCircle },
     ],
   },
   {
-    title: "Learn",
-    showFor: ["community", "club", "academy"],
+    title: "My Academy",
+    icon: GraduationCap,
     items: [
-      {
-        href: "/account/academy/browse",
-        label: "Academy Programs",
-        icon: BookOpen,
-      },
-      { href: "/account/academy", label: "My Progress", icon: GraduationCap },
-      { href: "/account/academy/manage", label: "Manage Academy", icon: GraduationCap },
+      { href: "/account/academy", label: "Learning Progress", icon: GraduationCap },
+      { href: "/account/academy/manage", label: "My Enrollments", icon: BookOpen },
+      { href: "/account/makeups", label: "Make-up Classes", icon: Calendar },
+      { href: "/account/academy/browse", label: "Explore Programs", icon: BookOpen },
     ],
   },
   {
     title: "Community",
-    showFor: ["community"],
+    icon: Users,
     items: [
-      { href: "/account/chat", label: "Chat", icon: MessageCircle },
-      { href: "/community/directory", label: "Members", icon: Users },
-      { href: "/community/events", label: "Events", icon: CalendarDays },
+      { href: "/community/events", label: "Events & Experiences", icon: CalendarDays },
+      { href: leaderboardHref, label: "Leaderboard", icon: Trophy },
       { href: "/community/challenges", label: "Challenges", icon: Trophy },
+      { href: "/community/directory", label: "Members", icon: Users },
+      { href: "/account/chat", label: "Chat", icon: MessageCircle },
       { href: "/community/volunteers", label: "Volunteer Hub", icon: HandHeart },
       { href: "/community/tips", label: "Tips & Articles", icon: BookOpen },
     ],
   },
   {
-    // "Pod Lead Tools" is gated by leadsAnyPod — see filter logic in
-    // visibleSections. Members who don't lead any pod never see this
-    // section, so the queue page they can't act on doesn't appear.
-    title: "Pod Lead Tools",
+    title: "Progress & Media",
+    icon: Activity,
     items: [
-      { href: "/account/pod-lead/sessions", label: "Practice scheduling", icon: Calendar },
-      {
-        href: "/account/pod-lead/review",
-        label: "Submission Review",
-        icon: ClipboardCheck,
-      },
+      { href: "/account/media-vault", label: "My Swim Videos", icon: CloudUpload },
+      { href: "/account/reports", label: "Swim Reports", icon: Activity },
+      { href: "https://analyzer.swimbuddz.com", label: "Stroke Lab", icon: Activity },
+    ],
+  },
+  {
+    title: "Payments",
+    icon: CreditCard,
+    items: [
+      { href: "/account/billing", label: "Payments & Credits", icon: CreditCard },
+      { href: "/account/wallet", label: "My Wallet", icon: Wallet },
     ],
   },
   {
     title: "Shop",
+    icon: ShoppingBag,
     items: [
-      { href: "/store", label: "Store", icon: ShoppingBag },
-      { href: "/account/orders", label: "Orders", icon: Package },
+      { href: "/store", label: "Swim Store", icon: ShoppingBag },
+      { href: "/account/orders", label: "My Orders", icon: Package },
     ],
   },
   {
-    title: "Finance",
+    title: "Pod Lead Tools",
+    icon: ClipboardCheck,
     items: [
-      { href: "/account/billing", label: "Payments & Credits", icon: CreditCard },
-      { href: "/account/wallet", label: "Wallet", icon: Wallet },
+      { href: "/account/pod-lead/sessions", label: "Practice Scheduling", icon: Calendar },
+      { href: "/account/pod-lead/review", label: "Submission Review", icon: ClipboardCheck },
     ],
   },
 ];
+
+const MEMBER_NAV_EXPANDED_KEY = "swimbuddz-member-nav-expanded";
 
 export function MemberLayout({ children }: MemberLayoutProps) {
   const router = useRouter();
@@ -222,6 +226,11 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   }, [sidebarOpen]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    "My Swims": true,
+    Community: true,
+  });
   const { data: member, refetch: refreshMember } = useApi<MemberInfo>("/api/v1/members/me");
   const [isCoach, setIsCoach] = useState(false);
   // True when this user is the lead or assistant lead of at least one pod.
@@ -233,6 +242,12 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
   useEffect(() => {
     setSidebarCollapsed(localStorage.getItem(MEMBER_SIDEBAR_COLLAPSED_KEY) === "true");
+    try {
+      const saved = localStorage.getItem(MEMBER_NAV_EXPANDED_KEY);
+      if (saved) setExpandedSections(JSON.parse(saved) as Record<string, boolean>);
+    } catch {
+      // Ignore outdated or invalid local preferences.
+    }
   }, []);
 
   const toggleSidebarCollapsed = () => {
@@ -293,6 +308,14 @@ export function MemberLayout({ children }: MemberLayoutProps) {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [refreshMember, searchParams]);
+
+  const toggleSection = (title: string) => {
+    setExpandedSections((current) => {
+      const next = { ...current, [title]: !current[title] };
+      localStorage.setItem(MEMBER_NAV_EXPANDED_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -395,42 +418,34 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
   const visibleSections = navSections
     .map((section) => {
-      if (section.title === "Swim") {
+      if (!section.title) {
+        return {
+          ...section,
+          items: needsOnboarding
+            ? section.items
+            : section.items.filter((item) => item.href !== "/account/onboarding"),
+        };
+      }
+      if (section.title === "My Swims") {
         return {
           ...section,
           items: section.items.filter(
-            (item) =>
-              item.href !== "/account/makeups" ||
-              academyActive ||
-              Boolean(member?.membership?.academy_paid_until)
+            (item) => item.href !== "/account/club" || clubEntitled
           ),
         };
       }
-      // Hide Complete Setup when onboarding is done
-      if (section.title === "") {
-        const items = needsOnboarding
-          ? section.items
-          : section.items.filter((item) => item.href !== "/account/onboarding");
-        return { ...section, items };
-      }
-      if (section.title === "Learn") {
-        const items = section.items.filter((item) => {
-          if (item.href === "/account/academy") {
-            // Keep prior Academy progress/history discoverable after expiry.
-            return academyEntitled;
-          }
-          return true;
-        });
-        return { ...section, items };
+      if (section.title === "My Academy") {
+        return {
+          ...section,
+          items: section.items.filter((item) => {
+            if (item.href === "/account/academy/browse") return true;
+            if (item.href === "/account/makeups") return academyEntitled;
+            return academyEntitled || wantsAcademy;
+          }),
+        };
       }
       return section;
     })
-    .filter((section) => {
-      if (!section.showFor) return true;
-      return section.showFor.some((tier) => memberTiers.includes(tier));
-    })
-    // Pod Lead Tools requires both an operational lead assignment and
-    // effective Club access. The backend repeats the same authorization.
     .filter((section) => section.title !== "Pod Lead Tools" || (leadsAnyPod && clubActive))
     .filter((section) => section.items.length > 0);
 
@@ -507,193 +522,114 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             </button>
           </div>
 
-          {/* User Profile Card */}
-          <div className={`p-4 ${sidebarCollapsed ? "md:p-2" : ""}`}>
-            <div
-              className={`flex items-center gap-3 rounded-xl bg-white/10 p-3 backdrop-blur-sm ${
-                sidebarCollapsed ? "md:justify-center md:p-2" : ""
-              }`}
-              title={sidebarCollapsed ? `${memberName} - ${membershipLabel}` : undefined}
+          {/* Primary navigation stays compact; groups expose related pages only when needed. */}
+          <nav
+            aria-label="Member navigation"
+            className={`flex-1 space-y-2 overflow-y-auto px-3 pb-4 ${sidebarCollapsed ? "md:px-2" : ""}`}
+          >
+            {visibleSections.map((section) => {
+              const expanded = Boolean(expandedSections[section.title]);
+              const sectionActive = section.items.some((item) => isActive(item.href));
+              const showItems = !section.title || expanded || sectionActive;
+              const GroupIcon = section.icon;
+              return (
+                <div key={section.title || "_main"} className="space-y-1">
+                  {section.title && GroupIcon && (
+                    <button
+                      type="button"
+                      onClick={() => toggleSection(section.title)}
+                      aria-expanded={showItems}
+                      aria-controls={`member-group-${section.title.replace(/\\W+/g, "-").toLowerCase()}`}
+                      title={section.title}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${sectionActive ? "bg-white/15 text-white" : "text-cyan-50 hover:bg-white/10"}`}
+                    >
+                      <GroupIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{section.title}</span>
+                      {showItems ? (
+                        <ChevronDown className={`h-4 w-4 ${sidebarCollapsed ? "md:hidden" : ""}`} aria-hidden="true" />
+                      ) : (
+                        <ChevronRight className={`h-4 w-4 ${sidebarCollapsed ? "md:hidden" : ""}`} aria-hidden="true" />
+                      )}
+                    </button>
+                  )}
+                  <ul
+                    id={section.title ? `member-group-${section.title.replace(/\\W+/g, "-").toLowerCase()}` : undefined}
+                    className={`space-y-1 ${section.title ? "ml-2 border-l border-white/15 pl-2 md:ml-0 md:pl-2" : ""} ${showItems ? "" : "hidden"}`}
+                  >
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      const active = isActive(item.href);
+                      const external = item.href.startsWith("https://");
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            onClick={() => setSidebarOpen(false)}
+                            aria-current={active ? "page" : undefined}
+                            title={item.label}
+                            {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
+                          >
+                            <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
+                            <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{item.label}</span>
+                            {external && <ExternalLink className={`h-3.5 w-3.5 ${sidebarCollapsed ? "md:hidden" : ""}`} aria-hidden="true" />}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </nav>
+
+          {/* One account control replaces repeated profile and settings links. */}
+          <div className={`border-t border-white/15 p-3 ${sidebarCollapsed ? "md:px-2" : ""}`}>
+            <button
+              type="button"
+              onClick={() => setAccountOpen((current) => !current)}
+              aria-expanded={accountOpen}
+              aria-controls="member-account-actions"
+              title={`My Account — ${memberName}`}
+              className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center" : ""}`}
             >
               {member?.profile_photo_url ? (
-                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-white/30">
-                  <Image
-                    src={member.profile_photo_url}
-                    alt={memberName}
-                    fill
-                    sizes="48px"
-                    className="object-cover"
-                  />
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full ring-2 ring-white/30">
+                  <Image src={member.profile_photo_url} alt="" fill sizes="40px" className="object-cover" />
                 </div>
               ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-lg font-bold text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 font-semibold text-white">
                   {initials}
                 </div>
               )}
               <div className={`min-w-0 flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>
-                <p className="text-sm font-semibold text-white truncate">{memberName}</p>
-                <p className="text-xs text-cyan-100">{membershipLabel}</p>
-                {membershipDetail && (
-                  <p className="truncate text-xs text-cyan-200/80">{membershipDetail}</p>
-                )}
+                <p className="truncate text-sm font-semibold">{memberName}</p>
+                <p className="truncate text-xs text-cyan-100">{membershipLabel}</p>
+                {membershipDetail && <p className="truncate text-xs text-cyan-100/70">{membershipDetail}</p>}
               </div>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <nav
-            className={`flex-1 space-y-6 overflow-y-auto px-4 pb-4 ${
-              sidebarCollapsed ? "md:px-2" : ""
-            }`}
-          >
-            {visibleSections.map((section) => (
-              <div key={section.title || "_dashboard"}>
-                {section.title && (
-                  <>
-                    <h3
-                      className={`mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-cyan-200/70 ${
-                        sidebarCollapsed ? "md:hidden" : ""
-                      }`}
-                    >
-                      {section.title}
-                    </h3>
-                    {sidebarCollapsed && (
-                      <div
-                        className="mx-2 mb-3 hidden h-px bg-white/20 md:block"
-                        title={section.title}
-                      />
-                    )}
-                  </>
-                )}
-                <ul className="space-y-1">
-                  {section.items.map((item) => {
-                    const Icon = item.icon;
-                    const active = isActive(item.href);
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          onClick={() => setSidebarOpen(false)}
-                          aria-label={item.label}
-                          title={sidebarCollapsed ? item.label : undefined}
-                          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                            sidebarCollapsed ? "md:justify-center md:px-2" : ""
-                          } ${
-                            active
-                              ? "bg-white text-cyan-700 shadow-lg"
-                              : "text-white/90 hover:bg-white/10 hover:text-white"
-                          }`}
-                        >
-                          <Icon className="h-5 w-5 shrink-0" />
-                          <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>
-                            {item.label}
-                          </span>
-                          {item.badge && (
-                            <span
-                              className={`rounded-full bg-amber-400 px-2 py-0.5 text-xs font-bold text-amber-900 ${
-                                sidebarCollapsed ? "md:hidden" : ""
-                              }`}
-                            >
-                              {item.badge}
-                            </span>
-                          )}
-                          {active && (
-                            <ChevronRight
-                              className={`h-4 w-4 ${sidebarCollapsed ? "md:hidden" : ""}`}
-                            />
-                          )}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </nav>
-
-          {/* Footer Actions */}
-          <div
-            className={`space-y-1 border-t border-white/10 p-4 ${
-              sidebarCollapsed ? "md:px-2" : ""
-            }`}
-          >
-            {isCoach && (
-              <Link
-                href="/coach/dashboard"
-                aria-label="Coach Portal"
-                title={sidebarCollapsed ? "Coach Portal" : undefined}
-                className={`flex items-center gap-3 rounded-xl bg-emerald-600/30 px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white ${
-                  sidebarCollapsed ? "md:justify-center md:px-2" : ""
-                }`}
-              >
-                <Briefcase className="h-5 w-5 shrink-0" />
-                <span className={sidebarCollapsed ? "md:hidden" : ""}>Coach Portal</span>
-              </Link>
-            )}
-            <Link
-              href="/account/profile"
-              onClick={() => setSidebarOpen(false)}
-              aria-label="My Profile"
-              title={sidebarCollapsed ? "My Profile" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                sidebarCollapsed ? "md:justify-center md:px-2" : ""
-              } ${
-                isActive("/account/profile")
-                  ? "bg-white text-cyan-700 shadow-lg"
-                  : "text-white/80 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <User className="h-5 w-5 shrink-0" />
-              <span className={sidebarCollapsed ? "md:hidden" : ""}>My Profile</span>
-              {isActive("/account/profile") && (
-                <ChevronRight
-                  className={`ml-auto h-4 w-4 ${sidebarCollapsed ? "md:hidden" : ""}`}
-                />
-              )}
-            </Link>
-            <Link
-              href="/account/settings"
-              onClick={() => setSidebarOpen(false)}
-              aria-label="Notification Settings"
-              title={sidebarCollapsed ? "Notification Settings" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                sidebarCollapsed ? "md:justify-center md:px-2" : ""
-              } ${
-                isActive("/account/settings")
-                  ? "bg-white text-cyan-700 shadow-lg"
-                  : "text-white/80 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <Settings className="h-5 w-5 shrink-0" />
-              <span className={sidebarCollapsed ? "md:hidden" : ""}>Notification Settings</span>
-              {isActive("/account/settings") && (
-                <ChevronRight
-                  className={`ml-auto h-4 w-4 ${sidebarCollapsed ? "md:hidden" : ""}`}
-                />
-              )}
-            </Link>
-            <Link
-              href="/"
-              aria-label="Back to Website"
-              title={sidebarCollapsed ? "Back to Website" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white ${
-                sidebarCollapsed ? "md:justify-center md:px-2" : ""
-              }`}
-            >
-              <Home className="h-5 w-5 shrink-0" />
-              <span className={sidebarCollapsed ? "md:hidden" : ""}>Back to Website</span>
-            </Link>
-            <button
-              onClick={handleLogout}
-              aria-label="Logout"
-              title={sidebarCollapsed ? "Logout" : undefined}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:text-white ${
-                sidebarCollapsed ? "md:justify-center md:px-2" : ""
-              }`}
-            >
-              <LogOut className="h-5 w-5 shrink-0" />
-              <span className={sidebarCollapsed ? "md:hidden" : ""}>Logout</span>
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${accountOpen ? "rotate-180" : ""} ${sidebarCollapsed ? "md:hidden" : ""}`} />
             </button>
+            {accountOpen && (
+              <div id="member-account-actions" className="mt-2 space-y-1 rounded-xl bg-white/10 p-1">
+                {isCoach && (
+                  <Link href="/coach/dashboard" onClick={() => setSidebarOpen(false)} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm hover:bg-white/10">
+                    <Briefcase className="h-4 w-4" /> <span className={sidebarCollapsed ? "md:hidden" : ""}>Coach Portal</span>
+                  </Link>
+                )}
+                <Link href="/account/profile" onClick={() => setSidebarOpen(false)} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm hover:bg-white/10">
+                  <User className="h-4 w-4" /> <span className={sidebarCollapsed ? "md:hidden" : ""}>My Profile</span>
+                </Link>
+                <Link href="/account/settings" onClick={() => setSidebarOpen(false)} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm hover:bg-white/10">
+                  <Settings className="h-4 w-4" /> <span className={sidebarCollapsed ? "md:hidden" : ""}>Notification Preferences</span>
+                </Link>
+                <Link href="/" onClick={() => setSidebarOpen(false)} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm hover:bg-white/10">
+                  <Home className="h-4 w-4" /> <span className={sidebarCollapsed ? "md:hidden" : ""}>Main Website</span>
+                </Link>
+                <button type="button" onClick={handleLogout} className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm hover:bg-white/10">
+                  <LogOut className="h-4 w-4" /> <span className={sidebarCollapsed ? "md:hidden" : ""}>Sign Out</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </aside>
