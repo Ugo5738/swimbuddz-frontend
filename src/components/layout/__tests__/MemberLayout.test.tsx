@@ -120,7 +120,7 @@ describe("MemberLayout desktop navigation", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("link", { name: "Upcoming, Calendar & History" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Upcoming, Calendar & History", hidden: true }).closest("ul")).toHaveClass("hidden");
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     window.history.replaceState({}, "", "/");
