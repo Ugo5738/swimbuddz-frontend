@@ -79,7 +79,7 @@ describe("MemberLayout desktop navigation", () => {
       </MemberLayout>
     );
     await screen.findAllByText("Amara Emrey");
-    expect(screen.queryByRole("link", { name: "Make-ups" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Make-up Classes" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Stroke Lab" })).toHaveAttribute(
       "href",
       "https://analyzer.swimbuddz.com"
@@ -96,9 +96,17 @@ describe("MemberLayout desktop navigation", () => {
         <div>Content</div>
       </MemberLayout>
     );
-    expect(await screen.findByRole("link", { name: "Make-ups" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "Make-up Classes" })).toHaveAttribute(
       "href",
       "/account/makeups"
+    );
+  });
+
+  it("keeps the leaderboard reachable through Community", async () => {
+    render(<MemberLayout><div>Content</div></MemberLayout>);
+    expect(await screen.findByRole("link", { name: "Leaderboard" })).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^\\/account\\/reports\\/q[1-4]-\\d{4}\\/leaderboard$/)
     );
   });
 
@@ -139,7 +147,9 @@ describe("MemberLayout desktop navigation", () => {
       </MemberLayout>
     );
 
-    const link = await screen.findByRole("link", { name: "Notification Settings" });
+    await screen.findByRole("button", { name: /My Account/i });
+    fireEvent.click(screen.getByRole("button", { name: /My Account/i }));
+    const link = screen.getByRole("link", { name: "Notification Preferences" });
     expect(link).toHaveAttribute("href", "/account/settings");
   });
 
@@ -152,6 +162,8 @@ describe("MemberLayout desktop navigation", () => {
       </MemberLayout>
     );
 
-    await waitFor(() => expect(screen.getByText("Submission Review")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: /Pod Lead Tools/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Pod Lead Tools/i }));
+    expect(screen.getByRole("link", { name: "Submission Review" })).toBeInTheDocument();
   });
 });
