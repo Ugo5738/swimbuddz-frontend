@@ -132,11 +132,7 @@ const navSections: NavSection[] = [
     title: "My Swims",
     icon: CalendarDays,
     items: [
-      { href: "/account/bookings", label: "Bookings & Upcoming", icon: CalendarDays },
-      { href: "/account/calendar", label: "Swim Calendar", icon: Calendar },
-      { href: "/account/club", label: "Club Reservations", icon: Waves },
-      { href: "/account/pool-access", label: "Pool Access Tickets", icon: ClipboardCheck },
-      { href: "/account/attendance/history", label: "Attendance History", icon: CheckCircle },
+      { href: "/account/bookings", label: "Upcoming, Calendar & History", icon: CalendarDays },
     ],
   },
   {
