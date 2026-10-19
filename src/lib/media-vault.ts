@@ -1,6 +1,6 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
 
-export type VaultRole = "contributor" | "curator" | "admin";
+export type VaultRole = "viewer" | "contributor" | "curator" | "admin";
 
 export type MediaVault = {
   id: string;
@@ -26,7 +26,9 @@ export type MediaVault = {
   opt_out_count: number;
   shot_checklist: string[];
   settings_json: Record<string, unknown>;
-  default_session_visibility: "private" | "selected_members" | "session_participants";
+  default_session_visibility: "private" | "selected_members" | "session_participants" | "community";
+  attendee_can_view: boolean;
+  attendee_can_contribute: boolean;
   default_allow_member_clips: boolean;
   default_allow_member_downloads: boolean;
   published_album_id: string | null;
@@ -75,7 +77,7 @@ export type VaultMedia = {
   thumbnail_url: string | null;
   preview_status: "pending" | "processing" | "thumbnail_ready" | "ready" | "failed" | "unavailable";
   labels: string[];
-  session_visibility?: "private" | "selected_members" | "session_participants";
+  session_visibility?: "private" | "selected_members" | "session_participants" | "community";
   allow_member_clips?: boolean;
   allow_member_downloads?: boolean;
 };
@@ -176,7 +178,7 @@ export const MEDIA_RECORDING_STANDARDS = [
 
 export function accessWindowForRole(
   vault: Pick<MediaVault, "upload_opens_at" | "upload_closes_at">,
-  role: "contributor" | "curator",
+  role: "viewer" | "contributor" | "curator",
   now = new Date()
 ) {
   const opensAt = new Date(vault.upload_opens_at);
@@ -187,7 +189,7 @@ export function accessWindowForRole(
   return {
     startsAt: new Date(Math.min(opensAt.getTime(), now.getTime())).toISOString(),
     expiresAt:
-      role === "curator"
+      role === "curator" || role === "viewer"
         ? new Date(closesAt.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
         : new Date(Math.max(closesAt.getTime(), contributorMinimum.getTime())).toISOString(),
   };

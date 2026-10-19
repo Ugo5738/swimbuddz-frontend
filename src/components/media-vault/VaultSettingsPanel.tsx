@@ -1,6 +1,7 @@
 "use client";
 
 import { mediaVaultApi, type MediaVault } from "@/lib/media-vault";
+import { AttendeeAccessAdmin } from "./AttendeeAccessAdmin";
 import { Save, ShieldCheck, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -30,6 +31,8 @@ export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSa
   const [defaultAudience, setDefaultAudience] = useState(vault.default_session_visibility);
   const [defaultClips, setDefaultClips] = useState(vault.default_allow_member_clips);
   const [defaultDownloads, setDefaultDownloads] = useState(vault.default_allow_member_downloads);
+  const [attendeeView, setAttendeeView] = useState(vault.attendee_can_view ?? true);
+  const [attendeeContribute, setAttendeeContribute] = useState(vault.attendee_can_contribute ?? true);
   const [applyExisting, setApplyExisting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -77,6 +80,8 @@ export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSa
         default_session_visibility: defaultAudience,
         default_allow_member_clips: defaultAudience !== "private" && defaultClips,
         default_allow_member_downloads: defaultAudience !== "private" && defaultDownloads,
+        attendee_can_view: attendeeView,
+        attendee_can_contribute: attendeeView && attendeeContribute,
         apply_defaults_to_existing: applyExisting,
         location_name: location.trim() || null,
         upload_opens_at: new Date(opensAt).toISOString(),
@@ -191,6 +196,13 @@ export function VaultSettingsPanel({ vault, onSaved }: { vault: MediaVault; onSa
           <label className="mt-4 flex items-start gap-2 text-sm font-medium text-slate-800"><input type="checkbox" checked={applyExisting} onChange={(e) => setApplyExisting(e.target.checked)} className="mt-1" /> Also update existing recordings in this Vault</label>
           {applyExisting && <p className="mt-2 text-xs text-amber-800">This changes the audience for every existing ready video. Broadening access requires every affected recording to be approved and consent-cleared. Otherwise saving will be rejected. Use the Review tab for individual exceptions.</p>}
         </div>
+        {vault.session_id && <div className="mt-5 space-y-3 rounded-xl border border-cyan-200 bg-cyan-50 p-4">
+          <h3 className="font-semibold text-slate-900">Automatic access for verified attendees</h3>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={attendeeView} onChange={e=>setAttendeeView(e.target.checked)}/> Allow verified attendees to browse approved session media</label>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={attendeeView && attendeeContribute} disabled={!attendeeView} onChange={e=>setAttendeeContribute(e.target.checked)}/> Allow verified attendees to contribute recordings</label>
+          <p className="text-xs text-slate-600">All uploads still require approval and consent clearance before being shared with attendees.</p>
+          <AttendeeAccessAdmin vaultId={vault.id}/>
+        </div>}
         <Field label="Consent and safeguarding notice" wide>
           <textarea
             value={consentNotice}
