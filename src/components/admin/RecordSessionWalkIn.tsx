@@ -5,7 +5,8 @@ import { useApi } from "@/hooks/useApi";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-type Member = { id: string; first_name: string; last_name: string; email: string };
+export type WalkInMember = { id: string; first_name: string; last_name: string; email: string };
+type Member = WalkInMember;
 
 export type GuestWalkInInput = {
   full_name: string;
@@ -23,12 +24,14 @@ export function RecordSessionWalkIn({
   disabled,
   onRecord,
   onRecordGuest,
+  eligibleMembers,
 }: {
   defaultFee: number;
   defaultGuestFee: number;
   disabled: boolean;
   onRecord: (memberId: string, feeKobo: number, note: string) => Promise<void>;
   onRecordGuest: (input: GuestWalkInInput) => Promise<void>;
+  eligibleMembers?: WalkInMember[];
 }) {
   const [mode, setMode] = useState<"member" | "guest">("member");
   const [search, setSearch] = useState("");
@@ -46,9 +49,15 @@ export function RecordSessionWalkIn({
     useState<"unknown" | "unpaid">("unknown");
   const [guestNote, setGuestNote] = useState("");
 
-  const { data, loading, error } = useApi<Member[]>(
-    query ? `/api/v1/members/?search=${encodeURIComponent(query)}&limit=20` : null
+  const remote = useApi<Member[]>(
+    query && eligibleMembers === undefined
+      ? `/api/v1/members/?search=${encodeURIComponent(query)}&limit=20` : null
   );
+  const data = eligibleMembers === undefined ? remote.data : eligibleMembers.filter((member) =>
+    `${member.first_name} ${member.last_name} ${member.email}`.toLowerCase().includes(query.toLowerCase())
+  );
+  const loading = eligibleMembers === undefined && remote.loading;
+  const error = eligibleMembers === undefined ? remote.error : null;
 
   const guestFeeChanged = Math.round(guestFee * 100) !== Math.round(defaultGuestFee * 100);
 
@@ -95,6 +104,9 @@ export function RecordSessionWalkIn({
             }
           }}
         >
+          {eligibleMembers !== undefined && <p className="text-sm text-slate-600">
+            Only members with Club access for this swim are listed. Academy enrollment alone does not grant Club access.
+          </p>}
           <div className="flex items-end gap-2">
             <Input
               label="Find member by name or email"
@@ -118,7 +130,7 @@ export function RecordSessionWalkIn({
           </div>
           {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
           {loading && <p>Searching…</p>}
-          {!loading && !error && query === search.trim() && data && (
+          {!loading && !error && query && query === search.trim() && data && (
             <select
               aria-label="Member to record"
               required
@@ -129,7 +141,7 @@ export function RecordSessionWalkIn({
               <option value="">{data.length ? "Select the member" : "No matching members"}</option>
               {data.map((member) => (
                 <option key={member.id} value={member.id}>
-                  {member.first_name} {member.last_name} — {member.email}
+                  {`${member.first_name} ${member.last_name}`.trim()} — {member.email}
                 </option>
               ))}
             </select>

@@ -169,7 +169,9 @@ export function isSessionRelevant(
   if (context.bookedSessionIds.has(session.id)) return true;
   if (session.pod_id) return session.pod_id === context.myPodId;
   if (session.cohort_id) return context.enrolledCohortIds.has(session.cohort_id);
-  return session.access?.bookable !== false;
+  // Booking closes once a swim starts. It must not erase an eligible past
+  // swim from the All view for members who did not pre-book.
+  return session.access?.bookable !== false || session.access?.sign_in_eligible === true;
 }
 
 /** Group sessions by date and sort groups chronologically.

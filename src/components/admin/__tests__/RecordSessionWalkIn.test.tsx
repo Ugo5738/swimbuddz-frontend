@@ -9,6 +9,27 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+it("searches only the session's eligible Club members for a Club walk-in", async () => {
+  vi.mocked(apiGet).mockResolvedValue([
+    { id: "academy", first_name: "Academy", last_name: "Only", email: "academy@example.com" },
+  ]);
+  render(<RecordSessionWalkIn defaultFee={5200} defaultGuestFee={15000} disabled={false}
+    eligibleMembers={[
+      { id: "comfort", first_name: "Comfort", last_name: "Example", email: "comfort@example.com" },
+      { id: "uche", first_name: "Uche", last_name: "Example", email: "uche@example.com" },
+    ]}
+    onRecord={vi.fn(async () => {})} onRecordGuest={vi.fn(async () => {})} />);
+  fireEvent.click(screen.getByText("Add walk-in"));
+  fireEvent.change(screen.getByLabelText("Find member by name or email"), { target: { value: "Comfort" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search members" }));
+  expect(await screen.findByRole("option", { name: "Comfort Example — comfort@example.com" })).toBeInTheDocument();
+  expect(apiGet).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText("Find member by name or email"), { target: { value: "Academy" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search members" }));
+  expect(screen.getByRole("option", { name: "No matching members" })).toBeInTheDocument();
+  expect(screen.queryByRole("option", { name: /Academy Only/ })).not.toBeInTheDocument();
+});
+
 it("finds a registered member outside the roster and records attendance, not a payment", async () => {
   vi.mocked(apiGet).mockResolvedValue([
     { id: "member-1", first_name: "Ada", last_name: "Example", email: "ada@example.com" },

@@ -39,4 +39,15 @@ describe("isSessionRelevant", () => {
       isSessionRelevant(session({ id: "cohort", cohort_id: "cohort-other" }), baseContext)
     ).toBe(false);
   });
+
+  it("keeps an eligible past Club swim after its booking window has closed", () => {
+    expect(isSessionRelevant(session({
+      id: "past-club",
+      access: { bookable: false, sign_in_eligible: true, reason: "session_unavailable" } as never,
+    }), baseContext)).toBe(true);
+    expect(isSessionRelevant(session({
+      id: "other-club",
+      access: { bookable: false, sign_in_eligible: false, reason: "club_required" } as never,
+    }), baseContext)).toBe(false);
+  });
 });
