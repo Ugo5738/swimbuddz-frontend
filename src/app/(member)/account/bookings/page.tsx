@@ -1,6 +1,7 @@
 "use client";
 
 import { PoolVisitActions } from "@/components/swims/PoolVisitActions";
+import { UpcomingCalendarPreview } from "@/components/swims/UpcomingCalendarPreview";
 import { TierCalendar } from "@/components/calendar/TierCalendar";
 import { apiGet, apiPost } from "@/lib/api";
 import {
@@ -146,9 +147,9 @@ export default function MySwimsPage() {
 
       <div role="tablist" aria-label="My Swims views" className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
         {([
-          ["upcoming", "Upcoming", Clock3],
-          ["calendar", "Calendar", CalendarDays],
-          ["history", "History", History],
+          ["upcoming", "My bookings", Clock3],
+          ["calendar", "All activities", CalendarDays],
+          ["history", "Past swims", History],
         ] as const).map(([key, label, Icon]) => (
           <button type="button" role="tab" aria-selected={view === key} key={key} onClick={() => changeView(key)}
             className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition ${view === key ? "bg-white text-cyan-800 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
@@ -158,13 +159,13 @@ export default function MySwimsPage() {
       </div>
 
       {errors.length > 0 && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        Some swim information could not be loaded ({errors.join(", ")}). This view may be incomplete.
+        Some reservation information could not be loaded ({errors.join(", ")}). A missing booking here does not mean it was cancelled.
         <button type="button" onClick={() => void load()} className="ml-2 font-semibold underline">Retry</button>
       </div>}
       {actionError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{actionError}</p>}
 
       {view === "calendar" ? (
-        <TierCalendar authenticated title="SwimBuddz calendar"
+        <TierCalendar authenticated embedded title="SwimBuddz calendar"
           subtitle="Explore the dates of Community activities, Club sessions and Academy classes. The calendar includes activities you have not booked." />
       ) : loading ? <p className="py-8 text-center text-sm text-slate-600" role="status">Loading your swims…</p>
         : view === "upcoming" ? (
@@ -172,10 +173,11 @@ export default function MySwimsPage() {
             {sections.upcoming.length ? <section aria-label="Upcoming booked swims" className="space-y-3">
               {sections.upcoming.map(activityCard)}
             </section> : <div className="rounded-2xl border bg-white p-8 text-center">
-              <h2 className="font-semibold text-slate-900">No upcoming swims booked</h2>
-              <p className="mt-1 text-sm text-slate-600">When you reserve a swim it will appear here.</p>
-              <Link href="/find-a-swim" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Find your next swim</Link>
+              <h2 className="font-semibold text-slate-900">No upcoming reservations yet</h2>
+              <p className="mt-1 text-sm text-slate-600">Your confirmed reservations will appear here. SwimBuddz activities are still happening — explore them below.</p>
+              <Link href="/sessions" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Browse available sessions</Link>
             </div>}
+            <UpcomingCalendarPreview onOpenCalendar={() => changeView("calendar")} />
             {sections.attention.length > 0 && <section className="space-y-3" aria-label="Bookings needing attention">
               <h2 className="text-lg font-semibold text-slate-900">Bookings needing attention</h2>
               {sections.attention.map(activityCard)}
