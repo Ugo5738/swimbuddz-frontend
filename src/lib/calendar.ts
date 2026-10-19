@@ -158,3 +158,19 @@ export function formatCalendarDateTime(item: CalendarItem): string {
     }).format(startsAt);
   }
 }
+
+/** Return a small discovery preview without treating activities as bookings. */
+export function selectUpcomingCalendarItems(
+  items: CalendarItem[],
+  now: Date,
+  limit: number
+): CalendarItem[] {
+  return items
+    .filter((item) => {
+      const starts = new Date(item.starts_at).getTime();
+      return Number.isFinite(starts) && starts >= now.getTime()
+        && !["cancelled", "canceled", "draft", "archived"].includes(item.status.toLowerCase());
+    })
+    .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+    .slice(0, limit);
+}

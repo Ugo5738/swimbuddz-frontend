@@ -42,6 +42,7 @@ type TierCalendarProps = {
   authenticated: boolean;
   title: string;
   subtitle: string;
+  embedded?: boolean;
 };
 
 const AUDIENCES: CalendarAudience[] = ["community", "club", "academy"];
@@ -67,7 +68,7 @@ function itemKey(item: CalendarItem): string {
   return `${item.source}:${item.id}`;
 }
 
-export function TierCalendar({ authenticated, title, subtitle }: TierCalendarProps) {
+export function TierCalendar({ authenticated, title, subtitle, embedded = false }: TierCalendarProps) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [range, setRange] = useState(listRange);
   const [view, setView] = useState<CalendarView>("list");
@@ -207,7 +208,7 @@ export function TierCalendar({ authenticated, title, subtitle }: TierCalendarPro
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-col justify-between gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end">
+      {!embedded && <header className="flex flex-col justify-between gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end">
         <div>
           <h1 className="text-2xl font-bold text-slate-950 md:text-3xl">{title}</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-600 md:text-base">{subtitle}</p>
@@ -215,7 +216,7 @@ export function TierCalendar({ authenticated, title, subtitle }: TierCalendarPro
         <p className="text-sm font-semibold text-slate-700">
           {view === "list" ? "Upcoming 12 months" : format(visibleMonth, "MMMM yyyy")}
         </p>
-      </header>
+      </header>}
 
       <div className="space-y-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
