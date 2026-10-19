@@ -526,7 +526,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             {visibleSections.map((section) => {
               const expanded = Boolean(expandedSections[section.title]);
               const sectionActive = section.items.some((item) => isActive(item.href));
-              const showItems = !section.title || expanded || sectionActive;
+              const showItems = !section.title || expanded;
               const GroupIcon = section.icon;
               return (
                 <div key={section.title || "_main"} className="space-y-1">

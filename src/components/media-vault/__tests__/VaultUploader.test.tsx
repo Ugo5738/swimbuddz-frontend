@@ -35,6 +35,8 @@ const vault: MediaVault = {
   shot_checklist: ["Opening shot"],
   settings_json: {},
   default_session_visibility: "selected_members",
+  attendee_can_view: true,
+  attendee_can_contribute: true,
   default_allow_member_clips: false,
   default_allow_member_downloads: false,
   published_album_id: null,

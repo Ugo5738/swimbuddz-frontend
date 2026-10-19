@@ -9,7 +9,7 @@ import { toast } from "sonner";
 type Grant = {
   id: string;
   member_id: string;
-  role: "contributor" | "curator" | "admin";
+  role: "viewer" | "contributor" | "curator" | "admin";
   starts_at: string;
   expires_at: string;
   source: string;
@@ -47,7 +47,7 @@ export function VaultAccessPanel({
   const [allMembers, setAllMembers] = useState<MemberSearch[]>([]);
   const [members, setMembers] = useState<MemberSearch[]>([]);
   const [selectedMember, setSelectedMember] = useState<MemberSearch | null>(null);
-  const [role, setRole] = useState<"contributor" | "curator">("contributor");
+  const [role, setRole] = useState<"viewer" | "contributor" | "curator">("viewer");
   const [newLink, setNewLink] = useState<GuestLink | null>(null);
   const [working, setWorking] = useState(false);
   const membersById = useMemo(
@@ -244,9 +244,10 @@ export function VaultAccessPanel({
         <div className="mt-3 flex gap-2">
           <select
             value={role}
-            onChange={(event) => setRole(event.target.value as "contributor" | "curator")}
+            onChange={(event) => setRole(event.target.value as "viewer" | "contributor" | "curator")}
             className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
           >
+            <option value="viewer">Viewer — no uploading</option>
             <option value="contributor">Media uploader</option>
             <option value="curator">Social curator</option>
           </select>

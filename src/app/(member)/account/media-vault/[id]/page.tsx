@@ -91,9 +91,9 @@ export default function MemberMediaVaultDetailPage() {
         </div>
       ) : (
         <div className="space-y-5">
-          <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">You can browse approved, consent-cleared media from this assigned Vault and upload your own contributions. Unreviewed media from other contributors remains private.</div>
+          <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">You can browse approved, consent-cleared media from this Vault. Uploading is available when your permissions allow it; unreviewed footage from others stays private.</div>
           <VaultLibrary vaults={[data]} />
-          <VaultUploader vault={data} scope={{ kind: "member", vaultId: data.id }} />
+          {data.effective_role !== "viewer" && <VaultUploader vault={data} scope={{ kind: "member", vaultId: data.id }} />}
         </div>
       )}
     </div>

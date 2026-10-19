@@ -198,6 +198,12 @@ export default function MySwimsPage() {
                     <h3 className="font-semibold text-slate-900">{record.session?.title || "SwimBuddz session"}</h3>
                     <p className="text-sm text-slate-600">{formatSwimDate(record.session?.start_time || null)} · {record.session?.location_name || "Location unavailable"}</p>
                     <p className="mt-1 text-xs capitalize text-cyan-800">Attendance: {record.status.replace(/_/g, " ")}</p>
+                    {["present", "late"].includes(record.status.toLowerCase()) && <div className="mt-3 flex flex-wrap gap-3">
+                      <Link href={`/account/media-vault?session=${record.session_id}&action=view`}
+                        className="rounded-lg border border-cyan-700 px-3 py-2 text-sm font-semibold text-cyan-800">View session media</Link>
+                      <Link href={`/account/media-vault?session=${record.session_id}&action=contribute`}
+                        className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white">Contribute media</Link>
+                    </div>}
                   </article>)}
               </div> : <p className="rounded-xl border bg-white p-5 text-sm text-slate-600">No attendance records have been loaded.</p>}
               <Link href="/account/attendance/history" className="inline-block text-sm font-semibold text-cyan-700 underline">Full attendance record</Link>

@@ -367,6 +367,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/members/club-session-roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Club Session Roster */
+        get: operations["get_club_session_roster_members_club_session_roster_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/members/": {
         parameters: {
             query?: never;
@@ -19183,6 +19200,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/vaults/my-attended-vaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Attended Vaults */
+        get: operations["list_my_attended_vaults_media_vaults_my_attended_vaults_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/my-session-vault/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get Or Create Attended Session Vault */
+        post: operations["get_or_create_attended_session_vault_media_vaults_my_session_vault__session_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/my-collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Collections */
+        get: operations["list_my_collections_media_vaults_my_collections_get"];
+        put?: never;
+        /** Create My Collection */
+        post: operations["create_my_collection_media_vaults_my_collections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/my-collections/{vault_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename My Collection */
+        patch: operations["rename_my_collection_media_vaults_my_collections__vault_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/media/vaults/{vault_id}/attendee-denials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Attendee Denials */
+        get: operations["list_attendee_denials_media_vaults__vault_id__attendee_denials_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/{vault_id}/attendee-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Attendee Access */
+        post: operations["change_attendee_access_media_vaults__vault_id__attendee_access_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/vaults/my-media/{media_item_id}/share-community": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Share Personal Media With Community */
+        post: operations["share_personal_media_with_community_media_vaults_my_media__media_item_id__share_community_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/vaults/my-videos": {
         parameters: {
             query?: never;
@@ -23736,6 +23873,30 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** ClubSessionRosterMember */
+        ClubSessionRosterMember: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Access Source */
+            access_source: string;
+        };
+        /** ClubSessionRosterResponse */
+        ClubSessionRosterResponse: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Members */
+            members: components["schemas"]["ClubSessionRosterMember"][];
         };
         /** ClubTermsApproval */
         ClubTermsApproval: {
@@ -46288,6 +46449,19 @@ export interface components {
              */
             start_offset_seconds: number;
         };
+        /** AttendanceAccessChange */
+        AttendanceAccessChange: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Deny
+             * @default true
+             */
+            deny: boolean;
+        };
         /**
          * AudioTrackResponse
          * @description Audio track response schema.
@@ -46540,7 +46714,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "contributor" | "curator";
+            role: "viewer" | "contributor" | "curator";
             /**
              * Scope
              * @enum {string}
@@ -46598,6 +46772,8 @@ export interface components {
             expires_at: string;
             /** Download Url */
             download_url?: string | null;
+            /** Error Message */
+            error_message?: string | null;
         };
         /** CompletedPart */
         CompletedPart: {
@@ -47138,6 +47314,32 @@ export interface components {
             /** Expires In Seconds */
             expires_in_seconds: number;
         };
+        /** PersonalCollectionCreate */
+        PersonalCollectionCreate: {
+            /** Title */
+            title: string;
+            /**
+             * Share With Community
+             * @default false
+             */
+            share_with_community: boolean;
+            /** Description */
+            description?: string | null;
+        };
+        /** PersonalCollectionUpdate */
+        PersonalCollectionUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Share With Community */
+            share_with_community?: boolean | null;
+            /** Description */
+            description?: string | null;
+        };
+        /** PersonalMediaShareUpdate */
+        PersonalMediaShareUpdate: {
+            /** Share With Community */
+            share_with_community: boolean;
+        };
         /** PublishRequest */
         PublishRequest: {
             /** Media Item Ids */
@@ -47441,6 +47643,16 @@ export interface components {
              */
             default_session_visibility: "private" | "selected_members" | "session_participants";
             /**
+             * Attendee Can View
+             * @default true
+             */
+            attendee_can_view: boolean;
+            /**
+             * Attendee Can Contribute
+             * @default true
+             */
+            attendee_can_contribute: boolean;
+            /**
              * Default Allow Member Clips
              * @default false
              */
@@ -47462,7 +47674,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "contributor" | "curator" | "admin";
+            role: "viewer" | "contributor" | "curator" | "admin";
             /**
              * Starts At
              * Format: date-time
@@ -47711,6 +47923,16 @@ export interface components {
              */
             default_session_visibility: string;
             /**
+             * Attendee Can View
+             * @default true
+             */
+            attendee_can_view: boolean;
+            /**
+             * Attendee Can Contribute
+             * @default true
+             */
+            attendee_can_contribute: boolean;
+            /**
              * Default Allow Member Clips
              * @default false
              */
@@ -47786,6 +48008,10 @@ export interface components {
              * @default false
              */
             apply_defaults_to_existing: boolean;
+            /** Attendee Can View */
+            attendee_can_view?: boolean | null;
+            /** Attendee Can Contribute */
+            attendee_can_contribute?: boolean | null;
         };
         /** AdminMemberRoleUpdateRequest */
         AdminMemberRoleUpdateRequest: {
@@ -50759,6 +50985,43 @@ export interface operations {
                     "application/json": {
                         [key: string]: components["schemas"]["MemberBasicResponse"];
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_club_session_roster_members_club_session_roster_get: {
+        parameters: {
+            query: {
+                session_id: string;
+                at: string;
+                club_id?: string | null;
+                pool_id?: string | null;
+                pod_id?: string | null;
+                club_access_mode?: "plan_included" | "active_club" | "paid_addon";
+                allows_visiting_club_members?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClubSessionRosterResponse"];
                 };
             };
             /** @description Validation Error */
@@ -83823,6 +84086,250 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultResponse"];
+                };
+            };
+        };
+    };
+    list_my_attended_vaults_media_vaults_my_attended_vaults_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultListResponse"];
+                };
+            };
+        };
+    };
+    get_or_create_attended_session_vault_media_vaults_my_session_vault__session_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_collections_media_vaults_my_collections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultListResponse"];
+                };
+            };
+        };
+    };
+    create_my_collection_media_vaults_my_collections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalCollectionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_my_collection_media_vaults_my_collections__vault_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vault_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalCollectionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_attendee_denials_media_vaults__vault_id__attendee_denials_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vault_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_attendee_access_media_vaults__vault_id__attendee_access_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vault_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttendanceAccessChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    share_personal_media_with_community_media_vaults_my_media__media_item_id__share_community_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                media_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalMediaShareUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
