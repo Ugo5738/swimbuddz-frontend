@@ -114,6 +114,8 @@ export type Enrollment = {
   // Resumable pause marker (NULL/undefined = active). Paused students are off
   // the attendance roster and earn the coach nothing from this date.
   paused_at?: string | null;
+  access_suspended?: boolean;
+  enrolled_at?: string | null;
   cohort?: Cohort;
   program?: Program;
   // Additional fields populated by backend when returning students
@@ -324,6 +326,7 @@ export type CoachSession = {
   location_address: string | null;
   capacity: number;
   cohort_id: string | null;
+  cohort_fee_mode?: "included" | "paid_extra";
   week_number: number | null;
   lesson_title: string | null;
   created_at: string;
