@@ -15,6 +15,7 @@ export type SwimSession = {
   starts_at?: string | null;
   start_time?: string | null;
   location_name?: string | null;
+  cohort_id?: string | null;
   status?: string | null;
 };
 export type ClubQuarterSwim = {
@@ -53,6 +54,8 @@ export type SwimActivity = {
   status: string;
   sessionId?: string;
   bookingId: string;
+  /** Scheduled class inherited from an active Academy enrollment (not a booking). */
+  assignedAcademy?: boolean;
   club?: ClubQuarterSwim;
   pool?: PoolVisitBooking;
 };
@@ -71,12 +74,27 @@ function validDate(value: string | null): number | null {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
+export type AcademyEnrollmentForSwims = {
+  cohort_id?: string | null;
+  status: string;
+  access_suspended?: boolean;
+  paused_at?: string | null;
+};
+
+/** A confirmed enrollment provides a class schedule, not an individual booking. */
+export function isActiveAcademyEnrollment(enrollment: AcademyEnrollmentForSwims): boolean {
+  return enrollment.status.toLowerCase() === "enrolled"
+    && !enrollment.access_suspended
+    && !enrollment.paused_at;
+}
+
 export function buildSwimActivities(
   bookings: SessionBooking[],
   sessions: SwimSession[],
   clubSwims: ClubQuarterSwim[],
   poolBookings: PoolVisitBooking[],
-  offers: PoolVisitOffer[]
+  offers: PoolVisitOffer[],
+  academyEnrollments: AcademyEnrollmentForSwims[] = []
 ): SwimActivity[] {
   const sessionById = new Map(sessions.map((s) => [s.id, s]));
   const offerById = new Map(offers.map((offer) => [offer.id, offer]));
@@ -109,6 +127,29 @@ export function buildSwimActivities(
     });
   }
 
+  const assignedCohorts = new Set(
+    academyEnrollments.filter(isActiveAcademyEnrollment)
+      .map((enrollment) => enrollment.cohort_id).filter((id): id is string => Boolean(id))
+  );
+  const listedSessionIds = new Set(result.map((item) => item.sessionId));
+  for (const session of sessions) {
+    if (!session.cohort_id || !assignedCohorts.has(session.cohort_id)) continue;
+    if (classifySession(session) !== "academy" || listedSessionIds.has(session.id)) continue;
+    if (["cancelled", "canceled", "draft"].includes((session.status ?? "").toLowerCase())) continue;
+    result.push({
+      key: `academy-assigned:${session.id}`,
+      kind: "academy",
+      title: session.title || session.name || "Academy class",
+      date: session.starts_at || session.start_time || null,
+      location: session.location_name || null,
+      status: "assigned",
+      bookingId: session.id,
+      sessionId: session.id,
+      assignedAcademy: true,
+    });
+    listedSessionIds.add(session.id);
+  }
+
   for (const booking of poolBookings) {
     const offer = offerById.get(booking.offer_id);
     result.push({
@@ -134,7 +175,7 @@ export function buildSwimActivities(
 
 export function categorizeActivities(activities: SwimActivity[], now = new Date()) {
   const today = now.getTime();
-  const active = (status: string) => ["confirmed", "pending", "pending_payment"].includes(status);
+  const active = (status: string) => ["confirmed", "pending", "pending_payment", "assigned"].includes(status);
   const upcoming = activities.filter((activity) => {
     const when = validDate(activity.date);
     return when !== null && when >= today && active(activity.status);

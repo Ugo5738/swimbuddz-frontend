@@ -1,16 +1,6 @@
-import { TierCalendar } from "@/components/calendar/TierCalendar";
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "My Calendar | SwimBuddz",
-};
-
-export default function MemberCalendarPage() {
-  return (
-    <TierCalendar
-      authenticated
-      title="My SwimBuddz Calendar"
-      subtitle="Your available Community activities, Club sessions, and Academy cohort dates in one place."
-    />
-  );
+/** The shared SwimBuddz calendar is public, not an individual's booking list. */
+export default function LegacyAccountCalendar() {
+  redirect("/calendar");
 }
