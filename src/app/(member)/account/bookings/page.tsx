@@ -492,7 +492,7 @@ function SessionsHub() {
           </Alert>
         ) : activeTab === "past" ? null : (
           renderContent()
-        )
+        )}
         {!loading && !error && activeTab === "booked" && (
           <div className="mt-6">
             <AdditionalSwimRecords view="booked" primaryHasSessions={filteredSessions.length > 0}
