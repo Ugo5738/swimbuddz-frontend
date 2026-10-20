@@ -4,6 +4,7 @@ import type { SessionWithRides } from "@/components/sessions/SessionCard";
 import { AcademyApi, type Cohort, type Enrollment } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
 import type { SessionAccessTier } from "@/lib/sessionAccess";
+import { isActiveAcademyEnrollment } from "@/lib/my-swims";
 import { getMyPod, podDisplayName } from "@/lib/pods";
 import type { CohortInfo } from "@/lib/sessions";
 import { getMembershipLabel, getPaidMembershipTier } from "@/lib/tiers";
@@ -115,7 +116,7 @@ export function useSessionsHubData({ loadPast }: { loadPast: boolean }) {
     const nextCohortMap = new Map<string, CohortInfo>();
     const nextEnrolledIds = new Set<string>();
     for (const enrollment of cohortsQuery.data?.enrollments ?? []) {
-      if (!enrollment.cohort_id || !enrollment.cohort) continue;
+      if (!enrollment.cohort_id || !enrollment.cohort || !isActiveAcademyEnrollment(enrollment)) continue;
       nextEnrolledIds.add(enrollment.cohort_id);
       nextCohortMap.set(enrollment.cohort_id, {
         cohortName: enrollment.cohort.name,
