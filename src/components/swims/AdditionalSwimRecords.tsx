@@ -103,25 +103,6 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
   const otherActivities = (view === "booked" ? [...sections.upcoming, ...sections.attention] : sections.past)
     .filter((item) => !item.sessionId || !represented.has(item.sessionId));
 
-  const knownSessions = new Map(sessionDates.map((session) => [session.id, session]));
-  const attendanceDate = (record: AttendanceRecord) =>
-    record.session?.start_time || record.session?.starts_at ||
-    knownSessions.get(record.session_id)?.starts_at ||
-    knownSessions.get(record.session_id)?.start_time || null;
-
-  // Attendance is personal history; it must not disappear because that session
-  // also appears in the general completed-session catalogue.
-  const remainingAttendance = view === "past"
-    ? attendance.filter((record) => {
-        if (!record.session_id) return false;
-        const date = attendanceDate(record);
-        return !date || (Number.isFinite(Date.parse(date)) && Date.parse(date) < Date.now());
-      }).sort((a, b) =>
-        new Date(attendanceDate(b) ?? 0).getTime() -
-        new Date(attendanceDate(a) ?? 0).getTime()
-      )
-    : [];
-
   const personalHistory = view === "past"
     ? buildPersonalSwimHistory({ activities, attendance, sessions: sessionDates })
     : [];
@@ -223,20 +204,14 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
           <Link href="/find-a-swim/sessions" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Browse upcoming sessions</Link>
         </div>
       )}
-      {view === "past" && personalHistory.length > 0 && (
+      {view === "booked" && otherActivities.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">
-            {view === "booked" ? "Other booked and assigned swims" : "Other previous swims"}
-          </h2>
-          <p className="text-sm text-slate-600">
-            {view === "booked"
-              ? "Club-quarter places, Academy classes, pool visits and reservations not already shown above."
-              : "Previous commitments not already included in the session cards above."}
-          </p>
+          <h2 className="text-lg font-semibold text-slate-900">Other booked and assigned swims</h2>
+          <p className="text-sm text-slate-600">Club-quarter places, Academy classes, pool visits and reservations not already shown above.</p>
           <div className="grid gap-3 md:grid-cols-2">{otherActivities.map(activityCard)}</div>
         </div>
       )}
-      {remainingAttendance.length > 0 && (
+      {view === "past" && personalHistory.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-slate-900">My swimming history</h2>
           <div className="grid gap-3 md:grid-cols-2">
@@ -278,7 +253,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
           </div>
         </div>
       )}
-      {view === "past" && remainingAttendance.length === 0 && !errors.includes("Attendance") && (
+      {view === "past" && personalHistory.length === 0 && !errors.includes("Attendance") && (
         <p className="text-sm text-slate-600">No personal swimming history was returned. Browse the SwimBuddz calendar to see all completed activities.</p>
       )}
       {view === "past" && (
