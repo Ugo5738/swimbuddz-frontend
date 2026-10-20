@@ -23,6 +23,16 @@ describe("member swim activity aggregation", () => {
     expect(booked[0].assignedAcademy).toBeUndefined();
   });
 
+  it("keeps installment-paying enrolled students in their assigned classes", () => {
+    const sessions = [{ id: "week-5", cohort_id: "cohort-a", session_type: "cohort_class",
+      starts_at: "2027-01-10T10:00:00Z", title: "Week 5", status: "scheduled" }];
+    const activities = buildSwimActivities([], sessions, [], [], [], [{
+      cohort_id: "cohort-a", status: "enrolled", payment_status: "pending",
+    }]);
+    expect(activities).toHaveLength(1);
+    expect(activities[0]).toMatchObject({ assignedAcademy: true, status: "assigned" });
+  });
+
   it("does not assign Academy classes to paused, suspended or pending enrollments", () => {
     expect(isActiveAcademyEnrollment({ status: "enrolled", paused_at: "2026-10-01" })).toBe(false);
     expect(isActiveAcademyEnrollment({ status: "enrolled", access_suspended: true })).toBe(false);

@@ -298,40 +298,6 @@ function SessionsHub() {
   const renderContent = () => {
     if (filteredSessions.length === 0) {
       // Empty states per tab
-      if (activeTab === "booked") {
-        return (
-          <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center space-y-4">
-            <Waves className="mx-auto h-12 w-12 text-slate-300" />
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                {hasActiveFilters ? "No bookings match your filters" : "No upcoming bookings"}
-              </h2>
-              <p className="mt-2 text-slate-500">
-                {hasActiveFilters
-                  ? "Try adjusting your filters to see more sessions."
-                  : "You haven\u2019t reserved a spot in any upcoming sessions yet."}
-              </p>
-            </div>
-            {hasActiveFilters ? (
-              <button
-                onClick={clearFilters}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                <X className="h-4 w-4" />
-                Clear filters
-              </button>
-            ) : (
-              <button
-                onClick={() => setTab("upcoming")}
-                className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-700 transition-colors"
-              >
-                Browse Sessions
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        );
-      }
 
       if (activeTab === "past") {
         return (
@@ -536,6 +502,12 @@ function SessionsHub() {
 
       {/* Content */}
       <section aria-live="polite">
+        {!loading && !error && activeTab === "past" && (
+          <div className="mb-6">
+            <AdditionalSwimRecords view="past" primaryHasSessions={filteredSessions.length > 0}
+              representedSessionIds={filteredSessions.map((session) => session.id)} />
+          </div>
+        )}
         {loading ? (
           <LoadingCard text="Loading sessions..." />
         ) : error ? (
@@ -545,12 +517,10 @@ function SessionsHub() {
         ) : (
           renderContent()
         )}
-        {!loading && !error && (activeTab === "booked" || activeTab === "past") && (
+        {!loading && !error && activeTab === "booked" && (
           <div className="mt-6">
-            <AdditionalSwimRecords
-              view={activeTab}
-              representedSessionIds={filteredSessions.map((session) => session.id)}
-            />
+            <AdditionalSwimRecords view="booked" primaryHasSessions={filteredSessions.length > 0}
+              representedSessionIds={filteredSessions.map((session) => session.id)} />
           </div>
         )}
         {!loading && !error && activeTab === "all" && pastLoading && (

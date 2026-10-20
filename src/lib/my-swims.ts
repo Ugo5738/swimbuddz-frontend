@@ -75,6 +75,8 @@ function validDate(value: string | null): number | null {
 }
 
 export type AcademyEnrollmentForSwims = {
+  /** Installment billing is independent of enrollment access. */
+  payment_status?: string;
   cohort_id?: string | null;
   status: string;
   access_suspended?: boolean;
