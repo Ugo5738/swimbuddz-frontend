@@ -1,6 +1,7 @@
 "use client";
 
 import { SessionWeatherChip } from "@/components/sessions/SessionWeatherChip";
+import { AcademyAttendanceException } from "@/components/sessions/AcademyAttendanceException";
 import { Badge } from "@/components/ui/Badge";
 import {
   getSessionPriceDisplay,
@@ -463,6 +464,10 @@ export function SessionCard({
               )}
             </div>
           )}
+
+        {isAcademy && cohortInfo?.isEnrolled && session.cohort_fee_mode !== "paid_extra" &&
+          access?.reason !== "cohort_access_suspended" && !effectivelyPast &&
+          <AcademyAttendanceException sessionId={session.id} startsAt={session.starts_at} attendanceStatus={attendanceStatus} />}
 
         {/* Spacer */}
         <div className="flex-1" />
