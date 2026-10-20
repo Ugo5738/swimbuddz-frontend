@@ -125,6 +125,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/account", label: "Dashboard", icon: LayoutDashboard },
       { href: "/find-a-swim", label: "Find a Swim", icon: Waves },
+      { href: "/calendar", label: "SwimBuddz Calendar", icon: CalendarDays },
       { href: "/account/onboarding", label: "Complete Setup", icon: CheckCircle },
     ],
   },
@@ -132,7 +133,7 @@ const navSections: NavSection[] = [
     title: "My Swims",
     icon: CalendarDays,
     items: [
-      { href: "/account/bookings", label: "Upcoming, Calendar & History", icon: CalendarDays },
+      { href: "/account/bookings", label: "My Bookings & History", icon: CalendarDays },
     ],
   },
   {

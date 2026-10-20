@@ -1,19 +1,17 @@
 "use client";
 
 import { PoolVisitActions } from "@/components/swims/PoolVisitActions";
-import { UpcomingCalendarPreview } from "@/components/swims/UpcomingCalendarPreview";
-import { TierCalendar } from "@/components/calendar/TierCalendar";
 import { apiGet, apiPost } from "@/lib/api";
 import {
   buildSwimActivities, categorizeActivities, formatSwimDate,
   type SessionBooking, type SwimSession, type ClubQuarterSwim,
   type PoolVisitBooking, type PoolVisitOffer, type SwimActivity,
 } from "@/lib/my-swims";
-import { CalendarDays, Clock3, History, Waves } from "lucide-react";
+import { Clock3, History, Waves } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type View = "upcoming" | "calendar" | "history";
+type View = "upcoming" | "history";
 type AttendanceRecord = {
   id: string;
   session_id: string;
@@ -22,7 +20,7 @@ type AttendanceRecord = {
 };
 
 function isView(input: string | null): input is View {
-  return input === "upcoming" || input === "calendar" || input === "history";
+  return input === "upcoming" || input === "history";
 }
 
 function statusText(status: string): string {
@@ -139,17 +137,16 @@ export default function MySwimsPage() {
     <main className="mx-auto max-w-5xl space-y-6 px-3 py-4 sm:p-6">
       <header className="space-y-2">
         <h1 className="text-3xl font-bold text-slate-900">My Swims</h1>
-        <p className="text-sm text-slate-600">Your booked sessions, Club reservations and pool visits in one place. Academy enrollments and programme payments stay under My Academy.</p>
+        <p className="text-sm text-slate-600">Your personal swimming commitments, reservations and attendance history. Browse the wider schedule separately in the SwimBuddz Calendar.</p>
         <Link href="/find-a-swim" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-cyan-700 hover:underline">
           <Waves className="h-4 w-4" /> Find a Swim
         </Link>
       </header>
 
-      <div role="tablist" aria-label="My Swims views" className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+      <div role="tablist" aria-label="My Swims views" className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
         {([
           ["upcoming", "My bookings", Clock3],
-          ["calendar", "All activities", CalendarDays],
-          ["history", "Past swims", History],
+                    ["history", "Past swims", History],
         ] as const).map(([key, label, Icon]) => (
           <button type="button" role="tab" aria-selected={view === key} key={key} onClick={() => changeView(key)}
             className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition ${view === key ? "bg-white text-cyan-800 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
@@ -164,10 +161,7 @@ export default function MySwimsPage() {
       </div>}
       {actionError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{actionError}</p>}
 
-      {view === "calendar" ? (
-        <TierCalendar authenticated embedded title="SwimBuddz calendar"
-          subtitle="Explore the dates of Community activities, Club sessions and Academy classes. The calendar includes activities you have not booked." />
-      ) : loading ? <p className="py-8 text-center text-sm text-slate-600" role="status">Loading your swims…</p>
+      {loading ? <p className="py-8 text-center text-sm text-slate-600" role="status">Loading your swims…</p>
         : view === "upcoming" ? (
           <div className="space-y-6">
             {sections.upcoming.length ? <section aria-label="Upcoming booked swims" className="space-y-3">
@@ -175,9 +169,9 @@ export default function MySwimsPage() {
             </section> : <div className="rounded-2xl border bg-white p-8 text-center">
               <h2 className="font-semibold text-slate-900">No upcoming reservations yet</h2>
               <p className="mt-1 text-sm text-slate-600">Your confirmed reservations will appear here. SwimBuddz activities are still happening — explore them below.</p>
-              <Link href="/sessions" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Browse available sessions</Link>
+              <Link href="/find-a-swim/sessions" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Browse available sessions</Link>
             </div>}
-            <UpcomingCalendarPreview onOpenCalendar={() => changeView("calendar")} />
+            <p className="text-sm text-slate-600">Looking for an upcoming swim? <Link href="/find-a-swim/sessions" className="font-semibold text-cyan-700 underline">Discover SwimBuddz sessions</Link> or <Link href="/calendar" className="font-semibold text-cyan-700 underline">view the full calendar</Link>.</p>
             {sections.attention.length > 0 && <section className="space-y-3" aria-label="Bookings needing attention">
               <h2 className="text-lg font-semibold text-slate-900">Bookings needing attention</h2>
               {sections.attention.map(activityCard)}
