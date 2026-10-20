@@ -1,6 +1,7 @@
 "use client";
 
 import { MultiSelectBar } from "@/components/sessions/MultiSelectBar";
+import { AdditionalSwimRecords } from "@/components/swims/AdditionalSwimRecords";
 import { type SessionWithRides } from "@/components/sessions/SessionCard";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
@@ -427,7 +428,7 @@ function SessionsHub() {
           Browse, book and manage your swimming sessions, including attendance and session history.
         </p>
         <p className="text-sm text-slate-500">
-          <Link href="/account/bookings/records" className="font-semibold text-cyan-700 hover:underline">Pool bookings, Academy commitments & full attendance records →</Link>
+          Your Club, Academy, pool reservations and recorded attendance are together in the Booked and Past tabs.
         </p>
         <p className="text-sm text-slate-500">
           Need independent pool access? <Link href="/pool-access" className="font-medium text-cyan-700 hover:underline">Explore Pool Access</Link>.{" "}
@@ -543,6 +544,14 @@ function SessionsHub() {
           </Alert>
         ) : (
           renderContent()
+        )}
+        {!loading && !error && (activeTab === "booked" || activeTab === "past") && (
+          <div className="mt-6">
+            <AdditionalSwimRecords
+              view={activeTab}
+              representedSessionIds={filteredSessions.map((session) => session.id)}
+            />
+          </div>
         )}
         {!loading && !error && activeTab === "all" && pastLoading && (
           <p className="mt-3 text-center text-sm text-slate-500">Loading recent sessions…</p>
