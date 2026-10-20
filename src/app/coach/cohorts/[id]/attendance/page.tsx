@@ -22,13 +22,14 @@ import {
   getSessionBookedMemberIds,
 } from "@/lib/coach";
 import { formatDate } from "@/lib/format";
+import { academyAttendanceStatus } from "@/lib/academyAttendance";
 import { ArrowLeft, CheckCircle, Clock, Save, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 // Status options shown in the per-student selector. PRESENT is the default
-// when no exception row exists; selecting it will delete any prior row.
+// for included classes. Saving an exception replaces the persisted status.
 const STATUS_OPTIONS: { value: AttendanceStatus; label: string; tone: string }[] = [
   { value: "present", label: "Present", tone: "text-emerald-700" },
   { value: "late", label: "Late", tone: "text-amber-700" },
@@ -124,13 +125,15 @@ export default function CoachCohortAttendancePage() {
 
         const newRows: StudentRowState[] = students.map((s) => {
           const rec = recordByMember.get(s.member_id);
-          // Default: an existing record wins; otherwise Present if the student
-          // booked this session, Absent if not. The coach flips booked-no-shows
-          // to Absent/Excused and walk-ins to Present, then Saves.
-          const status = (rec?.status ??
-            (bookedSet.has(s.member_id)
-              ? "present"
-              : "absent")) as AttendanceStatus;
+          const selected = sessions.find((session) => session.id === selectedSessionId);
+          const status = academyAttendanceStatus({
+            recordedStatus: rec?.status,
+            feeMode: selected?.cohort_fee_mode,
+            hasConfirmedBooking: bookedSet.has(s.member_id),
+            eligibleEnrollment: s.status === "enrolled" && !s.access_suspended,
+            joinedAt: s.enrolled_at || s.created_at,
+            sessionStartsAt: selected?.starts_at,
+          });
           const notes = rec?.notes ?? "";
           return {
             member_id: s.member_id,
@@ -150,7 +153,7 @@ export default function CoachCohortAttendancePage() {
         setLoadingSession(false);
       }
     })();
-  }, [selectedSessionId, students]);
+  }, [selectedSessionId, students, sessions]);
 
   const selectedSession = useMemo(
     () => sessions.find((s) => s.id === selectedSessionId) ?? null,

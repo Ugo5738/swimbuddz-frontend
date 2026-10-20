@@ -6348,6 +6348,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attendance/sessions/{session_id}/my-academy-attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report My Academy Attendance
+         * @description Report an own-class exception before class ends; no separate booking needed.
+         *
+         *     Excused absence keeps the existing 24-hour notice rule. Later absence is
+         *     recorded as Absent. A student may undo their own report, while coach/admin
+         *     exceptions can only be cleared by a coach/admin. This action moves no money.
+         */
+        post: operations["report_my_academy_attendance_attendance_sessions__session_id__my_academy_attendance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/attendance/member/{member_id}": {
         parameters: {
             query?: never;
@@ -30121,6 +30145,16 @@ export interface components {
             payment_reference?: string | null;
             /** Note */
             note?: string | null;
+        };
+        /** AcademyAttendanceExceptionRequest */
+        AcademyAttendanceExceptionRequest: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "present" | "absent" | "excused" | "late";
+            /** Notes */
+            notes?: string | null;
         };
         /** AttendanceCreate */
         AttendanceCreate: {
@@ -60758,6 +60792,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_my_academy_attendance_attendance_sessions__session_id__my_academy_attendance_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcademyAttendanceExceptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceResponse"];
                 };
             };
             /** @description Validation Error */

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet, apiPost } from "@/lib/api";
 import type { components } from "@/lib/api-types";
+import { academyAttendanceStatus } from "@/lib/academyAttendance";
 import { isPoolFeeRefunded, isRunningLate, isSelfExcused, SessionsApi } from "@/lib/sessions";
 import { format } from "date-fns";
 import type { jsPDF as JsPDFType } from "jspdf";
@@ -562,7 +563,7 @@ export default function AdminAttendancePage() {
 
   const cohortRoster = useMemo(() => {
     if (!isCohortSession) return [] as EnrollmentResponse[];
-    return enrollments.filter((e) => e.status === "enrolled");
+    return enrollments.filter((e) => e.status === "enrolled" && !e.paused_at);
   }, [enrollments, isCohortSession]);
 
   // Build the unified roster: cohort enrollees + confirmed bookings + walk-ins,
@@ -633,15 +634,14 @@ export default function AdminAttendancePage() {
       for (const e of cohortRoster) {
         const att = attendanceByMember.get(e.member_id);
         const booking = bookingByMember.get(e.member_id);
-        // If the cohort member has a booking, their default effective status
-        // is the same as a non-cohort booked attendee (awaiting → absent).
-        const effective = att
-          ? computeEffective("cohort", att)
-          : booking
-            ? sessionStarted
-              ? "absent"
-              : "awaiting"
-            : "absent";
+        const effective = academyAttendanceStatus({
+          recordedStatus: att?.status,
+          feeMode: selectedSession?.cohort_fee_mode,
+          hasConfirmedBooking: Boolean(booking),
+          eligibleEnrollment: !e.access_suspended,
+          joinedAt: e.created_at,
+          sessionStartsAt: selectedSession?.starts_at,
+        });
         byMember.set(e.member_id, {
           member_id: e.member_id,
           name: memberLookup.get(e.member_id)?.name || e.member_name || "(unknown)",
@@ -701,6 +701,8 @@ export default function AdminAttendancePage() {
     attendanceByMember,
     memberLookup,
     sessionStarted,
+    selectedSession?.cohort_fee_mode,
+    selectedSession?.starts_at,
   ]);
 
   // Count drafts whose target status differs from the current effective status
