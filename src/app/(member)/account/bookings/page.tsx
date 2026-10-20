@@ -1,215 +1,574 @@
 "use client";
 
-import { PoolVisitActions } from "@/components/swims/PoolVisitActions";
-import { AcademyApi, type Enrollment } from "@/lib/academy";
-import { apiGet, apiPost } from "@/lib/api";
-import {
-  buildSwimActivities, categorizeActivities, formatSwimDate,
-  type SessionBooking, type SwimSession, type ClubQuarterSwim,
-  type PoolVisitBooking, type PoolVisitOffer, type SwimActivity,
-} from "@/lib/my-swims";
-import { Clock3, History, Waves } from "lucide-react";
+import { MultiSelectBar } from "@/components/sessions/MultiSelectBar";
+import { type SessionWithRides } from "@/components/sessions/SessionCard";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
+import { LoadingCard } from "@/components/ui/LoadingCard";
+import { apiPost } from "@/lib/api";
+import { ArrowRight, Calendar, CheckSquare, Waves, X } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-type View = "upcoming" | "history";
-type AttendanceRecord = {
-  id: string;
-  session_id: string;
-  status: string;
-  session?: { title?: string; start_time?: string; location_name?: string };
-};
+import { ActiveFilterChips, DateGroupedSessions, FilterBar, NextSessionPanel } from "@/app/(member)/sessions/components";
+import { TABS } from "@/app/(member)/sessions/constants";
+import type { DateFilter, MyBooking, ViewTab } from "@/app/(member)/sessions/types";
+import { useSessionsHubData } from "@/app/(member)/sessions/useSessionsHubData";
+import {
+  filterByDate,
+  filterByType,
+  isActiveBooking,
+  isConfirmedBooking,
+  isSessionRelevant,
+} from "@/app/(member)/sessions/utils";
 
-function isView(input: string | null): input is View {
-  return input === "upcoming" || input === "history";
-}
+// ── Inner component (needs searchParams) ────────────────────────────────
 
-function statusText(status: string): string {
-  const labels: Record<string, string> = {
-    confirmed: "Booked", pending: "Awaiting confirmation", pending_payment: "Payment pending",
-    cancelled: "Attendance cancelled", session_cancelled: "Session cancelled",
-    assigned: "Academy cohort class",
-  };
-  return labels[status] || status.replace(/_/g, " ");
-}
+function SessionsHub() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawView = searchParams.get("view");
 
-function kindText(kind: SwimActivity["kind"]): string {
-  const labels = { club: "Club", academy: "Academy", community: "Community",
-    session: "SwimBuddz", pool: "Independent pool visit" };
-  return labels[kind];
-}
+  // Map view param to tab. Default is "upcoming". Legacy "my" → "booked".
+  const activeTab: ViewTab =
+    rawView === "booked" || rawView === "my"
+      ? "booked"
+      : rawView === "past" || rawView === "history"
+        ? "past"
+        : rawView === "all"
+          ? "all"
+          : "upcoming";
 
-export default function MySwimsPage() {
-  const [view, setView] = useState<View>("upcoming");
-  const [activities, setActivities] = useState<SwimActivity[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [actionError, setActionError] = useState("");
+  const {
+    sessions,
+    pastSessions,
+    attendance,
+    myBookings,
+    cohortMap,
+    enrolledCohortIds,
+    myPodId,
+    myPodName,
+    membership,
+    membershipLabel,
+    upcomingLoading,
+    bookingsLoading,
+    attendanceLoading,
+    personalizationLoading,
+    pastLoading,
+    upcomingError,
+    pastError,
+  } = useSessionsHubData({
+    loadPast: activeTab === "past" || activeTab === "all",
+  });
 
-  useEffect(() => {
-    const selected = new URLSearchParams(window.location.search).get("view");
-    if (isView(selected)) setView(selected);
+  // Filters
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
+  const [myCohortsOnly, setMyCohortsOnly] = useState(false);
+  const [relevantOnly, setRelevantOnly] = useState(true);
+
+  // Multi-select for bundle booking
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelected = useCallback((sessionId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(sessionId)) {
+        next.delete(sessionId);
+      } else {
+        if (next.size >= 10) return prev; // max 10 per bundle
+        next.add(sessionId);
+      }
+      return next;
+    });
   }, []);
 
-  const load = useCallback(async () => {
-    const requests = await Promise.allSettled([
-      apiGet<SessionBooking[]>("/api/v1/sessions/bookings/me", { auth: true }),
-      apiGet<SwimSession[]>("/api/v1/sessions?limit=100", { auth: true }),
-      apiGet<ClubQuarterSwim[]>("/api/v1/sessions/bookings/me/club-quarter", { auth: true }),
-      apiGet<PoolVisitBooking[]>("/api/v1/pools/access/bookings/me", { auth: true }),
-      apiGet<PoolVisitOffer[]>("/api/v1/pools/access/offers"),
-      apiGet<AttendanceRecord[]>("/api/v1/attendance/me", { auth: true }),
-      AcademyApi.getMyEnrollments(),
-    ]);
-    const value = <T,>(index: number): T[] =>
-      requests[index].status === "fulfilled" ? (requests[index] as PromiseFulfilledResult<T[]>).value : [];
-    setActivities(buildSwimActivities(
-      value<SessionBooking>(0), value<SwimSession>(1), value<ClubQuarterSwim>(2),
-      value<PoolVisitBooking>(3), value<PoolVisitOffer>(4), value<Enrollment>(6)
-    ));
-    setAttendance(value<AttendanceRecord>(5));
-    setErrors(requests.flatMap((item, index) => item.status === "rejected" ?
-      [["Session bookings", "Session dates", "Club reservations", "Pool visits", "Pool visit dates", "Attendance", "Academy enrollments"][index]] : []));
-    setLoading(false);
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
-  const sections = useMemo(() => categorizeActivities(activities), [activities]);
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
 
-  const cancelClub = async (item: SwimActivity) => {
-    if (!window.confirm("Cancel your attendance for this Club swim? This frees your seat and does not refund your quarterly payment.")) return;
-    setBusy(item.bookingId);
-    setActionError("");
+  const supportsRelevance = activeTab === "upcoming" || activeTab === "all";
+  const hasActiveFilters =
+    dateFilter !== "all" ||
+    typeFilters.size > 0 ||
+    myCohortsOnly ||
+    (supportsRelevance && relevantOnly);
+
+  const toggleTypeFilter = useCallback((type: string) => {
+    setTypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setDateFilter("all");
+    setTypeFilters(new Set());
+    setMyCohortsOnly(false);
+    setRelevantOnly(false);
+  }, []);
+
+  const loading =
+    activeTab === "booked"
+      ? upcomingLoading || bookingsLoading || attendanceLoading
+      : activeTab === "past"
+        ? pastLoading
+        : upcomingLoading || (supportsRelevance && personalizationLoading);
+  const error = (activeTab === "past" ? pastError : upcomingError)
+    ? "Unable to load sessions. Please try again later."
+    : null;
+
+  // ── Derived data ───────────────────────────────────────────────────────
+  const bookedSessionIds = useMemo(() => {
+    const ids = new Set<string>();
+    // Legacy/day-of path: an attendance record in a non-cancelled state.
+    for (const record of attendance) {
+      if (!record.session_id) continue;
+      if (isActiveBooking(record.status)) {
+        ids.add(record.session_id);
+      }
+    }
+    // SessionBooking path: a CONFIRMED (paid) reservation that has no
+    // attendance record yet (attendance is created day-of at sign-in).
+    // The fetch already scopes to status_filter=confirmed; guard with
+    // isConfirmedBooking anyway so a PENDING (unpaid / abandoned) booking
+    // never counts as "Booked" even if the filter is ever dropped.
+    for (const booking of myBookings) {
+      if (!booking.session_id) continue;
+      if (isConfirmedBooking(booking.status)) {
+        ids.add(booking.session_id);
+      }
+    }
+    return ids;
+  }, [attendance, myBookings]);
+
+  // Map session_id → the member's active booking for that session. Powers
+  // per-card self-report actions ("I can't make it" / "I'll be late") that
+  // need the booking_id, not just whether-the-session-is-booked.
+  const bookingsBySession = useMemo(() => {
+    const map = new Map<string, MyBooking>();
+    for (const booking of myBookings) {
+      if (!booking.session_id) continue;
+      // Self-report actions (excuse / running-late) require a CONFIRMED
+      // booking server-side, so only map confirmed ones here.
+      if (isConfirmedBooking(booking.status)) {
+        map.set(booking.session_id, booking);
+      }
+    }
+    return map;
+  }, [myBookings]);
+
+  const attendanceBySession = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const record of attendance) {
+      if (record.session_id && record.status) {
+        map.set(record.session_id, record.status);
+      }
+    }
+    return map;
+  }, [attendance]);
+
+  const myUpcomingSessions = useMemo(() => {
+    const now = new Date();
+    return sessions
+      .filter((s) => bookedSessionIds.has(s.id) && new Date(s.starts_at) > now)
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+  }, [sessions, bookedSessionIds]);
+
+  const nextSession = myUpcomingSessions[0] ?? null;
+
+  // Bundle total and checkout URL for multi-select
+  const selectedSessions = useMemo(
+    () => sessions.filter((s) => selectedIds.has(s.id)),
+    [sessions, selectedIds]
+  );
+
+  const bundleTotal = useMemo(
+    () =>
+      selectedSessions.reduce(
+        (sum, s) =>
+          sum +
+          (s.access?.fee_amount_kobo == null
+            ? s.pool_fee || 0
+            : s.access.fee_amount_kobo / 100),
+        0
+      ),
+    [selectedSessions]
+  );
+
+  // Creates a server-side SessionBundleCart, then navigates the user to
+  // /sessions/bundle/{bundleId}/book to complete checkout.
+  const [creatingBundle, setCreatingBundle] = useState(false);
+  const handleCheckoutBundle = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setCreatingBundle(true);
     try {
-      await apiPost(`/api/v1/sessions/bookings/${item.bookingId}/cancel`, {}, { auth: true });
-      await load();
-    } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : "Unable to cancel Club attendance.");
-    } finally { setBusy(null); }
-  };
+      const cart = await apiPost<{ id: string }>(
+        "/api/v1/sessions/bundles",
+        { session_ids: Array.from(selectedIds) },
+        { auth: true }
+      );
+      router.push(`/sessions/bundle/${cart.id}/book`);
+    } catch (err) {
+      console.error("Failed to create bundle cart:", err);
+      const message =
+        err instanceof Error ? err.message : "Could not start bundle checkout. Please try again.";
+      toast.error(message);
+      setCreatingBundle(false);
+    }
+  }, [selectedIds, router]);
 
-  const changeView = (next: View) => {
-    setView(next);
-    window.history.replaceState(null, "", `/account/bookings?view=${next}`);
-  };
+  // Apply filters to sessions for current tab
+  const filteredSessions = useMemo(() => {
+    let result: SessionWithRides[];
+    const now = new Date();
 
-  const activityCard = (activity: SwimActivity) => {
-    const dateMissing = !activity.date;
-    const cancelled = ["cancelled", "session_cancelled"].includes(activity.status);
-    return (
-      <article key={activity.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-cyan-700">{kindText(activity.kind)}</span>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${cancelled ? "bg-slate-100 text-slate-600" : activity.status === "confirmed" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-800"}`}>
-            {statusText(activity.status)}
-          </span>
-        </div>
-        <h3 className="mt-2 text-base font-semibold text-slate-900">{activity.title}</h3>
-        <p className="mt-1 text-sm text-slate-600">
-          {formatSwimDate(activity.date)}
-          {activity.location ? ` · ${activity.location}` : ""}
-        </p>
-        {dateMissing && <p className="mt-1 text-xs text-amber-800">We could not confirm the date for this booking. Open its details for the latest information.</p>}
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          {activity.sessionId && (
-            <Link href={`/sessions/${activity.sessionId}`} className="text-sm font-semibold text-cyan-700 hover:underline">View swim details</Link>
-          )}
-          {activity.club?.status === "confirmed" && activity.club.session_status === "scheduled" &&
-            activity.date && new Date(activity.date).getTime() >= Date.now() && (
-              <button type="button" disabled={busy !== null} onClick={() => void cancelClub(activity)}
-                className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-medium text-slate-700 disabled:opacity-50">
-                {busy === activity.bookingId ? "Cancelling…" : "Can't attend? Cancel"}
+    if (activeTab === "upcoming") {
+      // Only future sessions (strict filter)
+      result = sessions.filter((s) => new Date(s.starts_at) > now);
+    } else if (activeTab === "booked") {
+      result = myUpcomingSessions;
+    } else if (activeTab === "past") {
+      result = pastSessions;
+    } else {
+      // "all" tab — everything, past + future
+      result = [...pastSessions, ...sessions];
+    }
+
+    result = filterByDate(result, dateFilter);
+    result = filterByType(result, typeFilters);
+
+    if (supportsRelevance && relevantOnly) {
+      result = result.filter((session) =>
+        isSessionRelevant(session, { bookedSessionIds, enrolledCohortIds, myPodId })
+      );
+    }
+
+    if (myCohortsOnly && enrolledCohortIds.size > 0) {
+      result = result.filter((s) => s.cohort_id && enrolledCohortIds.has(s.cohort_id));
+    }
+
+    return result;
+  }, [
+    activeTab,
+    sessions,
+    myUpcomingSessions,
+    pastSessions,
+    dateFilter,
+    typeFilters,
+    relevantOnly,
+    supportsRelevance,
+    bookedSessionIds,
+    myCohortsOnly,
+    enrolledCohortIds,
+    myPodId,
+  ]);
+
+  // ── Tab switching ──────────────────────────────────────────────────────
+  const setTab = useCallback(
+    (tab: ViewTab) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (tab === "upcoming") {
+        // Upcoming is the default — no param needed
+        params.delete("view");
+      } else {
+        params.set("view", tab);
+      }
+      const qs = params.toString();
+      router.replace(`/account/bookings${qs ? `?${qs}` : ""}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  // ── Render ─────────────────────────────────────────────────────────────
+  const renderContent = () => {
+    if (filteredSessions.length === 0) {
+      // Empty states per tab
+      if (activeTab === "booked") {
+        return (
+          <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center space-y-4">
+            <Waves className="mx-auto h-12 w-12 text-slate-300" />
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">
+                {hasActiveFilters ? "No bookings match your filters" : "No upcoming bookings"}
+              </h2>
+              <p className="mt-2 text-slate-500">
+                {hasActiveFilters
+                  ? "Try adjusting your filters to see more sessions."
+                  : "You haven\u2019t reserved a spot in any upcoming sessions yet."}
+              </p>
+            </div>
+            {hasActiveFilters ? (
+              <button
+                onClick={clearFilters}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <X className="h-4 w-4" />
+                Clear filters
               </button>
-          )}
-          {activity.club?.status === "cancelled" && activity.club.session_status === "scheduled" &&
-            activity.date && new Date(activity.date).getTime() >= Date.now() && (
-              <Link href={`/sessions/${activity.sessionId}/book`} className="text-sm font-semibold text-cyan-700 hover:underline">Reserve again if space is available</Link>
+            ) : (
+              <button
+                onClick={() => setTab("upcoming")}
+                className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-700 transition-colors"
+              >
+                Browse Sessions
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        );
+      }
+
+      if (activeTab === "past") {
+        return (
+          <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center space-y-4">
+            <Calendar className="mx-auto h-12 w-12 text-slate-300" />
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">
+                {hasActiveFilters ? "No past sessions match your filters" : "No recent sessions"}
+              </h2>
+              <p className="mt-2 text-slate-500">
+                {hasActiveFilters
+                  ? "Try adjusting your filters."
+                  : "Past sessions from the last 60 days will appear here."}
+              </p>
+            </div>
+            <Link
+              href="/account/attendance/history"
+              className="inline-flex items-center gap-2 text-sm font-medium text-cyan-600 hover:text-cyan-700"
+            >
+              View full attendance history
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        );
+      }
+
+      // All tab empty
+      return (
+        <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center space-y-3">
+          <Waves className="mx-auto h-12 w-12 text-slate-300" />
+          <p className="text-slate-600">
+            {hasActiveFilters
+              ? "No sessions match your filters. Try adjusting them."
+              : "No upcoming sessions found."}
+          </p>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-2 text-sm font-medium text-cyan-600 hover:text-cyan-700"
+            >
+              <X className="h-4 w-4" />
+              Clear filters
+            </button>
           )}
         </div>
-        {activity.assignedAcademy && <p className="mt-2 text-xs text-violet-700">Included in your active Academy cohort schedule. This is not a separately booked reservation.</p>}
-        {activity.club && <p className="mt-2 text-xs text-slate-500">Included in your Club quarter. Cancelling attendance does not refund the quarter.</p>}
-        {activity.pool && <div className="mt-3 border-t border-slate-100 pt-3">
-          <PoolVisitActions booking={activity.pool} onChanged={load} />
-        </div>}
-      </article>
+      );
+    }
+
+    // Result count
+    const countLabel = `${filteredSessions.length} ${filteredSessions.length === 1 ? "session" : "sessions"}`;
+
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-slate-500">{countLabel}</p>
+        <DateGroupedSessions
+          sessions={filteredSessions}
+          bookedSessionIds={bookedSessionIds}
+          bookingsBySession={bookingsBySession}
+          membership={membership}
+          isPast={activeTab === "past"}
+          attendanceBySession={activeTab === "past" ? attendanceBySession : undefined}
+          cohortMap={cohortMap}
+          enrolledCohortIds={enrolledCohortIds}
+          selectMode={selectMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelected}
+        />
+
+        {activeTab === "past" && (
+          <div className="text-center pt-4">
+            <Link
+              href="/account/attendance/history"
+              className="inline-flex items-center gap-2 text-sm text-cyan-600 hover:text-cyan-700 font-medium"
+            >
+              View full attendance history
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        )}
+      </div>
     );
   };
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-3 py-4 sm:p-6">
+    <div className="space-y-6">
+      {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold text-slate-900">My Swims</h1>
-        <p className="text-sm text-slate-600">Your personal swimming commitments, Academy classes, reservations and attendance history. Browse the wider schedule separately in the SwimBuddz Calendar.</p>
-        <Link href="/find-a-swim" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-cyan-700 hover:underline">
-          <Waves className="h-4 w-4" /> Find a Swim
-        </Link>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">My Swims</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">My Swims</h1>
+          <Badge variant="info">{membershipLabel}</Badge>
+        </div>
+        <p className="text-base text-slate-600">
+          Browse, book and manage your swimming sessions, including attendance and session history.
+        </p>
+        <p className="text-sm text-slate-500">
+          <Link href="/account/bookings/records" className="font-semibold text-cyan-700 hover:underline">Pool bookings, Academy commitments & full attendance records →</Link>
+        </p>
+        <p className="text-sm text-slate-500">
+          Need independent pool access? <Link href="/pool-access" className="font-medium text-cyan-700 hover:underline">Explore Pool Access</Link>.{" "}
+          Know a pool we should partner with?{" "}
+          <Link href="/account/pools/suggest" className="font-medium text-cyan-700 hover:underline">
+            Suggest a pool &rarr;
+          </Link>
+        </p>
       </header>
 
-      <div role="tablist" aria-label="My Swims views" className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
-        {([
-          ["upcoming", "My bookings", Clock3],
-                    ["history", "Past swims", History],
-        ] as const).map(([key, label, Icon]) => (
-          <button type="button" role="tab" aria-selected={view === key} key={key} onClick={() => changeView(key)}
-            className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition ${view === key ? "bg-white text-cyan-800 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
-            <Icon className="h-4 w-4" /> {label}
-          </button>
-        ))}
+      {/* Next session panel — always visible when user has a booking */}
+      {!loading && nextSession && <NextSessionPanel session={nextSession} />}
+
+      {!loading && supportsRelevance && relevantOnly && (
+        <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-sm text-cyan-950">
+          <p className="font-semibold">Showing sessions recommended for you</p>
+          <p className="mt-0.5 text-xs leading-5 text-cyan-800">
+            Based on your {membershipLabel} access
+            {myPodName ? `, ${myPodName} Pod` : ""}
+            {enrolledCohortIds.size > 0 ? ", and Academy cohort" : ""}. Remove the Recommended
+            filter to explore every published session.
+          </p>
+        </div>
+      )}
+
+      {/* Segmented control + filters */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex rounded-xl bg-slate-100 p-1 flex-1 sm:flex-initial">
+          {TABS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex-1 sm:flex-initial rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                activeTab === key
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {label}
+              {key === "booked" && myUpcomingSessions.length > 0 && (
+                <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-100 px-1.5 text-xs font-semibold text-cyan-700">
+                  {myUpcomingSessions.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          {/* Multi-select toggle — only on upcoming/all tabs */}
+          {(activeTab === "upcoming" || activeTab === "all") && (
+            <button
+              onClick={() => {
+                if (selectMode) {
+                  exitSelectMode();
+                } else {
+                  setSelectMode(true);
+                }
+              }}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                selectMode
+                  ? "border-cyan-600 bg-cyan-50 text-cyan-700"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <CheckSquare className="h-4 w-4" />
+              {selectMode ? "Cancel" : "Book multiple"}
+            </button>
+          )}
+
+          {/* Filter button */}
+          {activeTab !== "past" && (
+            <FilterBar
+              relevantOnly={relevantOnly}
+              setRelevantOnly={setRelevantOnly}
+              showRelevanceFilter={supportsRelevance}
+              dateFilter={dateFilter}
+              setDateFilter={setDateFilter}
+              typeFilters={typeFilters}
+              toggleTypeFilter={toggleTypeFilter}
+              myCohortsOnly={myCohortsOnly}
+              setMyCohortsOnly={setMyCohortsOnly}
+              showCohortFilter={enrolledCohortIds.size > 0}
+              clearFilters={clearFilters}
+              hasActiveFilters={hasActiveFilters}
+            />
+          )}
+        </div>
       </div>
 
-      {errors.length > 0 && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        Some reservation information could not be loaded ({errors.join(", ")}). A missing booking here does not mean it was cancelled.
-        <button type="button" onClick={() => void load()} className="ml-2 font-semibold underline">Retry</button>
-      </div>}
-      {actionError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{actionError}</p>}
+      {/* Active filter chips */}
+      {activeTab !== "past" && hasActiveFilters && (
+        <ActiveFilterChips
+          relevantOnly={supportsRelevance && relevantOnly}
+          setRelevantOnly={setRelevantOnly}
+          dateFilter={dateFilter}
+          setDateFilter={setDateFilter}
+          typeFilters={typeFilters}
+          toggleTypeFilter={toggleTypeFilter}
+          myCohortsOnly={myCohortsOnly}
+          setMyCohortsOnly={setMyCohortsOnly}
+        />
+      )}
 
-      {loading ? <p className="py-8 text-center text-sm text-slate-600" role="status">Loading your swims…</p>
-        : view === "upcoming" ? (
-          <div className="space-y-6">
-            {sections.upcoming.length ? <section aria-label="Upcoming booked swims" className="space-y-3">
-              {sections.upcoming.map(activityCard)}
-            </section> : <div className="rounded-2xl border bg-white p-8 text-center">
-              <h2 className="font-semibold text-slate-900">No upcoming reservations yet</h2>
-              <p className="mt-1 text-sm text-slate-600">Your confirmed reservations and assigned Academy classes will appear here. For other swims, browse Find a Swim.</p>
-              <Link href="/find-a-swim/sessions" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Browse available sessions</Link>
-            </div>}
-            <p className="text-sm text-slate-600">Looking for an upcoming swim? <Link href="/find-a-swim/sessions" className="font-semibold text-cyan-700 underline">Discover SwimBuddz sessions</Link> or <Link href="/calendar" className="font-semibold text-cyan-700 underline">view the full calendar</Link>.</p>
-            {sections.attention.length > 0 && <section className="space-y-3" aria-label="Bookings needing attention">
-              <h2 className="text-lg font-semibold text-slate-900">Bookings needing attention</h2>
-              {sections.attention.map(activityCard)}
-            </section>}
-          </div>
+      {/* Content */}
+      <section aria-live="polite">
+        {loading ? (
+          <LoadingCard text="Loading sessions..." />
+        ) : error ? (
+          <Alert variant="error" title="Error loading sessions">
+            {error}
+          </Alert>
         ) : (
-          <div className="space-y-6">
-            {sections.past.length > 0 && <section aria-label="Past bookings" className="space-y-3">
-              <h2 className="text-lg font-semibold text-slate-900">Previous bookings</h2>
-              <p className="text-sm text-slate-600">A past booking does not necessarily mean you attended.</p>
-              {sections.past.map(activityCard)}
-            </section>}
-            <section aria-label="Attendance history" className="space-y-3">
-              <h2 className="text-lg font-semibold text-slate-900">Recorded attendance</h2>
-              {attendance.length ? <div className="space-y-2">
-                {attendance.filter(record => record.session?.start_time &&
-                  new Date(record.session.start_time).getTime() < Date.now())
-                  .sort((a,b) => new Date(b.session?.start_time || 0).getTime() - new Date(a.session?.start_time || 0).getTime())
-                  .map(record => <article key={record.id} className="rounded-xl border bg-white p-4">
-                    <h3 className="font-semibold text-slate-900">{record.session?.title || "SwimBuddz session"}</h3>
-                    <p className="text-sm text-slate-600">{formatSwimDate(record.session?.start_time || null)} · {record.session?.location_name || "Location unavailable"}</p>
-                    <p className="mt-1 text-xs capitalize text-cyan-800">Attendance: {record.status.replace(/_/g, " ")}</p>
-                    {["present", "late"].includes(record.status.toLowerCase()) && <div className="mt-3 flex flex-wrap gap-3">
-                      <Link href={`/account/media-vault?session=${record.session_id}&action=view`}
-                        className="rounded-lg border border-cyan-700 px-3 py-2 text-sm font-semibold text-cyan-800">View session media</Link>
-                      <Link href={`/account/media-vault?session=${record.session_id}&action=contribute`}
-                        className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white">Contribute media</Link>
-                    </div>}
-                  </article>)}
-              </div> : <p className="rounded-xl border bg-white p-5 text-sm text-slate-600">No attendance records have been loaded.</p>}
-              <Link href="/account/attendance/history" className="inline-block text-sm font-semibold text-cyan-700 underline">Full attendance record</Link>
-            </section>
-          </div>
+          renderContent()
         )}
-    </main>
+        {!loading && !error && activeTab === "all" && pastLoading && (
+          <p className="mt-3 text-center text-sm text-slate-500">Loading recent sessions…</p>
+        )}
+      </section>
+
+      {/* Sticky multi-select checkout bar */}
+      {selectMode && (
+        <MultiSelectBar
+          count={selectedIds.size}
+          totalNgn={bundleTotal}
+          onCheckout={handleCheckoutBundle}
+          onClear={clearSelection}
+          busy={creatingBundle}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Page export (wrapped in Suspense for useSearchParams) ────────────────
+
+export default function MySwimsPage() {
+  return (
+    <Suspense fallback={<LoadingCard text="Loading sessions..." />}>
+      <SessionsHub />
+    </Suspense>
   );
 }
