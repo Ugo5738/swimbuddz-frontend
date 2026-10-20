@@ -502,6 +502,12 @@ function SessionsHub() {
 
       {/* Content */}
       <section aria-live="polite">
+        {!loading && !error && activeTab === "past" && (
+          <div className="mb-6">
+            <AdditionalSwimRecords view="past" primaryHasSessions={filteredSessions.length > 0}
+              representedSessionIds={filteredSessions.map((session) => session.id)} />
+          </div>
+        )}
         {loading ? (
           <LoadingCard text="Loading sessions..." />
         ) : error ? (
@@ -511,13 +517,10 @@ function SessionsHub() {
         ) : (
           renderContent()
         )}
-        {!loading && !error && (activeTab === "booked" || activeTab === "past") && (
+        {!loading && !error && activeTab === "booked" && (
           <div className="mt-6">
-            <AdditionalSwimRecords
-              view={activeTab}
-              primaryHasSessions={filteredSessions.length > 0}
-              representedSessionIds={filteredSessions.map((session) => session.id)}
-            />
+            <AdditionalSwimRecords view="booked" primaryHasSessions={filteredSessions.length > 0}
+              representedSessionIds={filteredSessions.map((session) => session.id)} />
           </div>
         )}
         {!loading && !error && activeTab === "all" && pastLoading && (
