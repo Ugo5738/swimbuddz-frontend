@@ -136,6 +136,10 @@ The implementation of pages should follow these flows closely.
 
 ### Included Academy classes and paid extras
 
+- Enrolled Academy students default to Present for included classes. Coaches
+  and admins record exceptions; saved exceptions take precedence. Attendance's
+  worker persists missing defaults after classes start so session media,
+  attendance history and reporting use the same records.
 - Cohort-generated regular classes use `cohort_fee_mode=included`. Enrolled
   students book at ₦0 even if a nonzero operating/pool rate is stored.
 - To offer extra practice, use Admin Sessions or the cohort's Add Session form:
