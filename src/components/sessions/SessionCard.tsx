@@ -383,6 +383,26 @@ export function SessionCard({
           )}
         </div>
 
+        {effectivelyPast && attendanceStatus && (
+          <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold capitalize text-slate-700">
+              Recorded attendance: {attendanceStatus.replaceAll("_", " ")}
+            </p>
+            {["present", "late"].includes(attendanceStatus.toLowerCase()) && (
+              <div className="flex flex-wrap gap-2">
+                <Link href={`/account/media-vault?session=${session.id}&action=view`}
+                  className="inline-flex min-h-10 items-center rounded-lg border border-cyan-700 px-3 text-xs font-semibold text-cyan-800 hover:bg-cyan-50">
+                  View session media
+                </Link>
+                <Link href={`/account/media-vault?session=${session.id}&action=contribute`}
+                  className="inline-flex min-h-10 items-center rounded-lg bg-cyan-700 px-3 text-xs font-semibold text-white hover:bg-cyan-800">
+                  Contribute media
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Fees (upcoming only) */}
         {!effectivelyPast && (
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
