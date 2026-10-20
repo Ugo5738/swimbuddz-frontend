@@ -1,6 +1,7 @@
 "use client";
 
 import { PoolVisitActions } from "@/components/swims/PoolVisitActions";
+import { AcademyApi, type Enrollment } from "@/lib/academy";
 import { apiGet, apiPost } from "@/lib/api";
 import {
   buildSwimActivities, categorizeActivities, formatSwimDate,
@@ -27,6 +28,7 @@ function statusText(status: string): string {
   const labels: Record<string, string> = {
     confirmed: "Booked", pending: "Awaiting confirmation", pending_payment: "Payment pending",
     cancelled: "Attendance cancelled", session_cancelled: "Session cancelled",
+    assigned: "Academy cohort class",
   };
   return labels[status] || status.replace(/_/g, " ");
 }
@@ -59,16 +61,17 @@ export default function MySwimsPage() {
       apiGet<PoolVisitBooking[]>("/api/v1/pools/access/bookings/me", { auth: true }),
       apiGet<PoolVisitOffer[]>("/api/v1/pools/access/offers"),
       apiGet<AttendanceRecord[]>("/api/v1/attendance/me", { auth: true }),
+      AcademyApi.getMyEnrollments(),
     ]);
     const value = <T,>(index: number): T[] =>
       requests[index].status === "fulfilled" ? (requests[index] as PromiseFulfilledResult<T[]>).value : [];
     setActivities(buildSwimActivities(
       value<SessionBooking>(0), value<SwimSession>(1), value<ClubQuarterSwim>(2),
-      value<PoolVisitBooking>(3), value<PoolVisitOffer>(4)
+      value<PoolVisitBooking>(3), value<PoolVisitOffer>(4), value<Enrollment>(6)
     ));
     setAttendance(value<AttendanceRecord>(5));
     setErrors(requests.flatMap((item, index) => item.status === "rejected" ?
-      [["Session bookings", "Session dates", "Club reservations", "Pool visits", "Pool visit dates", "Attendance"][index]] : []));
+      [["Session bookings", "Session dates", "Club reservations", "Pool visits", "Pool visit dates", "Attendance", "Academy enrollments"][index]] : []));
     setLoading(false);
   }, []);
 
@@ -125,6 +128,7 @@ export default function MySwimsPage() {
               <Link href={`/sessions/${activity.sessionId}/book`} className="text-sm font-semibold text-cyan-700 hover:underline">Reserve again if space is available</Link>
           )}
         </div>
+        {activity.assignedAcademy && <p className="mt-2 text-xs text-violet-700">Included in your active Academy cohort schedule. This is not a separately booked reservation.</p>}
         {activity.club && <p className="mt-2 text-xs text-slate-500">Included in your Club quarter. Cancelling attendance does not refund the quarter.</p>}
         {activity.pool && <div className="mt-3 border-t border-slate-100 pt-3">
           <PoolVisitActions booking={activity.pool} onChanged={load} />
@@ -137,7 +141,7 @@ export default function MySwimsPage() {
     <main className="mx-auto max-w-5xl space-y-6 px-3 py-4 sm:p-6">
       <header className="space-y-2">
         <h1 className="text-3xl font-bold text-slate-900">My Swims</h1>
-        <p className="text-sm text-slate-600">Your personal swimming commitments, reservations and attendance history. Browse the wider schedule separately in the SwimBuddz Calendar.</p>
+        <p className="text-sm text-slate-600">Your personal swimming commitments, Academy classes, reservations and attendance history. Browse the wider schedule separately in the SwimBuddz Calendar.</p>
         <Link href="/find-a-swim" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-cyan-700 hover:underline">
           <Waves className="h-4 w-4" /> Find a Swim
         </Link>
@@ -168,7 +172,7 @@ export default function MySwimsPage() {
               {sections.upcoming.map(activityCard)}
             </section> : <div className="rounded-2xl border bg-white p-8 text-center">
               <h2 className="font-semibold text-slate-900">No upcoming reservations yet</h2>
-              <p className="mt-1 text-sm text-slate-600">Your confirmed reservations will appear here. SwimBuddz activities are still happening — explore them below.</p>
+              <p className="mt-1 text-sm text-slate-600">Your confirmed reservations and assigned Academy classes will appear here. For other swims, browse Find a Swim.</p>
               <Link href="/find-a-swim/sessions" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Browse available sessions</Link>
             </div>}
             <p className="text-sm text-slate-600">Looking for an upcoming swim? <Link href="/find-a-swim/sessions" className="font-semibold text-cyan-700 underline">Discover SwimBuddz sessions</Link> or <Link href="/calendar" className="font-semibold text-cyan-700 underline">view the full calendar</Link>.</p>
