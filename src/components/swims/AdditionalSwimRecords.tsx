@@ -21,13 +21,14 @@ type AttendanceRecord = {
   id: string;
   session_id: string;
   status: string;
-  session?: { title?: string; start_time?: string; location_name?: string };
+  session?: { title?: string; start_time?: string; starts_at?: string; location_name?: string };
 };
 
 type Props = {
   view: "booked" | "past";
   /** Session cards already rendered in the primary Sessions Hub view. */
   representedSessionIds: string[];
+  primaryHasSessions: boolean;
 };
 
 const attendanceLabel = (status: string) =>
@@ -51,9 +52,10 @@ const statusLabel = (status: string) => {
  * of all booked-session controls; these cards preserve pool access, quarter
  * reservations and enrolled-but-not-booked Academy classes.
  */
-export function AdditionalSwimRecords({ view, representedSessionIds }: Props) {
+export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasSessions }: Props) {
   const [activities, setActivities] = useState<SwimActivity[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [sessionDates, setSessionDates] = useState<SwimSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
   const [actionError, setActionError] = useState("");
@@ -82,6 +84,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds }: Props) {
       values<Enrollment>(6)
     ));
     setAttendance(values<AttendanceRecord>(5));
+    setSessionDates(values<SwimSession>(1));
     const names = [
       "Bookings", "Sessions", "Club reservations", "Pool visits",
       "Pool visit schedules", "Attendance", "Academy enrollment",
@@ -99,18 +102,22 @@ export function AdditionalSwimRecords({ view, representedSessionIds }: Props) {
   const otherActivities = (view === "booked" ? [...sections.upcoming, ...sections.attention] : sections.past)
     .filter((item) => !item.sessionId || !represented.has(item.sessionId));
 
-  const otherActivityIds = new Set(otherActivities.map((item) => item.sessionId));
+  const knownSessions = new Map(sessionDates.map((session) => [session.id, session]));
+  const attendanceDate = (record: AttendanceRecord) =>
+    record.session?.start_time || record.session?.starts_at ||
+    knownSessions.get(record.session_id)?.starts_at ||
+    knownSessions.get(record.session_id)?.start_time || null;
+
+  // Attendance is personal history; it must not disappear because that session
+  // also appears in the general completed-session catalogue.
   const remainingAttendance = view === "past"
-    ? attendance.filter((record) =>
-        record.session_id &&
-        !represented.has(record.session_id) &&
-        !otherActivityIds.has(record.session_id) &&
-        record.session?.start_time &&
-        new Date(record.session.start_time).getTime() < Date.now()
-      )
-      .sort((a, b) =>
-        new Date(b.session?.start_time ?? 0).getTime() -
-        new Date(a.session?.start_time ?? 0).getTime()
+    ? attendance.filter((record) => {
+        if (!record.session_id) return false;
+        const date = attendanceDate(record);
+        return !date || (Number.isFinite(Date.parse(date)) && Date.parse(date) < Date.now());
+      }).sort((a, b) =>
+        new Date(attendanceDate(b) ?? 0).getTime() -
+        new Date(attendanceDate(a) ?? 0).getTime()
       )
     : [];
 
@@ -204,7 +211,14 @@ export function AdditionalSwimRecords({ view, representedSessionIds }: Props) {
         </div>
       )}
       {actionError && <p role="alert" className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{actionError}</p>}
-      {otherActivities.length > 0 && (
+      {view === "booked" && otherActivities.length === 0 && !primaryHasSessions && errors.length === 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+          <h2 className="font-semibold text-slate-900">No upcoming bookings or assigned swims found</h2>
+          <p className="mt-2 text-sm text-slate-600">We could not find an active reservation, Club-quarter place, assigned Academy class or pool visit in the records loaded.</p>
+          <Link href="/find-a-swim/sessions" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Browse upcoming sessions</Link>
+        </div>
+      )}
+      {remainingAttendance.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-slate-900">
             {view === "booked" ? "Other booked and assigned swims" : "Other previous swims"}
@@ -219,16 +233,16 @@ export function AdditionalSwimRecords({ view, representedSessionIds }: Props) {
       )}
       {remainingAttendance.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">Additional recorded attendance</h2>
+          <h2 className="text-lg font-semibold text-slate-900">My recorded attendance</h2>
           <div className="grid gap-3 md:grid-cols-2">
             {remainingAttendance.map((record) => (
               <article key={record.id} className="rounded-2xl border border-slate-200 bg-white p-4">
                 <h3 className="font-semibold text-slate-900">
-                  {record.session?.title || "SwimBuddz session"}
+                  {record.session?.title || knownSessions.get(record.session_id)?.title || "SwimBuddz session"}
                 </h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  {formatSwimDate(record.session?.start_time ?? null)} ·
-                  {" "}{record.session?.location_name || "Location unavailable"}
+                  {formatSwimDate(attendanceDate(record))} ·
+                  {" "}{record.session?.location_name || knownSessions.get(record.session_id)?.location_name || "Location unavailable"}
                 </p>
                 <p className="mt-2 text-sm font-medium text-slate-700">
                   Recorded attendance: {attendanceLabel(record.status)}
@@ -249,6 +263,9 @@ export function AdditionalSwimRecords({ view, representedSessionIds }: Props) {
             ))}
           </div>
         </div>
+      )}
+      {view === "past" && remainingAttendance.length === 0 && !errors.includes("Attendance") && (
+        <p className="text-sm text-slate-600">No verified attendance history was returned. Completed sessions below do not necessarily mean you attended them.</p>
       )}
       {view === "past" && (
         <Link href="/account/attendance/history"
