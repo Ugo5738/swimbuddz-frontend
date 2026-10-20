@@ -15,6 +15,7 @@ import {
 } from "@/lib/my-swims";
 import { PoolVisitActions } from "@/components/swims/PoolVisitActions";
 import Link from "next/link";
+import { buildPersonalSwimHistory } from "@/lib/personal-swim-history";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type AttendanceRecord = {
@@ -121,6 +122,10 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
       )
     : [];
 
+  const personalHistory = view === "past"
+    ? buildPersonalSwimHistory({ activities, attendance, sessions: sessionDates })
+    : [];
+
   const cancelClub = async (activity: SwimActivity) => {
     if (!window.confirm("Cancel your attendance for this Club swim? This frees your seat and does not refund your quarterly payment.")) return;
     setBusy(activity.bookingId);
@@ -218,7 +223,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
           <Link href="/find-a-swim/sessions" className="mt-3 inline-block text-sm font-semibold text-cyan-700 underline">Browse upcoming sessions</Link>
         </div>
       )}
-      {remainingAttendance.length > 0 && (
+      {view === "past" && personalHistory.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-slate-900">
             {view === "booked" ? "Other booked and assigned swims" : "Other previous swims"}
@@ -233,39 +238,48 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
       )}
       {remainingAttendance.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">My recorded attendance</h2>
+          <h2 className="text-lg font-semibold text-slate-900">My swimming history</h2>
           <div className="grid gap-3 md:grid-cols-2">
-            {remainingAttendance.map((record) => (
-              <article key={record.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                <h3 className="font-semibold text-slate-900">
-                  {record.session?.title || knownSessions.get(record.session_id)?.title || "SwimBuddz session"}
-                </h3>
+            {personalHistory.map((record) => (
+              <article key={record.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-semibold capitalize text-cyan-700">{record.kind === "pool" ? "Pool access" : record.kind}</span>
+                  {record.attendanceStatus && (
+                    <span className="rounded-full bg-green-50 px-2 py-1 text-xs font-semibold text-green-800">
+                      Attendance: {attendanceLabel(record.attendanceStatus)}
+                    </span>
+                  )}
+                </div>
+                <h3 className="mt-2 font-semibold text-slate-900">{record.title}</h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  {formatSwimDate(attendanceDate(record))} ·
-                  {" "}{record.session?.location_name || knownSessions.get(record.session_id)?.location_name || "Location unavailable"}
+                  {formatSwimDate(record.date)} · {record.location || "Location unavailable"}
                 </p>
-                <p className="mt-2 text-sm font-medium text-slate-700">
-                  Recorded attendance: {attendanceLabel(record.status)}
-                </p>
-                {["present", "late"].includes(record.status.toLowerCase()) && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Link href={`/account/media-vault?session=${record.session_id}&action=view`}
-                      className="rounded-lg border border-cyan-700 px-3 py-2 text-sm font-semibold text-cyan-800">
-                      View session media
-                    </Link>
-                    <Link href={`/account/media-vault?session=${record.session_id}&action=contribute`}
-                      className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white">
-                      Contribute media
-                    </Link>
-                  </div>
+                {!record.attendanceStatus && (
+                  <p className="mt-2 text-xs text-slate-600">
+                    {record.bookingStatus ? `Reservation: ${statusLabel(record.bookingStatus)}. Attendance not recorded.` : "Attendance not recorded."}
+                  </p>
                 )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {record.sessionId && (
+                    <Link href={`/sessions/${record.sessionId}`} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700">Session details</Link>
+                  )}
+                  {record.sessionId && ["present", "late", "checked_in"].includes(record.attendanceStatus?.toLowerCase() ?? "") && (
+                    <>
+                      <Link href={`/account/media-vault?session=${record.sessionId}&action=view`}
+                        className="rounded-lg border border-cyan-700 px-3 py-2 text-sm font-semibold text-cyan-800">View session media</Link>
+                      <Link href={`/account/media-vault?session=${record.sessionId}&action=contribute`}
+                        className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white">Contribute media</Link>
+                    </>
+                  )}
+                </div>
+                {record.activity?.pool && <div className="mt-3"><PoolVisitActions booking={record.activity.pool} onChanged={load}/></div>}
               </article>
             ))}
           </div>
         </div>
       )}
       {view === "past" && remainingAttendance.length === 0 && !errors.includes("Attendance") && (
-        <p className="text-sm text-slate-600">No verified attendance history was returned. Completed sessions below do not necessarily mean you attended them.</p>
+        <p className="text-sm text-slate-600">No personal swimming history was returned. Browse the SwimBuddz calendar to see all completed activities.</p>
       )}
       {view === "past" && (
         <Link href="/account/attendance/history"
