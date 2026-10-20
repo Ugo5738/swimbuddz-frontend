@@ -1,7 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { buildSwimActivities, categorizeActivities, classifySession } from "../my-swims";
+import { buildSwimActivities, categorizeActivities, classifySession, isActiveAcademyEnrollment } from "../my-swims";
 
 describe("member swim activity aggregation", () => {
+  it("includes active Academy cohort classes without pretending they were booked", () => {
+    const sessions = [{
+      id: "academy-a", cohort_id: "cohort-1", session_type: "cohort_class",
+      title: "Lesson five", starts_at: "2027-05-01T09:00:00Z", status: "scheduled",
+    }];
+    const enrolled = [{ cohort_id: "cohort-1", status: "enrolled" }];
+    const result = buildSwimActivities([], sessions, [], [], [], enrolled);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      kind: "academy", status: "assigned", assignedAcademy: true,
+      sessionId: "academy-a",
+    });
+    expect(categorizeActivities(result, new Date("2027-01-01")).upcoming).toHaveLength(1);
+    const booked = buildSwimActivities(
+      [{ id: "paid-booking", session_id: "academy-a", status: "confirmed" }],
+      sessions, [], [], [], enrolled
+    );
+    expect(booked).toHaveLength(1);
+    expect(booked[0].assignedAcademy).toBeUndefined();
+  });
+
+  it("does not assign Academy classes to paused, suspended or pending enrollments", () => {
+    expect(isActiveAcademyEnrollment({ status: "enrolled", paused_at: "2026-10-01" })).toBe(false);
+    expect(isActiveAcademyEnrollment({ status: "enrolled", access_suspended: true })).toBe(false);
+    expect(isActiveAcademyEnrollment({ status: "pending_approval" })).toBe(false);
+    expect(isActiveAcademyEnrollment({ status: "enrolled" })).toBe(true);
+  });
+
   it("deduplicates a prepaid Club reservation against the ordinary booking endpoint", () => {
     const result = buildSwimActivities(
       [{ id: "booking-1", session_id: "session-1", status: "confirmed" }],
