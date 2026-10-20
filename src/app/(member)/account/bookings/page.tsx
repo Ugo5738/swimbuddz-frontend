@@ -35,7 +35,7 @@ function SessionsHub() {
   const activeTab: ViewTab =
     rawView === "booked" || rawView === "my"
       ? "booked"
-      : rawView === "past"
+      : rawView === "past" || rawView === "history"
         ? "past"
         : rawView === "all"
           ? "all"
