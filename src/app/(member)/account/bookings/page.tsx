@@ -61,7 +61,7 @@ function SessionsHub() {
     upcomingError,
     pastError,
   } = useSessionsHubData({
-    loadPast: activeTab === "past" || activeTab === "all",
+    loadPast: activeTab === "all",
   });
 
   // Filters
@@ -126,9 +126,9 @@ function SessionsHub() {
     activeTab === "booked"
       ? upcomingLoading || bookingsLoading || attendanceLoading
       : activeTab === "past"
-        ? pastLoading
+        ? false
         : upcomingLoading || (supportsRelevance && personalizationLoading);
-  const error = (activeTab === "past" ? pastError : upcomingError)
+  const error = (activeTab === "past" ? false : upcomingError)
     ? "Unable to load sessions. Please try again later."
     : null;
 
@@ -243,7 +243,7 @@ function SessionsHub() {
     } else if (activeTab === "booked") {
       result = myUpcomingSessions;
     } else if (activeTab === "past") {
-      result = pastSessions;
+      result = [];
     } else {
       // "all" tab — everything, past + future
       result = [...pastSessions, ...sessions];
@@ -299,30 +299,6 @@ function SessionsHub() {
     if (filteredSessions.length === 0) {
       // Empty states per tab
 
-      if (activeTab === "past") {
-        return (
-          <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center space-y-4">
-            <Calendar className="mx-auto h-12 w-12 text-slate-300" />
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                {hasActiveFilters ? "No past sessions match your filters" : "No recent sessions"}
-              </h2>
-              <p className="mt-2 text-slate-500">
-                {hasActiveFilters
-                  ? "Try adjusting your filters."
-                  : "Past sessions from the last 60 days will appear here."}
-              </p>
-            </div>
-            <Link
-              href="/account/attendance/history"
-              className="inline-flex items-center gap-2 text-sm font-medium text-cyan-600 hover:text-cyan-700"
-            >
-              View full attendance history
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        );
-      }
 
       // All tab empty
       return (
@@ -514,9 +490,9 @@ function SessionsHub() {
           <Alert variant="error" title="Error loading sessions">
             {error}
           </Alert>
-        ) : (
+        ) : activeTab === "past" ? null : (
           renderContent()
-        )}
+        )
         {!loading && !error && activeTab === "booked" && (
           <div className="mt-6">
             <AdditionalSwimRecords view="booked" primaryHasSessions={filteredSessions.length > 0}
