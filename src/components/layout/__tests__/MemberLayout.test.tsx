@@ -62,7 +62,7 @@ describe("MemberLayout desktop navigation", () => {
       </MemberLayout>
     );
 
-    await waitFor(() => expect(apiGet).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(apiGet).toHaveBeenCalledTimes(1));
     await screen.findAllByText("Amara Emrey");
 
     fireEvent.click(screen.getByRole("button", { name: "Collapse member navigation" }));
@@ -70,6 +70,12 @@ describe("MemberLayout desktop navigation", () => {
     expect(screen.getByRole("complementary")).toHaveClass("md:w-20");
     expect(screen.getByRole("button", { name: "Expand member navigation" })).toBeInTheDocument();
     expect(localStorage.getItem("swimbuddz-member-sidebar-collapsed")).toBe("true");
+  });
+
+  it("does not redundantly refresh the profile on initial mount", async () => {
+    render(<MemberLayout><div>Content</div></MemberLayout>);
+    await screen.findAllByText("Amara Emrey");
+    expect(apiGet).toHaveBeenCalledTimes(1);
   });
 
   it("hides Academy make-ups from a Club-only member and links to the latest Stroke Lab", async () => {
@@ -135,7 +141,7 @@ describe("MemberLayout desktop navigation", () => {
       </MemberLayout>
     );
 
-    await waitFor(() => expect(apiGet).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(apiGet).toHaveBeenCalledTimes(1));
     await screen.findAllByText("Amara Emrey");
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Expand member navigation" })).toBeInTheDocument()
