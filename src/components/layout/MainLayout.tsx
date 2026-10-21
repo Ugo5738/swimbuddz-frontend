@@ -32,6 +32,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   // unauthenticated landing-page surface; only the member-side /community/challenges
   // route belongs in this allowlist.
   const isMemberPortalRoute =
+    pathname?.startsWith("/find-a-swim/sessions") ||
     pathname?.startsWith("/account") ||
     pathname?.startsWith("/community/directory") ||
     pathname?.startsWith("/community/events") ||
