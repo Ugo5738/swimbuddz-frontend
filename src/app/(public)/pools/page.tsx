@@ -1,6 +1,7 @@
 "use client";
 
 import { apiGet } from "@/lib/api";
+import { DirectoryMap } from "@/components/pools/DirectoryMap";
 import { MapPin, Search, Waves, Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -17,6 +18,10 @@ type Results = { items: Pool[]; total: number; page: number; page_size: number }
 export default function PoolsDirectoryPage() {
   const [search, setSearch] = useState("");
   const [area, setArea] = useState("");
+  const [mapOpen,setMapOpen] = useState(false);
+  const [sort,setSort] = useState<"name"|"nearest">("name");
+  const [nearby,setNearby] = useState<{latitude:number;longitude:number}|null>(null);
+  const [locationError,setLocationError] = useState("");
   const [applied, setApplied] = useState({ search: "", area: "" });
   const [page, setPage] = useState(1);
   const [results, setResults] = useState<Results | null>(null);
@@ -28,12 +33,18 @@ export default function PoolsDirectoryPage() {
     const qs = new URLSearchParams({ page: String(page), page_size: "12" });
     if (applied.search) qs.set("search", applied.search);
     if (applied.area) qs.set("area", applied.area);
+    if (nearby) { qs.set("latitude", String(nearby.latitude)); qs.set("longitude", String(nearby.longitude)); qs.set("radius_km","25"); qs.set("sort",sort); }
     try { setResults(await apiGet<Results>(`/api/v1/pools/directory?${qs.toString()}`)); }
     catch (e) { setError(e instanceof Error ? e.message : "The pool directory is unavailable."); }
     finally { setLoading(false); }
-  }, [applied, page]);
+  }, [applied, page, nearby, sort]);
   useEffect(() => { void load(); }, [load]);
 
+  function useMyLocation() {
+    if (!navigator.geolocation) {setLocationError("Location sharing is not supported in this browser.");return;}
+    setLocationError("");
+    navigator.geolocation.getCurrentPosition((position)=>{setNearby({latitude:position.coords.latitude,longitude:position.coords.longitude});setSort("nearest");setPage(1);},()=>setLocationError("Location was not shared. You can still search by neighbourhood."),{enableHighAccuracy:false,timeout:10000,maximumAge:60000});
+  }
   return <main className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:py-12">
     <header className="space-y-3">
       <p className="text-sm font-semibold uppercase tracking-widest text-cyan-700">Explore swimming pools</p>
@@ -56,6 +67,14 @@ export default function PoolsDirectoryPage() {
       <button type="submit" className="min-h-11 self-end rounded-lg bg-cyan-700 px-6 py-3 text-sm font-semibold text-white hover:bg-cyan-800">Find pools</button>
     </form>
 
+    <div className="flex flex-wrap items-center gap-3">
+      <button type="button" onClick={()=>setMapOpen(v=>!v)} aria-expanded={mapOpen} className="min-h-11 rounded-lg border px-4 py-2 text-sm font-semibold">{mapOpen?"Hide map":"Show map"}</button>
+      <button type="button" onClick={useMyLocation} className="min-h-11 rounded-lg border px-4 py-2 text-sm font-semibold">Find pools near me</button>
+      {nearby&&<button type="button" onClick={()=>{setNearby(null);setSort("name");setPage(1)}} className="text-sm font-semibold text-cyan-700 underline">Clear nearby filter (25 km)</button>}
+      {nearby&&<span className="text-sm text-slate-600">Nearby results sorted by straight-line distance</span>}
+      {locationError&&<p role="status" className="text-sm text-amber-800">{locationError}</p>}
+    </div>
+    {mapOpen&&<DirectoryMap pools={results?.items||[]}/>}
     <div aria-live="polite" className="text-sm text-slate-600">{loading ? "Searching pools…" : results ? `${results.total} published pool${results.total === 1 ? "" : "s"} found` : ""}</div>
     {error && <div role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-800">{error} <button type="button" onClick={() => void load()} className="font-semibold underline">Retry</button></div>}
     {!loading && !error && results?.items.length === 0 && <section className="rounded-2xl border bg-white p-8 text-center">

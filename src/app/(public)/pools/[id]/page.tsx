@@ -17,6 +17,8 @@ export default function PoolDetailPage() {
   const [error,setError] = useState("");
   const [rating,setRating] = useState(5);
   const [review,setReview] = useState("");
+  const [correction,setCorrection] = useState("");
+  const [correctionFeedback,setCorrectionFeedback] = useState("");
   const [busy,setBusy] = useState(false);
   const [feedback,setFeedback] = useState("");
   useEffect(()=>{
@@ -37,6 +39,17 @@ export default function PoolDetailPage() {
       setReview("");
     }catch(e){setFeedback(e instanceof Error?e.message:"Could not submit review");}
     finally{setBusy(false)}
+  }
+  async function submitCorrection(e:React.FormEvent) {
+    e.preventDefault();setCorrectionFeedback("");
+    if(!await getCurrentAccessToken()){window.location.assign(`/pool-access/visitor?next=${encodeURIComponent("/pools/"+id)}`);return;}
+    setBusy(true);
+    try {
+      await apiPost(`/api/v1/pools/directory/${encodeURIComponent(id)}/corrections`,{details:correction.trim()},{auth:true});
+      setCorrectionFeedback("Thank you. Your correction will be reviewed before the listing changes.");
+      setCorrection("");
+    }catch(e){setCorrectionFeedback(e instanceof Error?e.message:"Could not submit correction.");}
+    finally{setBusy(false);}
   }
   if(loading)return <main className="mx-auto max-w-4xl p-6" role="status">Loading pool details…</main>;
   if(error||!pool)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-bold">Pool unavailable</h1><p role="alert">{error||"This pool is not currently listed."}</p><Link href="/pools" className="text-cyan-700 underline">Explore pools</Link></main>;
@@ -60,6 +73,19 @@ export default function PoolDetailPage() {
       </dl>
       <p className="mt-4 flex items-center gap-2 text-xs text-slate-500"><ShieldCheck className="h-4 w-4"/>Last information check: {pool.last_verified_at?new Date(pool.last_verified_at).toLocaleDateString("en-NG"):"Not yet verified"}. Facility conditions can change.</p>
       {pool.latitude!=null&&pool.longitude!=null&&<a href={`https://www.google.com/maps/search/?api=1&query=${pool.latitude}%2C${pool.longitude}`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm text-cyan-700 underline">View map location</a>}
+    </section>
+    <section className="space-y-3 rounded-2xl border bg-white p-5">
+      <h2 className="text-lg font-semibold">Is something incorrect?</h2>
+      <p className="text-sm text-slate-600">Help us keep pool addresses, access conditions and facilities accurate. Submitted corrections are reviewed by the SwimBuddz team; they never edit a listing automatically.</p>
+      <form onSubmit={submitCorrection} className="space-y-3">
+        <label className="block text-sm font-semibold">Suggest a correction
+          <textarea required minLength={20} maxLength={1000} rows={3} value={correction}
+            onChange={e=>setCorrection(e.target.value)} placeholder="What should be updated, and how do you know?"
+            className="mt-1 block w-full rounded-lg border p-3 font-normal"/>
+        </label>
+        <button type="submit" disabled={busy} className="min-h-11 rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-700 disabled:opacity-50">Send correction for review</button>
+        {correctionFeedback&&<p role="status" className="text-sm text-slate-700">{correctionFeedback}</p>}
+      </form>
     </section>
     <section className="space-y-4">
       <h2 className="text-xl font-semibold">Swimmer reviews</h2>
