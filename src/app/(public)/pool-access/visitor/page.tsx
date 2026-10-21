@@ -12,7 +12,8 @@ export default function PoolAccessVisitorRegistration(){
  async function submit(e:React.FormEvent){
   e.preventDefault();setError("");setBusy(true);
   try{
-   const destination="/pool-access";
+   const requested = new URLSearchParams(window.location.search).get("next");
+   const destination = requested === "/pools/suggest" ? requested : "/pool-access";
    const confirmationUrl=new URL("/auth/callback",window.location.origin);
    confirmationUrl.searchParams.set("next",destination);
    const {data,error:authError}=await supabase.auth.signUp({
@@ -33,7 +34,7 @@ export default function PoolAccessVisitorRegistration(){
   finally{setBusy(false)}
  }
  return <main className="mx-auto max-w-xl space-y-5 px-4 py-12">
-  <header className="space-y-2"><p className="text-sm font-semibold uppercase text-cyan-700">SwimBuddz Pool Access</p>
+  <header className="space-y-2"><p className="text-sm font-semibold uppercase text-cyan-700">SwimBuddz Visitor Account</p>
    <h1 className="text-3xl font-bold">Book as a visitor</h1>
    <p className="text-slate-600">You do not need Academy, Club or Community membership to book independent Pool Access. Create a free visitor login to keep your payment and QR credentials securely attached to your email.</p></header>
   {sent?<div role="status" className="rounded-xl border bg-white p-6">
