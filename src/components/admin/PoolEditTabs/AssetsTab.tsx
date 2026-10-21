@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { MediaInput } from "@/components/ui/MediaInput";
 import { getMediaUrl } from "@/lib/media";
+import { resolvePublicPoolPhotoUrl } from "@/lib/pool-directory-photo";
 import { PoolsApi, type PoolAsset, type PoolAssetCreate, type PoolAssetType } from "@/lib/pools";
 import { Image as ImageIcon, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import NextImage from "next/image";
@@ -58,7 +59,12 @@ export function AssetsTab({ poolId }: { poolId: string }) {
 
   const togglePublic = async (asset: PoolAsset) => {
     try {
-      await PoolsApi.updateAsset(poolId, asset.id, { directory_public: !asset.directory_public });
+      const shouldPublish = !asset.directory_public;
+      const publicUrl = shouldPublish ? await resolvePublicPoolPhotoUrl(asset) : null;
+      await PoolsApi.updateAsset(poolId, asset.id, {
+        directory_public: shouldPublish,
+        ...(publicUrl ? { url: publicUrl } : {}),
+      });
       toast.success(asset.directory_public ? "Removed from public directory" : "Photo published to directory");
       load();
     } catch (e) {
@@ -212,7 +218,7 @@ function AssetCard({
                 Make primary
               </button>
             )}
-            {asset.asset_type === "photo" && asset.url?.startsWith("https://") && <button
+            {asset.asset_type === "photo" && (asset.media_id || asset.url?.startsWith("https://")) && <button
               onClick={onTogglePublic}
               className="text-xs font-semibold text-cyan-700 hover:underline"
             >{asset.directory_public ? "Unpublish photo" : "Publish photo"}</button>}
