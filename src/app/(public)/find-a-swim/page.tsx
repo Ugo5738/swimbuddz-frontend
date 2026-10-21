@@ -3,6 +3,12 @@ import { BookOpen, CalendarCheck2, CalendarDays, MapPin, UsersRound } from "luci
 
 const choices = [
   {
+    title: "Explore swimming pools",
+    desc: "Find pools by location, compare facilities and read swimmer reviews. Includes approved non-partner pools.",
+    href: "/pools",
+    icon: MapPin,
+  },
+  {
     title: "Find a SwimBuddz session",
     desc: "Browse Club practice, Academy classes and organised swims. Keep recommended sessions, pod/cohort eligibility, filters and multi-session booking.",
     href: "/account/find-a-swim/sessions",
