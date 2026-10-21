@@ -13,6 +13,7 @@ const money=(minor:number,currency:string)=>new Intl.NumberFormat("en-NG",{style
 
 export default function PoolAccessPage(){
  const [offers,setOffers]=useState<Offer[]>([]);
+ const [poolFilter,setPoolFilter]=useState<string|null>(null);
  const [area,setArea]=useState("");
  const areas=useMemo(()=>Array.from(new Set(offers.map(x=>x.location_area).filter((x):x is string=>!!x))).sort(),[offers]);
  const visibleOffers=useMemo(()=>offers.filter(x=>!area||x.location_area===area),[offers,area]);
@@ -26,7 +27,7 @@ export default function PoolAccessPage(){
  const [booking,setBooking]=useState<Booking|null>(null);
  const [busy,setBusy]=useState(false);
  const [paymentBusy,setPaymentBusy]=useState(false);
- useEffect(()=>{apiGet<Offer[]>("/api/v1/pools/access/offers").then(setOffers).catch(()=>setError("Could not load published Pool Access availability.")).finally(()=>setLoading(false))},[]);
+ useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("pool_id");const valid=requested && /^[0-9a-f-]{36}$/i.test(requested)?requested:null;setPoolFilter(valid);apiGet<Offer[]>(`/api/v1/pools/access/offers${valid?`?pool_id=${encodeURIComponent(valid)}`:""}`).then(setOffers).catch(()=>setError("Could not load published Pool Access availability.")).finally(()=>setLoading(false))},[]);
  const total=useMemo(()=>selected?money(selected.selling_price_kobo*guests.length,selected.currency):"",[selected,guests]);
  async function reserve(){
   if(!await getCurrentAccessToken()){window.location.assign("/pool-access/visitor");return;}
@@ -59,6 +60,7 @@ export default function PoolAccessPage(){
  return <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
   <header className="space-y-2"><p className="text-sm font-semibold uppercase tracking-widest text-cyan-700">Find a Swim</p>
    <h1 className="text-3xl font-bold text-slate-900">Pool Access</h1>
+   {poolFilter&&<p className="text-sm text-slate-700">Showing Pool Access availability for the selected pool. <Link href="/pool-access" className="font-semibold text-cyan-700 underline">View all pools</Link> · <Link href={`/pools/${poolFilter}`} className="font-semibold text-cyan-700 underline">Return to pool profile</Link></p>}
    <p className="max-w-2xl text-slate-600">Discover independent swims at published SwimBuddz partner locations. Coaching is not included. Entry requires a confirmed, paid booking and compliance with pool safety rules.</p>
    <div className="flex flex-wrap gap-4 text-sm"><Link className="text-cyan-700 underline" href="/pool-access/visitor">New here? Book as a visitor</Link><Link className="text-cyan-700 underline" href="/login?redirect=%2Fpool-access">Sign in</Link><Link className="text-cyan-700 underline" href="/pool-access/my-bookings">My Pool Access tickets</Link></div>
    <Link className="text-cyan-700 underline" href="/sessions">Looking for an organised Club or Community swim instead?</Link>
