@@ -61,6 +61,7 @@ export default function MemberDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [resumePaymentIntent, setResumePaymentIntent] = useState<CachedPaymentIntent | null>(null);
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
+  const [attendanceLoaded, setAttendanceLoaded] = useState(false);
   const [upcomingBookings, setUpcomingBookings] = useState<AttendanceRecord[]>([]);
   const [bookedSessionSignInEligible, setBookedSessionSignInEligible] = useState(false);
   const [nextAvailableSession, setNextAvailableSession] = useState<{
@@ -103,7 +104,8 @@ export default function MemberDashboardPage() {
       .catch(() => {
         setAllRecords([]);
         setUpcomingBookings([]);
-      });
+      })
+      .finally(() => setAttendanceLoaded(true));
 
     // Fetch recent announcements
     apiGet<Announcement[]>("/api/v1/communications/announcements/", { auth: true })
@@ -147,7 +149,9 @@ export default function MemberDashboardPage() {
 
   // Fetch the next session the backend says this member can book.
   useEffect(() => {
-    if (!member || upcomingBookings.length > 0) return;
+    // Do not request the full session catalogue while attendance is still
+    // loading: the member may already have an upcoming reservation.
+    if (!member || !attendanceLoaded || upcomingBookings.length > 0) return;
 
     SessionsApi.listSessions({ auth: true })
       .then((sessions: Session[]) => {
@@ -172,7 +176,7 @@ export default function MemberDashboardPage() {
         }
       })
       .catch(() => {});
-  }, [member, upcomingBookings]);
+  }, [member, attendanceLoaded, upcomingBookings]);
 
   useEffect(() => {
     const booking = upcomingBookings[0];

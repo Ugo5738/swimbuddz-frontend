@@ -48,7 +48,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 type MemberLayoutProps = {
   children: ReactNode;
@@ -276,7 +276,12 @@ export function MemberLayout({ children }: MemberLayoutProps) {
 
   // Keep sidebar membership/status in sync after in-app navigation
   // (e.g., checkout -> billing without a Paystack reference query param).
+  // useApi fetches the profile on mount. Re-fetch only when navigating to a
+  // different path; otherwise mounting the layout immediately duplicates /me.
+  const previousPathname = useRef(pathname);
   useEffect(() => {
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
     refreshMember();
   }, [pathname, refreshMember]);
 
