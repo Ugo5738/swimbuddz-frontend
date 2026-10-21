@@ -56,6 +56,16 @@ export function AssetsTab({ poolId }: { poolId: string }) {
     }
   };
 
+  const togglePublic = async (asset: PoolAsset) => {
+    try {
+      await PoolsApi.updateAsset(poolId, asset.id, { directory_public: !asset.directory_public });
+      toast.success(asset.directory_public ? "Removed from public directory" : "Photo published to directory");
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not change photo visibility");
+    }
+  };
+
   if (assets === null) return <Card className="p-6 text-sm text-slate-500">Loading assets...</Card>;
 
   return (
@@ -93,6 +103,7 @@ export function AssetsTab({ poolId }: { poolId: string }) {
               key={a.id}
               asset={a}
               onSetPrimary={() => setPrimary(a.id)}
+              onTogglePublic={() => togglePublic(a)}
               onDelete={() => handleDelete(a.id)}
             />
           ))}
@@ -105,10 +116,12 @@ export function AssetsTab({ poolId }: { poolId: string }) {
 function AssetCard({
   asset,
   onSetPrimary,
+  onTogglePublic,
   onDelete,
 }: {
   asset: PoolAsset;
   onSetPrimary: () => void;
+  onTogglePublic: () => void;
   onDelete: () => void;
 }) {
   // Resolve media_id to a real URL. Direct `url` is used as-is.
@@ -166,6 +179,7 @@ function AssetCard({
             <Badge variant="default" className="capitalize text-xs">
               {asset.asset_type}
             </Badge>
+            {asset.directory_public && <Badge variant="success">Public gallery</Badge>}
             {asset.is_primary && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-xs font-semibold text-amber-700">
                 <Star className="h-3 w-3" />
@@ -198,6 +212,10 @@ function AssetCard({
                 Make primary
               </button>
             )}
+            {asset.asset_type === "photo" && asset.url?.startsWith("https://") && <button
+              onClick={onTogglePublic}
+              className="text-xs font-semibold text-cyan-700 hover:underline"
+            >{asset.directory_public ? "Unpublish photo" : "Publish photo"}</button>}
             <button
               onClick={onDelete}
               className="text-xs text-rose-600 hover:underline ml-auto"

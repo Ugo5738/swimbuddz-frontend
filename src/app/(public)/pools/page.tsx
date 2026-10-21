@@ -1,6 +1,7 @@
 "use client";
 
 import { apiGet } from "@/lib/api";
+import { DirectoryMap } from "@/components/pools/DirectoryMap";
 import { MapPin, Search, Waves, Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -11,12 +12,18 @@ type Pool = {
   pool_length_m: number | null; depth_min_m: number | null; depth_max_m: number | null;
   has_lifeguard: boolean | null; is_partner: boolean; bookable: boolean;
   rating_average: number | null; rating_count: number; last_verified_at: string | null;
+  photos: {id:string;url:string;caption:string|null}[];
+  swimbuddz_assessment_rating:number|null;
 };
 type Results = { items: Pool[]; total: number; page: number; page_size: number };
 
 export default function PoolsDirectoryPage() {
   const [search, setSearch] = useState("");
   const [area, setArea] = useState("");
+  const [mapOpen,setMapOpen] = useState(false);
+  const [sort,setSort] = useState<"name"|"nearest">("name");
+  const [nearby,setNearby] = useState<{latitude:number;longitude:number}|null>(null);
+  const [locationError,setLocationError] = useState("");
   const [applied, setApplied] = useState({ search: "", area: "" });
   const [page, setPage] = useState(1);
   const [results, setResults] = useState<Results | null>(null);
@@ -28,12 +35,18 @@ export default function PoolsDirectoryPage() {
     const qs = new URLSearchParams({ page: String(page), page_size: "12" });
     if (applied.search) qs.set("search", applied.search);
     if (applied.area) qs.set("area", applied.area);
+    if (nearby) { qs.set("latitude", String(nearby.latitude)); qs.set("longitude", String(nearby.longitude)); qs.set("radius_km","25"); qs.set("sort",sort); }
     try { setResults(await apiGet<Results>(`/api/v1/pools/directory?${qs.toString()}`)); }
     catch (e) { setError(e instanceof Error ? e.message : "The pool directory is unavailable."); }
     finally { setLoading(false); }
-  }, [applied, page]);
+  }, [applied, page, nearby, sort]);
   useEffect(() => { void load(); }, [load]);
 
+  function useMyLocation() {
+    if (!navigator.geolocation) {setLocationError("Location sharing is not supported in this browser.");return;}
+    setLocationError("");
+    navigator.geolocation.getCurrentPosition((position)=>{setNearby({latitude:position.coords.latitude,longitude:position.coords.longitude});setSort("nearest");setPage(1);},()=>setLocationError("Location was not shared. You can still search by neighbourhood."),{enableHighAccuracy:false,timeout:10000,maximumAge:60000});
+  }
   return <main className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:py-12">
     <header className="space-y-3">
       <p className="text-sm font-semibold uppercase tracking-widest text-cyan-700">Explore swimming pools</p>
@@ -56,6 +69,14 @@ export default function PoolsDirectoryPage() {
       <button type="submit" className="min-h-11 self-end rounded-lg bg-cyan-700 px-6 py-3 text-sm font-semibold text-white hover:bg-cyan-800">Find pools</button>
     </form>
 
+    <div className="flex flex-wrap items-center gap-3">
+      <button type="button" onClick={()=>setMapOpen(v=>!v)} aria-expanded={mapOpen} className="min-h-11 rounded-lg border px-4 py-2 text-sm font-semibold">{mapOpen?"Hide map":"Show map"}</button>
+      <button type="button" onClick={useMyLocation} className="min-h-11 rounded-lg border px-4 py-2 text-sm font-semibold">Find pools near me</button>
+      {nearby&&<button type="button" onClick={()=>{setNearby(null);setSort("name");setPage(1)}} className="text-sm font-semibold text-cyan-700 underline">Clear nearby filter (25 km)</button>}
+      {nearby&&<span className="text-sm text-slate-600">Nearby results sorted by straight-line distance</span>}
+      {locationError&&<p role="status" className="text-sm text-amber-800">{locationError}</p>}
+    </div>
+    {mapOpen&&<DirectoryMap pools={results?.items||[]}/>}
     <div aria-live="polite" className="text-sm text-slate-600">{loading ? "Searching pools…" : results ? `${results.total} published pool${results.total === 1 ? "" : "s"} found` : ""}</div>
     {error && <div role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-800">{error} <button type="button" onClick={() => void load()} className="font-semibold underline">Retry</button></div>}
     {!loading && !error && results?.items.length === 0 && <section className="rounded-2xl border bg-white p-8 text-center">
@@ -65,6 +86,11 @@ export default function PoolsDirectoryPage() {
     </section>}
     {results?.items && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {results.items.map(pool => <article key={pool.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-cyan-300">
+        {pool.photos?.[0]?.url && <div className="overflow-hidden rounded-xl bg-slate-100">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={pool.photos[0].url} alt={pool.photos[0].caption||pool.name} loading="lazy" className="h-44 w-full object-cover"/>
+        </div>}
+        {pool.swimbuddz_assessment_rating&&<p className="text-xs font-semibold text-cyan-800">SwimBuddz assessment: {pool.swimbuddz_assessment_rating}/5</p>}
         <div className="flex flex-wrap gap-2 text-xs font-semibold">
           {pool.bookable && <span className="rounded-full bg-green-50 px-3 py-1 text-green-700">SwimBuddz booking available</span>}
           {!pool.bookable && <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">Directory listing</span>}

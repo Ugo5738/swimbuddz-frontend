@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-type Pool = { id:string;name:string;location_area:string|null;address:string|null;pool_length_m:number|null;depth_min_m:number|null;depth_max_m:number|null;indoor_outdoor:string|null;has_lifeguard:boolean|null;has_changing_rooms:boolean|null;has_showers:boolean|null;has_lockers:boolean|null;has_parking:boolean|null;rating_average:number|null;rating_count:number;bookable:boolean;last_verified_at:string|null;latitude:number|null;longitude:number|null };
+type Pool = { photos:{id:string;url:string;caption:string|null}[];swimbuddz_assessment_rating:number|null;swimbuddz_assessment_summary:string|null;swimbuddz_assessment_updated_at:string|null;id:string;name:string;location_area:string|null;address:string|null;pool_length_m:number|null;depth_min_m:number|null;depth_max_m:number|null;indoor_outdoor:string|null;has_lifeguard:boolean|null;has_changing_rooms:boolean|null;has_showers:boolean|null;has_lockers:boolean|null;has_parking:boolean|null;rating_average:number|null;rating_count:number;bookable:boolean;last_verified_at:string|null;latitude:number|null;longitude:number|null };
 type Review = {id:string;rating:number;review:string;created_at:string;attribution:string};
 export default function PoolDetailPage() {
   const { id } = useParams() as {id:string};
@@ -17,6 +17,8 @@ export default function PoolDetailPage() {
   const [error,setError] = useState("");
   const [rating,setRating] = useState(5);
   const [review,setReview] = useState("");
+  const [correction,setCorrection] = useState("");
+  const [correctionFeedback,setCorrectionFeedback] = useState("");
   const [busy,setBusy] = useState(false);
   const [feedback,setFeedback] = useState("");
   useEffect(()=>{
@@ -38,6 +40,17 @@ export default function PoolDetailPage() {
     }catch(e){setFeedback(e instanceof Error?e.message:"Could not submit review");}
     finally{setBusy(false)}
   }
+  async function submitCorrection(e:React.FormEvent) {
+    e.preventDefault();setCorrectionFeedback("");
+    if(!await getCurrentAccessToken()){window.location.assign(`/pool-access/visitor?next=${encodeURIComponent("/pools/"+id)}`);return;}
+    setBusy(true);
+    try {
+      await apiPost(`/api/v1/pools/directory/${encodeURIComponent(id)}/corrections`,{details:correction.trim()},{auth:true});
+      setCorrectionFeedback("Thank you. Your correction will be reviewed before the listing changes.");
+      setCorrection("");
+    }catch(e){setCorrectionFeedback(e instanceof Error?e.message:"Could not submit correction.");}
+    finally{setBusy(false);}
+  }
   if(loading)return <main className="mx-auto max-w-4xl p-6" role="status">Loading pool details…</main>;
   if(error||!pool)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-bold">Pool unavailable</h1><p role="alert">{error||"This pool is not currently listed."}</p><Link href="/pools" className="text-cyan-700 underline">Explore pools</Link></main>;
   const amenities=[["Changing rooms",pool.has_changing_rooms],["Showers",pool.has_showers],["Lockers",pool.has_lockers],["Parking",pool.has_parking],["Lifeguard",pool.has_lifeguard]].filter(x=>x[1]===true).map(x=>x[0] as string);
@@ -47,9 +60,25 @@ export default function PoolDetailPage() {
       <p className="text-sm font-semibold uppercase tracking-wide text-cyan-700">Pool directory</p>
       <h1 className="text-3xl font-bold text-slate-950">{pool.name}</h1>
       <p className="flex items-start gap-2 text-slate-600"><MapPin className="h-5 w-5 shrink-0"/>{[pool.location_area,pool.address].filter(Boolean).join(" · ")||"Address awaiting verification"}</p>
-      {pool.bookable ? <Link href="/pool-access" className="inline-flex min-h-11 items-center rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white">Check SwimBuddz booking availability</Link>
+      {pool.bookable ? <Link href={`/pool-access?pool_id=${pool.id}`} className="inline-flex min-h-11 items-center rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white">Check SwimBuddz booking availability</Link>
         : <p className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">This is a directory listing, not a bookable SwimBuddz visit. Verify admission and safety information with the facility before travelling.</p>}
     </header>
+    {pool.photos?.length>0&&<section aria-label="Pool photos" className="space-y-3">
+      <h2 className="text-xl font-semibold">Pool photos</h2>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {pool.photos.map(photo=><figure key={photo.id} className="overflow-hidden rounded-xl border bg-white">
+          {/* Directory photos are individually approved as public HTTPS assets by SwimBuddz staff. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photo.url} alt={photo.caption||`Photograph of ${pool.name}`} loading="lazy" className="h-56 w-full object-cover" />
+          {photo.caption&&<figcaption className="p-3 text-xs text-slate-600">{photo.caption}</figcaption>}
+        </figure>)}
+      </div>
+    </section>}
+    {pool.swimbuddz_assessment_rating&&pool.swimbuddz_assessment_summary&&<section aria-label="SwimBuddz assessment" className="space-y-2 rounded-2xl border border-cyan-200 bg-cyan-50/70 p-5">
+      <h2 className="text-xl font-semibold text-cyan-900">SwimBuddz assessment · {pool.swimbuddz_assessment_rating}/5</h2>
+      <p className="whitespace-pre-wrap text-sm text-slate-700">{pool.swimbuddz_assessment_summary}</p>
+      <p className="text-xs text-slate-500">SwimBuddz editorial assessment, separate from community reviews. {pool.swimbuddz_assessment_updated_at&&`Reviewed ${new Date(pool.swimbuddz_assessment_updated_at).toLocaleDateString("en-NG")}`}</p>
+    </section>}
     <section className="rounded-2xl border bg-white p-5">
       <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold"><Waves className="h-5 w-5 text-cyan-700"/>Pool information</h2>
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
@@ -60,6 +89,19 @@ export default function PoolDetailPage() {
       </dl>
       <p className="mt-4 flex items-center gap-2 text-xs text-slate-500"><ShieldCheck className="h-4 w-4"/>Last information check: {pool.last_verified_at?new Date(pool.last_verified_at).toLocaleDateString("en-NG"):"Not yet verified"}. Facility conditions can change.</p>
       {pool.latitude!=null&&pool.longitude!=null&&<a href={`https://www.google.com/maps/search/?api=1&query=${pool.latitude}%2C${pool.longitude}`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm text-cyan-700 underline">View map location</a>}
+    </section>
+    <section className="space-y-3 rounded-2xl border bg-white p-5">
+      <h2 className="text-lg font-semibold">Is something incorrect?</h2>
+      <p className="text-sm text-slate-600">Help us keep pool addresses, access conditions and facilities accurate. Submitted corrections are reviewed by the SwimBuddz team; they never edit a listing automatically.</p>
+      <form onSubmit={submitCorrection} className="space-y-3">
+        <label className="block text-sm font-semibold">Suggest a correction
+          <textarea required minLength={20} maxLength={1000} rows={3} value={correction}
+            onChange={e=>setCorrection(e.target.value)} placeholder="What should be updated, and how do you know?"
+            className="mt-1 block w-full rounded-lg border p-3 font-normal"/>
+        </label>
+        <button type="submit" disabled={busy} className="min-h-11 rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-700 disabled:opacity-50">Send correction for review</button>
+        {correctionFeedback&&<p role="status" className="text-sm text-slate-700">{correctionFeedback}</p>}
+      </form>
     </section>
     <section className="space-y-4">
       <h2 className="text-xl font-semibold">Swimmer reviews</h2>

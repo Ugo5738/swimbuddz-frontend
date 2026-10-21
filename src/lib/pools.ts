@@ -149,6 +149,7 @@ export interface PoolAsset {
   caption: string | null;
   display_order: number;
   is_primary: boolean;
+  directory_public: boolean;
   uploaded_by_auth_id: string | null;
   created_at: string;
   updated_at: string;
@@ -162,6 +163,7 @@ export interface PoolAssetCreate {
   caption?: string | null;
   display_order?: number | null;
   is_primary?: boolean;
+  directory_public?: boolean;
 }
 
 export type PoolAssetUpdate = Partial<PoolAssetCreate>;
