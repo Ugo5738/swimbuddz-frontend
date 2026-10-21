@@ -9,6 +9,20 @@ import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+/** Expose route-guard stages to browser DevTools without logging user data. */
+function timedResponse(
+  response: NextResponse,
+  timings: { authMs?: number; memberMs?: number; totalMs: number }
+): NextResponse {
+  const stages = [
+    timings.authMs === undefined ? null : `swimbuddz_auth;dur=${timings.authMs.toFixed(1)}`,
+    timings.memberMs === undefined ? null : `swimbuddz_member;dur=${timings.memberMs.toFixed(1)}`,
+    `swimbuddz_guard;dur=${timings.totalMs.toFixed(1)}`,
+  ].filter(Boolean);
+  response.headers.set("Server-Timing", stages.join(", "));
+  return response;
+}
+
 // Routes that require admin access
 const ADMIN_ROUTES = ["/admin"];
 
@@ -66,15 +80,26 @@ export async function middleware(request: NextRequest) {
 
   // For member routes, check approval status
   if (isMemberRoute || isAdminRoute) {
+    const guardStarted = performance.now();
+    let authMs: number | undefined;
+    let memberMs: number | undefined;
+    const finish = (result: NextResponse) =>
+      timedResponse(result, {
+        authMs,
+        memberMs,
+        totalMs: performance.now() - guardStarted,
+      });
     try {
+      const authStarted = performance.now();
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser();
 
+      authMs = performance.now() - authStarted;
       if (userError || !user) {
         // Not logged in, redirect to login and preserve return path.
-        return redirectToLogin(request, "not_logged_in");
+        return finish(redirectToLogin(request, "not_logged_in"));
       }
 
       // Finance area: any authenticated user may *reach* /admin/finance/* — the
@@ -83,7 +108,7 @@ export async function middleware(request: NextRequest) {
       // use /admin/finance without the admin role. All other /admin/* still
       // require admin (checked below).
       if (pathname.startsWith("/admin/finance")) {
-        return response;
+        return finish(response);
       }
 
       // Admin detection: read from the signed JWT's app_metadata.roles claim.
@@ -95,7 +120,7 @@ export async function middleware(request: NextRequest) {
 
       // Admin users bypass all approval checks
       if (isJwtAdmin) {
-        return response;
+        return finish(response);
       }
 
       const {
@@ -103,16 +128,18 @@ export async function middleware(request: NextRequest) {
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        return redirectToLogin(request, "missing_access_token");
+        return finish(redirectToLogin(request, "missing_access_token"));
       }
 
       // Fetch member profile to check approval status
+      const memberStarted = performance.now();
       const memberResponse = await fetch(`${API_BASE_URL}/api/v1/members/me`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
 
+      memberMs = performance.now() - memberStarted;
       if (memberResponse.ok) {
         const member = (await memberResponse.json()) as MiddlewareMember;
 
@@ -125,23 +152,23 @@ export async function middleware(request: NextRequest) {
           isJwtAdmin,
           member,
         });
-        return applyDecision(decision, request, response);
+        return finish(applyDecision(decision, request, response));
       } else if (memberResponse.status === 404 && isAdminRoute) {
         // No member profile but trying to access admin - might be admin-only user
         // Allow through and let the admin page handle authorization
-        return response;
+        return finish(response);
       } else {
         // API error or non-200 status - fail closed for security
         console.error("Middleware: Failed to fetch member profile", memberResponse.status);
         // If we can't verify the user, redirect to login or error
         // But if it's a 500, maybe we should let them see a generic error?
         // For now, redirecting to login is safer than letting them in.
-        return redirectToLogin(request, "auth_check_failed");
+        return finish(redirectToLogin(request, "auth_check_failed"));
       }
     } catch (error) {
       console.error("Middleware error:", error);
       // Fail closed: Redirect to login if we can't verify status
-      return redirectToLogin(request, "auth_check_error");
+      return finish(redirectToLogin(request, "auth_check_error"));
     }
   }
 
