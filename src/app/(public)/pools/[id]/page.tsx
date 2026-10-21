@@ -60,7 +60,7 @@ export default function PoolDetailPage() {
       <p className="text-sm font-semibold uppercase tracking-wide text-cyan-700">Pool directory</p>
       <h1 className="text-3xl font-bold text-slate-950">{pool.name}</h1>
       <p className="flex items-start gap-2 text-slate-600"><MapPin className="h-5 w-5 shrink-0"/>{[pool.location_area,pool.address].filter(Boolean).join(" · ")||"Address awaiting verification"}</p>
-      {pool.bookable ? <Link href="/pool-access" className="inline-flex min-h-11 items-center rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white">Check SwimBuddz booking availability</Link>
+      {pool.bookable ? <Link href={`/pool-access?pool_id=${pool.id}`} className="inline-flex min-h-11 items-center rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white">Check SwimBuddz booking availability</Link>
         : <p className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">This is a directory listing, not a bookable SwimBuddz visit. Verify admission and safety information with the facility before travelling.</p>}
     </header>
     <section className="rounded-2xl border bg-white p-5">
