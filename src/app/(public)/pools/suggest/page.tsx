@@ -18,7 +18,7 @@ export default function SuggestPublicPool() {
   async function submit(e:React.FormEvent){
     e.preventDefault();setStatus("");
     if(!await getCurrentAccessToken()){
-      window.location.assign("/pool-access/visitor");
+      window.location.assign("/login?redirect=%2Fpools%2Fsuggest");
       return;
     }
     setBusy(true);
