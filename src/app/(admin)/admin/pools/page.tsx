@@ -304,6 +304,7 @@ export default function PoolRegistryPage() {
           <p className="text-slate-500">Screening &amp; partnership CRM for pool locations</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/admin/pools/directory"><Button variant="outline">Public directory & reviews</Button></Link>
           <Link href="/admin/pools/submissions">
             <Button variant="outline">Member submissions</Button>
           </Link>
