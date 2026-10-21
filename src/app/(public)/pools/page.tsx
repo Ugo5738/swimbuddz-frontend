@@ -12,6 +12,8 @@ type Pool = {
   pool_length_m: number | null; depth_min_m: number | null; depth_max_m: number | null;
   has_lifeguard: boolean | null; is_partner: boolean; bookable: boolean;
   rating_average: number | null; rating_count: number; last_verified_at: string | null;
+  photos: {id:string;url:string;caption:string|null}[];
+  swimbuddz_assessment_rating:number|null;
 };
 type Results = { items: Pool[]; total: number; page: number; page_size: number };
 
@@ -84,6 +86,11 @@ export default function PoolsDirectoryPage() {
     </section>}
     {results?.items && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {results.items.map(pool => <article key={pool.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-cyan-300">
+        {pool.photos?.[0]?.url && <div className="overflow-hidden rounded-xl bg-slate-100">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={pool.photos[0].url} alt={pool.photos[0].caption||pool.name} loading="lazy" className="h-44 w-full object-cover"/>
+        </div>}
+        {pool.swimbuddz_assessment_rating&&<p className="text-xs font-semibold text-cyan-800">SwimBuddz assessment: {pool.swimbuddz_assessment_rating}/5</p>}
         <div className="flex flex-wrap gap-2 text-xs font-semibold">
           {pool.bookable && <span className="rounded-full bg-green-50 px-3 py-1 text-green-700">SwimBuddz booking available</span>}
           {!pool.bookable && <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">Directory listing</span>}
