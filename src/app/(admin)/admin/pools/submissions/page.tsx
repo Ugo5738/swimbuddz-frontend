@@ -65,10 +65,9 @@ export default function AdminPoolSubmissionsPage() {
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Member pool submissions</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Pool suggestions and corrections</h1>
         <p className="text-sm text-slate-600">
-          Moderation queue for community-contributed pool suggestions. Approving creates a
-          prospect pool and grants Bubbles to the submitter.
+          Review suggested new pools and corrections to existing directory listings. New suggestions can create prospect pools; corrections never create another pool record.
         </p>
       </div>
 
@@ -138,7 +137,7 @@ function SubmissionRow({
   const [showReject, setShowReject] = useState(false);
   const [showApprove, setShowApprove] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
-  const [rewardBubbles, setRewardBubbles] = useState(500);
+  const [rewardBubbles, setRewardBubbles] = useState(submission.promoted_pool_id ? 0 : 500);
   const [approveNotes, setApproveNotes] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -147,9 +146,9 @@ function SubmissionRow({
   const handleApprove = async () => {
     setBusy(true);
     try {
-      await PoolSubmissionsApi.approve(submission.id, rewardBubbles, approveNotes || undefined);
+      await PoolSubmissionsApi.approve(submission.id, submission.promoted_pool_id ? 0 : rewardBubbles, approveNotes || undefined);
       toast.success(
-        rewardBubbles > 0
+        rewardBubbles > 0 && !submission.promoted_pool_id
           ? `Approved — ${rewardBubbles} Bubbles granted to submitter`
           : "Approved",
       );
@@ -187,6 +186,7 @@ function SubmissionRow({
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <h3 className="text-lg font-semibold text-slate-900">{submission.pool_name}</h3>
             <StatusBadge status={submission.status} />
+            {submission.promoted_pool_id && <Badge variant="info">Existing pool correction</Badge>}
             {submission.pool_type && (
               <Badge variant="default" className="capitalize">
                 {submission.pool_type}
@@ -262,6 +262,8 @@ function SubmissionRow({
         </div>
       )}
 
+      {submission.promoted_pool_id && <p className="rounded-lg bg-cyan-50 p-3 text-sm text-cyan-900"><strong>Correction to existing pool.</strong> Inspect and update the record before approving. Approval acknowledges review; it does not automatically change the listing. <Link href={`/admin/pools/${submission.promoted_pool_id}`} className="font-semibold underline">Edit this pool</Link></p>}
+
       {submission.member_notes && (
         <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
@@ -306,7 +308,7 @@ function SubmissionRow({
 
           {showApprove && (
             <div className="w-full space-y-2">
-              <div className="flex items-center gap-2">
+              {!submission.promoted_pool_id && <div className="flex items-center gap-2">
                 <label className="text-sm text-slate-700">Reward (Bubbles):</label>
                 <input
                   type="number"
@@ -316,7 +318,7 @@ function SubmissionRow({
                   onChange={(e) => setRewardBubbles(Number(e.target.value))}
                   className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm"
                 />
-              </div>
+              </div>}
               <textarea
                 value={approveNotes}
                 onChange={(e) => setApproveNotes(e.target.value)}
