@@ -62,7 +62,7 @@ export default function FindASwim() {
         Looking for all SwimBuddz activities, including talks and events?{" "}
         <Link href="/calendar" className="font-semibold text-cyan-700 underline">Open the SwimBuddz calendar</Link>.
         {" "}Know a pool we should consider?{" "}
-        <Link href="/account/pools/suggest" className="font-semibold text-cyan-700 underline">Suggest a pool</Link>.
+        <Link href="/pools/suggest" className="font-semibold text-cyan-700 underline">Suggest a pool</Link>.
       </p>
     </main>
   );
