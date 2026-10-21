@@ -40,7 +40,7 @@ export default function PoolsDirectoryPage() {
       <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Find a swimming pool</h1>
       <p className="max-w-2xl text-slate-600">Discover pools by name or neighbourhood, compare facilities and read moderated swimmer reviews. Listings do not imply SwimBuddz partnership or available booking.</p>
       <div className="flex flex-wrap gap-4 text-sm font-semibold">
-        <Link href="/account/pools/suggest" className="text-cyan-700 underline">Suggest a pool</Link>
+        <Link href="/pools/suggest" className="text-cyan-700 underline">Suggest a pool</Link>
         <Link href="/pool-access" className="text-cyan-700 underline">See bookable pool visits</Link>
         <Link href="/calendar" className="text-cyan-700 underline">SwimBuddz calendar</Link>
       </div>
@@ -61,7 +61,7 @@ export default function PoolsDirectoryPage() {
     {!loading && !error && results?.items.length === 0 && <section className="rounded-2xl border bg-white p-8 text-center">
       <Waves className="mx-auto mb-3 h-9 w-9 text-cyan-600" /><h2 className="text-lg font-semibold">No published pools match yet</h2>
       <p className="mt-2 text-sm text-slate-600">Try another area or help our team discover a missing swimming pool.</p>
-      <Link href="/account/pools/suggest" className="mt-3 inline-block text-cyan-700 underline">Suggest a pool</Link>
+      <Link href="/pools/suggest" className="mt-3 inline-block text-cyan-700 underline">Suggest a pool</Link>
     </section>}
     {results?.items && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {results.items.map(pool => <article key={pool.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-cyan-300">
