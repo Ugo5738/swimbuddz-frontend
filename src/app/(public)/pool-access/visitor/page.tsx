@@ -13,7 +13,7 @@ export default function PoolAccessVisitorRegistration(){
   e.preventDefault();setError("");setBusy(true);
   try{
    const requested = new URLSearchParams(window.location.search).get("next");
-   const destination = requested && /^\\/pools\\/(?:suggest|[0-9a-fA-F-]{36})$/.test(requested) ? requested : "/pool-access";
+   const destination = requested && /^\/pools\/(?:suggest|[0-9a-fA-F-]{36})$/.test(requested) ? requested : "/pool-access";
    const confirmationUrl=new URL("/auth/callback",window.location.origin);
    confirmationUrl.searchParams.set("next",destination);
    const {data,error:authError}=await supabase.auth.signUp({
