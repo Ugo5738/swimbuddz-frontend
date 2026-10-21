@@ -29,7 +29,7 @@ export default function PoolDetailPage() {
   },[id]);
   async function submit(e:React.FormEvent) {
     e.preventDefault();setFeedback("");
-    if(!await getCurrentAccessToken()){window.location.assign(`/login?redirect=${encodeURIComponent("/pools/"+id)}`);return;}
+    if(!await getCurrentAccessToken()){window.location.assign(`/pool-access/visitor?next=${encodeURIComponent("/pools/"+id)}`);return;}
     setBusy(true);
     try {
       await apiPost(`/api/v1/pools/directory/${encodeURIComponent(id)}/reviews`,{rating,review:review.trim()},{auth:true});
