@@ -5,7 +5,7 @@ const choices = [
   {
     title: "Find a SwimBuddz session",
     desc: "Browse Club practice, Academy classes and organised swims. Keep recommended sessions, pod/cohort eligibility, filters and multi-session booking.",
-    href: "/find-a-swim/sessions",
+    href: "/account/find-a-swim/sessions",
     icon: CalendarCheck2,
   },
   {
