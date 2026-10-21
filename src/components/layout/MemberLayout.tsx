@@ -124,7 +124,7 @@ const navSections: NavSection[] = [
     title: "",
     items: [
       { href: "/account", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/find-a-swim", label: "Find a Swim", icon: Waves },
+      { href: "/account/find-a-swim", label: "Find a Swim", icon: Waves },
       { href: "/account/calendar", label: "SwimBuddz Calendar", icon: CalendarDays },
       { href: "/account/onboarding", label: "Complete Setup", icon: CheckCircle },
     ],
