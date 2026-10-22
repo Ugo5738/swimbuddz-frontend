@@ -17,11 +17,16 @@ export default function MemberLayoutWrapper({
   useEffect(() => {
     async function checkAuth() {
       try {
+        // Middleware verifies the user with Supabase before protected routes
+        // render. Repeating getUser() here adds a second network-dependent
+        // verification before the member shell becomes visible. The client
+        // layout only needs the locally available session for its UX guard;
+        // API endpoints remain independently authenticated/authorized.
         const {
-          data: { user },
-        } = await supabase.auth.getUser();
+          data: { session },
+        } = await supabase.auth.getSession();
 
-        if (!user) {
+        if (!session?.access_token) {
           console.log("No authenticated user, redirecting to login");
           router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
           return;
