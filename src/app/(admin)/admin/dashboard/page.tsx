@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { apiGet } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
 import type { FlywheelOverview } from "@/lib/types/flywheel";
 import {
   AlertCircle,
@@ -19,7 +19,7 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 interface DashboardStats {
   total_members: number;
@@ -55,100 +55,32 @@ interface Enrollment {
 }
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [recentEnrollments, setRecentEnrollments] = useState<Enrollment[]>([]);
-  const [flywheel, setFlywheel] = useState<FlywheelOverview | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setIsLoading(true);
-
-        // Load the main stats plus supporting lists in parallel, but only
-        // treat the stats call as page-critical so one flaky side panel
-        // doesn't blank the entire dashboard.
-        const [statsResult, sessionsResult, announcementsResult, enrollmentsResult] =
-          await Promise.allSettled([
-            apiGet<DashboardStats>("/api/v1/admin/dashboard-stats", {
-              auth: true,
-            }),
-            apiGet<Session[]>("/api/v1/sessions/", { auth: true }),
-            apiGet<Announcement[]>("/api/v1/communications/announcements/", {
-              auth: true,
-            }),
-            // Academy declares this list route without a trailing slash.
-            // Avoid the redirecting variant here because the gateway has
-            // intermittently surfaced it as a 503 in production.
-            apiGet<Enrollment[]>("/api/v1/academy/enrollments", {
-              auth: true,
-            }),
-          ]);
-
-        if (statsResult.status !== "fulfilled") {
-          throw statsResult.reason;
-        }
-        setStats(statsResult.value);
-
-        if (sessionsResult.status === "fulfilled") {
-          const now = new Date();
-          const upcoming = sessionsResult.value
-            .filter((s) => new Date(s.starts_at) > now)
-            .sort(
-              (a, b) =>
-                new Date(a.starts_at).getTime() -
-                new Date(b.starts_at).getTime(),
-            )
-            .slice(0, 5);
-          setSessions(upcoming);
-        } else {
-          console.warn("Failed to load admin sessions", sessionsResult.reason);
-          setSessions([]);
-        }
-
-        if (announcementsResult.status === "fulfilled") {
-          setAnnouncements(announcementsResult.value.slice(0, 5));
-        } else {
-          console.warn(
-            "Failed to load admin announcements",
-            announcementsResult.reason,
-          );
-          setAnnouncements([]);
-        }
-
-        if (enrollmentsResult.status === "fulfilled") {
-          setRecentEnrollments(enrollmentsResult.value.slice(0, 5));
-        } else {
-          console.warn(
-            "Failed to load recent academy enrollments",
-            enrollmentsResult.reason,
-          );
-          setRecentEnrollments([]);
-        }
-
-        // Fetch Flywheel Overview (best-effort — fails silently if no snapshot yet)
-        try {
-          const flywheelData = await apiGet<FlywheelOverview>(
-            "/api/v1/admin/reports/flywheel/overview",
-            { auth: true },
-          );
-          setFlywheel(flywheelData);
-        } catch {
-          // Snapshot may not exist yet — leave card showing em-dashes.
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load dashboard data");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchData();
-  }, []);
+  // Only stats are page-critical. Slow optional panels must not hold the
+  // whole dashboard behind their requests. useApi cancels each on unmount.
+  const { data: stats, loading: isLoading, error, refetch: retryStats } =
+    useApi<DashboardStats>("/api/v1/admin/dashboard-stats");
+  const {
+    data: sessionData, loading: sessionsLoading,
+    error: sessionsError, refetch: retrySessions,
+  } = useApi<Session[]>("/api/v1/sessions/");
+  const {
+    data: announcementData, loading: announcementsLoading,
+    error: announcementsError, refetch: retryAnnouncements,
+  } = useApi<Announcement[]>("/api/v1/communications/announcements/");
+  const {
+    data: enrollmentData, loading: enrollmentsLoading,
+    error: enrollmentsError, refetch: retryEnrollments,
+  } = useApi<Enrollment[]>("/api/v1/academy/enrollments");
+  const {
+    data: flywheel, loading: flywheelLoading,
+    error: flywheelError, refetch: retryFlywheel,
+  } = useApi<FlywheelOverview>("/api/v1/admin/reports/flywheel/overview");
+  const sessions = useMemo(() => (sessionData ?? [])
+    .filter((session) => new Date(session.starts_at) > new Date())
+    .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+    .slice(0, 5), [sessionData]);
+  const announcements = (announcementData ?? []).slice(0, 5);
+  const recentEnrollments = (enrollmentData ?? []).slice(0, 5);
 
   if (isLoading) {
     return (
@@ -163,7 +95,10 @@ export default function AdminDashboardPage() {
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="flex items-center gap-3 rounded-lg bg-red-50 px-4 py-3 text-red-600">
           <AlertCircle className="h-5 w-5" />
-          <span>{error}</span>
+          <div className="space-y-2">
+            <p>Failed to load dashboard data.</p>
+            <button type="button" onClick={retryStats} className="font-medium underline">Retry</button>
+          </div>
         </div>
       </div>
     );
@@ -307,7 +242,11 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
           <div className="flex-1">
-            {sessions.length === 0 ? (
+            {sessionsLoading ? (
+              <p role="status" className="py-6 text-sm text-slate-500">Loading sessions…</p>
+            ) : sessionsError ? (
+              <PanelError label="sessions" onRetry={retrySessions} />
+            ) : sessions.length === 0 ? (
               <div className="flex h-32 items-center justify-center rounded-lg bg-slate-50">
                 <p className="text-sm text-slate-500">No upcoming sessions scheduled</p>
               </div>
@@ -366,7 +305,11 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
           <div className="flex-1">
-            {announcements.length === 0 ? (
+            {announcementsLoading ? (
+              <p role="status" className="py-6 text-sm text-slate-500">Loading announcements…</p>
+            ) : announcementsError ? (
+              <PanelError label="announcements" onRetry={retryAnnouncements} />
+            ) : announcements.length === 0 ? (
               <div className="flex h-32 items-center justify-center rounded-lg bg-slate-50">
                 <p className="text-sm text-slate-500">No announcements published</p>
               </div>
@@ -410,7 +353,11 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
           <div className="flex-1">
-            {recentEnrollments.length === 0 ? (
+            {enrollmentsLoading ? (
+              <p role="status" className="py-6 text-sm text-slate-500">Loading enrollments…</p>
+            ) : enrollmentsError ? (
+              <PanelError label="enrollments" onRetry={retryEnrollments} />
+            ) : recentEnrollments.length === 0 ? (
               <div className="flex h-24 sm:h-32 items-center justify-center rounded-lg bg-slate-50">
                 <p className="text-xs sm:text-sm text-slate-500">No recent enrollments</p>
               </div>
@@ -547,6 +494,8 @@ export default function AdminDashboardPage() {
               View detailed flywheel <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
+          {flywheelLoading && <p role="status" className="mt-3 text-sm text-slate-500">Loading Flywheel…</p>}
+          {flywheelError && <PanelError label="Flywheel snapshot" onRetry={retryFlywheel} />}
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <FlywheelStat
               icon={<GraduationCap className="h-4 w-4 text-purple-600" />}
@@ -603,4 +552,11 @@ function FlywheelStat({
       <p className="mt-1 text-lg font-bold text-slate-900">{value}</p>
     </div>
   );
+}
+
+function PanelError({ label, onRetry }: { label: string; onRetry: () => void }) {
+  return <div role="alert" className="space-y-2 py-4 text-sm text-slate-600">
+    <p>Could not load {label}.</p>
+    <button type="button" onClick={onRetry} className="font-medium text-cyan-700 underline">Retry</button>
+  </div>;
 }

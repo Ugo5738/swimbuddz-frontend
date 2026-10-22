@@ -10,7 +10,8 @@ import { SwimCalendar } from "@/components/dashboard/SwimCalendar";
 import { YTDStatsOverview } from "@/components/dashboard/YTDStatsOverview";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { apiGet } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
+import { useMemberProfile } from "@/lib/member-profile-context";
 import type { Announcement } from "@/lib/communications";
 import { formatAnnouncementCategory } from "@/lib/communications";
 import { loadPaymentIntentCache, type CachedPaymentIntent } from "@/lib/paymentCache";
@@ -45,10 +46,10 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type AttendanceRecord = {
-  session_id: number;
+  session_id: string;
   session_title: string;
   session_starts_at: string;
   session_ends_at?: string;
@@ -57,12 +58,15 @@ type AttendanceRecord = {
 };
 
 export default function MemberDashboardPage() {
-  const [member, setMember] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: member, loading, error, refetch } = useMemberProfile();
   const [resumePaymentIntent, setResumePaymentIntent] = useState<CachedPaymentIntent | null>(null);
-  const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
-  const [attendanceLoaded, setAttendanceLoaded] = useState(false);
-  const [upcomingBookings, setUpcomingBookings] = useState<AttendanceRecord[]>([]);
+  const { data: attendanceData, loading: attendanceLoading } = useApi<AttendanceRecord[]>("/api/v1/attendance/me");
+  const allRecords = useMemo(() => attendanceData ?? [], [attendanceData]);
+  const attendanceLoaded = !attendanceLoading;
+  const upcomingBookings = useMemo(() => allRecords
+    .filter((record) => new Date(record.session_starts_at) > new Date())
+    .sort((a, b) => new Date(a.session_starts_at).getTime() - new Date(b.session_starts_at).getTime()),
+  [allRecords]);
   const [bookedSessionSignInEligible, setBookedSessionSignInEligible] = useState(false);
   const [nextAvailableSession, setNextAvailableSession] = useState<{
     session_id: string;
@@ -71,7 +75,12 @@ export default function MemberDashboardPage() {
     session_ends_at?: string;
     session_location?: string;
   } | null>(null);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const { data: announcementData } = useApi<Announcement[]>("/api/v1/communications/announcements/");
+  const announcements = useMemo(() => (announcementData ?? [])
+    .filter((a) => a.status === "published" && (!a.expires_at || new Date(a.expires_at).getTime() > Date.now()))
+    .sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned) ||
+      new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
+    .slice(0, 2), [announcementData]);
   const [ytdStats, setYtdStats] = useState<YTDStats | null>(null);
   const [myPod, setMyPod] = useState<PodSummary | null>(null);
 
@@ -81,45 +90,6 @@ export default function MemberDashboardPage() {
   const leaderboardSlug = quarterSlug(currentYear, currentQuarter);
 
   useEffect(() => {
-    apiGet("/api/v1/members/me", { auth: true })
-      .then((data) => setMember(data))
-      .catch((err) => console.error("Failed to load member", err))
-      .finally(() => setLoading(false));
-
-    // Fetch all attendance records (past + future) for heatmap + upcoming
-    apiGet<AttendanceRecord[]>("/api/v1/attendance/me", { auth: true })
-      .then((records) => {
-        setAllRecords(records);
-        const now = new Date();
-        const upcoming = records
-          .filter((r) => new Date(r.session_starts_at) > now)
-          .sort(
-            (a, b) =>
-              new Date(a.session_starts_at).getTime() - new Date(b.session_starts_at).getTime()
-          );
-        setUpcomingBookings(upcoming);
-
-        // Fallback fetch handled in separate effect once member tier is known
-      })
-      .catch(() => {
-        setAllRecords([]);
-        setUpcomingBookings([]);
-      })
-      .finally(() => setAttendanceLoaded(true));
-
-    // Fetch recent announcements
-    apiGet<Announcement[]>("/api/v1/communications/announcements/", { auth: true })
-      .then((data) => {
-        const now = Date.now();
-        const recent = data
-          .filter((a) => a.status === "published" && (!a.expires_at || new Date(a.expires_at).getTime() > now))
-          .sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned) ||
-            new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
-          .slice(0, 2);
-        setAnnouncements(recent);
-      })
-      .catch(() => setAnnouncements([]));
-
     // Fetch YTD stats
     fetchYTDStats(currentYear)
       .then(setYtdStats)
@@ -202,6 +172,13 @@ export default function MemberDashboardPage() {
 
   if (loading) {
     return <DashboardSkeleton />;
+  }
+
+  if (error && !member) {
+    return <div role="alert" className="space-y-3 rounded-lg bg-rose-50 p-4 text-rose-900">
+      <p>Could not load your profile. Please try again.</p>
+      <Button onClick={refetch}>Retry</Button>
+    </div>;
   }
 
   const firstName = member?.first_name || "Member";
