@@ -51,4 +51,12 @@ describe("Club same-identity rescheduling", () => {
     await waitFor(() => expect(mocks.post).toHaveBeenCalledTimes(2));
     expect(mocks.post.mock.calls[1][1]).toEqual(mocks.post.mock.calls[0][1]);
   });
+  it("accepts queued notifications without asking for a manual retry", async () => {
+    mocks.post.mockResolvedValue({ notification_status: "queued" });
+    render(<RescheduleClubPractice sessionId="original-swim" onChanged={async () => {}} />);
+    completeForm();
+    expect(await screen.findByText(/Notifications are queued for delivery/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm reschedule" })).toBeInTheDocument();
+    expect(screen.queryByText(/notifications need retry/)).not.toBeInTheDocument();
+  });
 });
