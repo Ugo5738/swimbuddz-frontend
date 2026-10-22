@@ -314,6 +314,15 @@ export function VaultLibrary({ vaults, admin = false }: { vaults: MediaVault[]; 
                         controls
                         preload="none"
                         playsInline
+                        muted
+                        onMouseEnter={(event) => {
+                          // Explicit pointer intent: never download every video on page load.
+                          void event.currentTarget.play().catch(() => undefined);
+                        }}
+                        onMouseLeave={(event) => {
+                          event.currentTarget.pause();
+                          event.currentTarget.currentTime = 0;
+                        }}
                         poster={item.thumbnail_url ?? undefined}
                         src={item.preview_url}
                         className="h-full w-full object-contain"
