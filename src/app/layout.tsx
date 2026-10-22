@@ -5,7 +5,7 @@ import { QueryProvider } from "@/components/providers/QueryProvider";
 import { NavigationFeedback } from "@/components/providers/NavigationFeedback";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import "../styles/globals.css";
 
@@ -36,7 +36,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en" className={inter.variable}>
       <body className="min-h-screen bg-slate-50 text-slate-900">
         <GoogleAnalytics />
-        <NavigationFeedback />
+        <Suspense fallback={null}>
+          <NavigationFeedback />
+        </Suspense>
         <QueryProvider>
           <AuthProvider>
             <MainLayout>{children}</MainLayout>
