@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { resolvePublicPoolPhotoUrl } from "../pool-directory-photo";
 
 const publicMedia = (url: string) => async () => ({
-  media_type: "image",
+  media_type: "IMAGE",
   file_url: url,
   metadata_info: { purpose: "general" },
 });

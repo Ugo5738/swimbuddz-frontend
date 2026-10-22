@@ -1,6 +1,6 @@
 "use client";
 
-import { formatBytes, mediaVaultApi, type VaultMedia } from "@/lib/media-vault";
+import { formatBytes, formatDuration, mediaVaultApi, type VaultMedia } from "@/lib/media-vault";
 import { apiPatch } from "@/lib/api";
 import {
   Check,
@@ -518,6 +518,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
                 </p>
                 <p className="mt-1 text-[11px] text-slate-500">
                   {formatBytes(item.size_bytes ?? 0)}
+                  {item.media_type === "VIDEO" && ` · ${formatDuration(item.duration_seconds)}`}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {item.processing_status !== "ready" && <Status value={item.processing_status} />}
