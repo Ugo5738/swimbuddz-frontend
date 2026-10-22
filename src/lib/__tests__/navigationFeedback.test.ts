@@ -14,7 +14,7 @@ function click(anchor: HTMLAnchorElement, overrides: Partial<MouseEventInit> = {
 describe("navigation feedback eligibility", () => {
   it("identifies internal link navigation", () => {
     const a = document.createElement("a");
-    a.href = "/account/bookings";
+    a.href = new URL("/account/bookings", current).href;
     expect(click(a)).toBe("/account/bookings");
   });
 
@@ -28,14 +28,14 @@ describe("navigation feedback eligibility", () => {
     const a = document.createElement("a");
     a.href = "https://analyzer.swimbuddz.com";
     expect(click(a)).toBeNull();
-    a.href = "/account/bookings";
+    a.href = new URL("/account/bookings", current).href;
     a.target = "_blank";
     expect(click(a)).toBeNull();
   });
 
   it("ignores modified clicks, non-primary clicks and downloads", () => {
     const a = document.createElement("a");
-    a.href = "/account/bookings";
+    a.href = new URL("/account/bookings", current).href;
     expect(click(a, { ctrlKey: true })).toBeNull();
     expect(click(a, { button: 1 })).toBeNull();
     a.download = "download";
@@ -44,7 +44,7 @@ describe("navigation feedback eligibility", () => {
 
   it("includes query-only navigation", () => {
     const a = document.createElement("a");
-    a.href = "/account?tab=payments";
+    a.href = new URL("/account?tab=payments", current).href;
     expect(click(a)).toBe("/account?tab=payments");
   });
 });
