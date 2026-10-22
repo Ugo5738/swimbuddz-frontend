@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VaultLibrary } from "../VaultLibrary";
 import { mediaVaultApi, type MediaVault, type VaultMedia } from "@/lib/media-vault";
 
-vi.mock("@/lib/media-vault", () => ({
+vi.mock("@/lib/media-vault", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/media-vault")>(),
   mediaVaultApi: { library: vi.fn(), tags: vi.fn(), review: vi.fn(), requestPreview: vi.fn() },
 }));
 const vault = {
@@ -19,6 +20,8 @@ const item = {
   labels: ["Coaching"],
   thumbnail_url: null,
   preview_url: null,
+  size_bytes: 10485760,
+  duration_seconds: 65,
 } as VaultMedia;
 
 beforeEach(() => {
@@ -35,6 +38,10 @@ beforeEach(() => {
 });
 
 describe("Vault media library", () => {
+  it("shows both file size and video duration", async () => {
+    render(<VaultLibrary vaults={[vault]} />);
+    expect(await screen.findByText(/10.*MB.*1:05/)).toBeInTheDocument();
+  });
   it("paginates across vaults and sends multiple selected tags with the chosen matching rule", async () => {
     render(<VaultLibrary vaults={[vault]} />);
     await screen.findByText(item.original_filename!);

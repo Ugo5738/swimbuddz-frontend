@@ -37,7 +37,7 @@ export async function resolvePublicPoolPhotoUrl(
     const item = await loadMedia(photo.media_id);
     // Pool Assets uploads explicitly use purpose=general. No private files,
     // milestone videos, coach documents or receipts may be publicly approved.
-    if (item.media_type !== "image" || item.metadata_info?.purpose !== "general") {
+    if (item.media_type.toLowerCase() !== "image" || item.metadata_info?.purpose !== "general") {
       throw new Error("Only public general-purpose uploaded images can be published. Ask an admin to upload an appropriate pool photograph.");
     }
     return validateHttpsPhoto(item.file_url);

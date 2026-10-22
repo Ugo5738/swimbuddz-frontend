@@ -7,6 +7,8 @@ import { FileVideo, Image as ImageIcon, Play, Tags } from "lucide-react";
 import { toast } from "sonner";
 import {
   mediaVaultApi,
+  formatBytes,
+  formatDuration,
   type MediaVault,
   type VaultMedia,
   type VaultMediaList,
@@ -337,6 +339,10 @@ export function VaultLibrary({ vaults, admin = false }: { vaults: MediaVault[]; 
                     <h3 className="break-words font-semibold text-slate-900">
                       {item.original_filename ?? "Untitled media"}
                     </h3>
+                    <p className="text-xs text-slate-500">
+                      {formatBytes(item.size_bytes ?? 0)}
+                      {item.media_type === "VIDEO" && ` · ${formatDuration(item.duration_seconds)}`}
+                    </p>
                     <Link
                       href={`${admin ? "/admin" : "/account"}/media-vault/${item.vault_id}`}
                       className="inline-flex min-h-11 items-center text-sm text-cyan-700"
