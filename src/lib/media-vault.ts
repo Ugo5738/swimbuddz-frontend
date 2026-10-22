@@ -61,6 +61,7 @@ export type VaultMedia = {
   original_filename: string | null;
   content_type: string | null;
   size_bytes: number | null;
+  duration_seconds?: number | null;
   captured_at: string | null;
   processing_status: string;
   review_status: "unreviewed" | "shortlisted" | "approved" | "rejected" | "published";
@@ -194,6 +195,15 @@ export function accessWindowForRole(
         : new Date(Math.max(closesAt.getTime(), contributorMinimum.getTime())).toISOString(),
   };
 }
+
+export const formatDuration = (seconds: number | null | undefined): string => {
+  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return "Duration pending";
+  const total = Math.max(1, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = String(total % 60).padStart(2, "0");
+  return hours ? `${hours}:${String(minutes).padStart(2, "0")}:${rest}` : `${minutes}:${rest}`;
+};
 
 export const formatBytes = (bytes: number) => {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";

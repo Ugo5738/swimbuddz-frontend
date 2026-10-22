@@ -133831,6 +133831,17 @@
             "type": "string",
             "title": "Preview Status",
             "default": "pending"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
           }
         },
         "type": "object",

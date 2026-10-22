@@ -47832,6 +47832,8 @@ export interface components {
             content_type: string | null;
             /** Size Bytes */
             size_bytes: number | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
             /** Captured At */
             captured_at: string | null;
             /** Processing Status */
