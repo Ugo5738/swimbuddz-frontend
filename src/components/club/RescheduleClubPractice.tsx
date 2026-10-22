@@ -50,12 +50,15 @@ export function RescheduleClubPractice({
         payload,
         { auth: true }
       );
+      const accepted = ["sent", "queued"].includes(result.notification_status);
       setDone(
-        result.notification_status === "sent"
-          ? "Rescheduled. Bookings and paid amounts are unchanged."
+        accepted
+          ? result.notification_status === "queued"
+            ? "Rescheduled. Notifications are queued for delivery. Bookings and paid amounts are unchanged."
+            : "Rescheduled. Bookings and paid amounts are unchanged."
           : "Rescheduled, but notifications need retry. Use Retry below; it will not move or charge the swim again."
       );
-      if (result.notification_status === "sent") setRequest(null);
+      if (accepted) setRequest(null);
       await onChanged();
       history.refetch();
     } catch (e) {
