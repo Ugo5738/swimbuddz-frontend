@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { CohortQuizSetup } from "@/components/academy/CohortQuizSetup";
+import type { QuizAssignmentInput } from "@/lib/academy-quizzes";
 import { Card } from "@/components/ui/Card";
 import {
   AcademyApi,
@@ -23,8 +25,8 @@ import { StepIndicator } from "./_new/StepIndicator";
 import { useCreateCohort } from "./_new/useCreateCohort";
 import type { CohortFormData, RideArea, ScheduleItem } from "./types";
 
-const STEPS = ["select-program", "basics", "schedule", "sessions", "review"] as const;
-const STEP_LABELS = ["Select Program", "Details", "Schedule", "Sessions", "Review"];
+const STEPS = ["select-program", "basics", "schedule", "sessions", "quizzes", "review"] as const;
+const STEP_LABELS = ["Select Program", "Details", "Schedule", "Sessions", "Quizzes", "Review"];
 type Step = (typeof STEPS)[number];
 
 export default function NewCohortPage() {
@@ -32,6 +34,7 @@ export default function NewCohortPage() {
   const [step, setStep] = useState<Step>("select-program");
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
+  const [quizAssignments, setQuizAssignments] = useState<QuizAssignmentInput[]>([]);
   const [selectedProgramId, setSelectedProgramId] = useState<string>("");
   const [rideAreas, setRideAreas] = useState<RideArea[]>([]);
 
@@ -146,6 +149,7 @@ export default function NewCohortPage() {
     selectedProgram,
     formData,
     schedule,
+    quizAssignments,
   });
 
   const currentStepIndex = STEPS.indexOf(step);
@@ -205,6 +209,10 @@ export default function NewCohortPage() {
               setFormData({ ...formData, notes_internal })
             }
           />
+        )}
+
+        {step === "quizzes" && selectedProgram && (
+          <CohortQuizSetup programId={selectedProgramId} durationWeeks={selectedProgram.duration_weeks} value={quizAssignments} onChange={setQuizAssignments} />
         )}
 
         {step === "review" && (

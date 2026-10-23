@@ -50,6 +50,7 @@ export function MilestoneProgressModal({
     !!currentProgress?.reviewed_at;
 
   const handleReview = async (action: "approve" | "reject") => {
+    if (action === "reject" && !coachNotes.trim()) { toast.error("Feedback is required for a rejected milestone."); return; }
     if (!currentProgress?.id) {
       toast.error("No progress record to review");
       return;

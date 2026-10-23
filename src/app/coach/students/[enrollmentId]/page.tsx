@@ -1,13 +1,14 @@
 "use client";
 
 import { EvidenceMedia } from "@/components/academy/EvidenceMedia";
+import { MediaInput } from "@/components/ui/MediaInput";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { Textarea } from "@/components/ui/Textarea";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import {
   calculateProgressPercentage,
   getEnrollmentProgress,
@@ -247,6 +248,10 @@ function MilestoneItem({
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(progress?.coach_notes || "");
   const [saving, setSaving] = useState(false);
+  const [recordingOpen, setRecordingOpen] = useState(false);
+  const [recordedVideoId, setRecordedVideoId] = useState<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [recordingNotes, setRecordingNotes] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<MilestoneReviewEvent[] | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -288,12 +293,23 @@ function MilestoneItem({
 
   const handleReject = async () => {
     if (!progress) return;
+    if (!notes.trim()) { alert("Please explain why the video evidence was rejected."); return; }
     setSaving(true);
     try {
       await onReview(progress.id, "reject", notes || undefined);
     } finally {
       setSaving(false);
     }
+  };
+
+  const submitRecordedVideo = async () => {
+    if (!recordedVideoId || uploadingVideo || saving) return;
+    setSaving(true);
+    try {
+      await apiPost(`/api/v1/academy/coach/enrollments/${enrollmentId}/progress/${milestone.id}/record-video`, {evidence_media_id:recordedVideoId, student_notes:recordingNotes.trim() || undefined}, {auth:true});
+      window.location.reload();
+    } catch (err) { alert(err instanceof Error ? err.message : "Unable to attach video evidence"); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -386,6 +402,17 @@ function MilestoneItem({
         </div>
       </div>
 
+      {(!progress || isRejected) && (
+        <div className="space-y-2 border-t border-slate-200 p-4">
+          <button type="button" className="text-sm font-medium text-teal-700 underline" onClick={() => setRecordingOpen(!recordingOpen)}>{recordingOpen ? "Cancel recording" : "Submit coach-recorded video evidence"}</button>
+          {recordingOpen && <div className="space-y-3">
+            <p className="text-xs text-slate-600">Upload the student’s swim video with their permission. This submits evidence for review; it does not automatically verify the milestone.</p>
+            <MediaInput purpose="milestone_evidence" linkedId={`${enrollmentId}:${milestone.id}`} mode="upload-only" value={recordedVideoId} onChange={setRecordedVideoId} onUploadingChange={setUploadingVideo} label="Recorded student video" showPreview={true} />
+            <Textarea label="Evidence notes (optional)" value={recordingNotes} onChange={e => setRecordingNotes(e.target.value)} rows={2}/>
+            <Button onClick={() => void submitRecordedVideo()} disabled={!recordedVideoId || uploadingVideo || saving}>{saving ? "Submitting…" : "Submit video for review"}</Button>
+          </div>}
+        </div>
+      )}
       {/* Evidence + Review section — always visible for pending reviews */}
       {isPendingReview && (
         <div className="px-4 pb-4 border-t border-amber-200 pt-4 space-y-3">
