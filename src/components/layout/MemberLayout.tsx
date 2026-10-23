@@ -3,6 +3,7 @@
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useApi } from "@/hooks/useApi";
+import { MemberProfileContext, type MemberInfo } from "@/lib/member-profile-context";
 import { supabase } from "@/lib/auth";
 import { listPodsILead } from "@/lib/pods";
 import {
@@ -11,7 +12,6 @@ import {
   getPaidMembershipTiers,
   getRequestedTiers,
   hasTierContext,
-  type MembershipTierStatus,
 } from "@/lib/tiers";
 import {
   Activity,
@@ -68,52 +68,6 @@ type NavSection = {
 };
 
 const MEMBER_SIDEBAR_COLLAPSED_KEY = "swimbuddz-member-sidebar-collapsed";
-
-type MemberInfo = {
-  id?: string;
-  first_name?: string;
-  last_name?: string;
-  profile_photo_url?: string;
-  profile_photo_media_id?: string;
-  email?: string;
-
-  // Nested sub-records
-  profile?: {
-    gender?: string | null;
-    date_of_birth?: string | null;
-    city?: string | null;
-    country?: string | null;
-    time_zone?: string | null;
-    swim_level?: string | null;
-  };
-  emergency_contact?: {
-    name?: string | null;
-    contact_relationship?: string | null;
-    phone?: string | null;
-  };
-  availability?: {
-    available_days?: string[] | null;
-    preferred_times?: string[] | null;
-    preferred_locations?: string[] | null;
-  };
-  membership?: {
-    primary_tier?: string | null;
-    active_tiers?: string[] | null;
-    requested_tiers?: string[] | null;
-    community_paid_until?: string | null;
-    club_paid_until?: string | null;
-    academy_paid_until?: string | null;
-    paid_tier?: string | null;
-    paid_tiers?: string[] | null;
-    display_label?: string | null;
-    display_detail?: string | null;
-    tier_statuses?: Partial<Record<"community" | "club" | "academy", MembershipTierStatus>> | null;
-    academy_skill_assessment?: Record<string, boolean> | null;
-    academy_goals?: string | null;
-    academy_preferred_coach_gender?: string | null;
-    academy_lesson_preference?: string | null;
-  };
-};
 
 const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
 const leaderboardHref = `/account/reports/q${currentQuarter}-${new Date().getFullYear()}/leaderboard`;
@@ -228,7 +182,8 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     "My Swims": true,
     Community: true,
   });
-  const { data: member, refetch: refreshMember } = useApi<MemberInfo>("/api/v1/members/me");
+  const profile = useApi<MemberInfo>("/api/v1/members/me");
+  const { data: member, refetch: refreshMember } = profile;
   const [isCoach, setIsCoach] = useState(false);
   // True when this user is the lead or assistant lead of at least one pod.
   // Drives the conditional "Pod Lead Tools" sidebar section. Default false
@@ -703,7 +658,9 @@ export function MemberLayout({ children }: MemberLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8">{children}</main>
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8">
+          <MemberProfileContext.Provider value={profile}>{children}</MemberProfileContext.Provider>
+        </main>
       </div>
     </div>
   );
