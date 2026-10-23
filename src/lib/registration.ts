@@ -1,4 +1,5 @@
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
+import { resolvePostAuthJourney } from "@/lib/journeys";
 import { apiGet, apiPost } from "./api";
 import { isAcademyDestination, safeReturnPath } from "./returnPath";
 import { getCurrentAccessToken, supabase } from "./auth";
@@ -195,6 +196,15 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
     const requestedTiers = getRequestedTiers(member);
     const wantsAcademy = requestedTiers.includes("academy") || isAcademyDestination(returnTo);
     const wantsClub = requestedTiers.includes("club");
+
+    const journeyDestination = resolvePostAuthJourney({
+      destination: returnTo,
+      requestedTiers,
+      communityActive,
+      academyActive,
+      clubActive: getTierStatus(member, "club")?.status === "active",
+    });
+    if (journeyDestination) return journeyDestination;
 
     const clubContext = wantsClub || hasTierContext(member, "club");
     const academyContext = wantsAcademy || hasTierContext(member, "academy");
