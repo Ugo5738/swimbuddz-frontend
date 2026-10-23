@@ -79,15 +79,19 @@ export function destinationForGoal(goal: string | null | undefined): string | nu
   }
 }
 
+function isPath(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(prefix + "/");
+}
+
 export function classifyJourneyDestination(destination: string | null | undefined): JourneyKind | null {
   const safe = safeReturnPath(destination);
   if (!safe) return null;
   const { pathname, searchParams } = new URL(safe, "https://swimbuddz.invalid");
   if (pathname === "/explore") return "explore";
-  if (/^\\/store(?:\\/|$)/.test(pathname) || /^\\/account\\/orders(?:\\/|$)/.test(pathname)) return "store";
-  if (/^\\/(?:pool-access|pools)(?:\\/|$)/.test(pathname)) return "pool_access";
-  if (/^\\/(?:upgrade|account)\\/academy(?:\\/|$)/.test(pathname) || (pathname === "/checkout" && searchParams.get("purpose") === "academy_cohort")) return "academy";
-  if (/^\\/(?:upgrade|account)\\/club(?:\\/|$)/.test(pathname) || (pathname === "/checkout" && searchParams.get("purpose") === "club")) return "club";
+  if (isPath(pathname, "/store") || isPath(pathname, "/account/orders")) return "store";
+  if (isPath(pathname, "/pool-access") || isPath(pathname, "/pools")) return "pool_access";
+  if (isPath(pathname, "/upgrade/academy") || isPath(pathname, "/account/academy") || (pathname === "/checkout" && searchParams.get("purpose") === "academy_cohort")) return "academy";
+  if (isPath(pathname, "/upgrade/club") || isPath(pathname, "/account/club") || (pathname === "/checkout" && searchParams.get("purpose") === "club")) return "club";
   if (pathname === "/community" || (pathname === "/checkout" && searchParams.get("purpose") === "community")) return "community";
   return null;
 }
