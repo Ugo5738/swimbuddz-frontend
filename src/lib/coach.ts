@@ -82,7 +82,7 @@ export type StudentProgress = {
   updated_at: string;
 };
 
-export type MilestoneEventType = "claimed" | "approved" | "rejected" | "status_changed";
+export type MilestoneEventType = "claimed" | "approved" | "rejected" | "override" | "status_changed";
 
 export type MilestoneReviewEvent = {
   id: string;

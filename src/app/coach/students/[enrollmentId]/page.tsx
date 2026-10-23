@@ -103,9 +103,9 @@ export default function CoachStudentProgressPage() {
   }
 
   const progressPercent = calculateProgressPercentage(progress, milestones.length);
-  const achievedCount = progress.filter((p) => p.status === "achieved" && p.reviewed_at).length;
+  const achievedCount = progress.filter((p) => p.status === "achieved").length;
   const pendingReviewCount = progress.filter(
-    (p) => p.status === "achieved" && !p.reviewed_at
+    (p) => p.status === "pending" && !p.reviewed_at
   ).length;
 
   // Map progress by milestone_id for easy lookup
@@ -272,8 +272,8 @@ function MilestoneItem({
   };
 
   const isAchieved = progress?.status === "achieved";
-  const isVerified = isAchieved && !!progress?.reviewed_at;
-  const isPendingReview = isAchieved && !progress?.reviewed_at;
+  const isVerified = isAchieved;
+  const isPendingReview = progress?.status === "pending" && !progress?.reviewed_at;
   const isRejected = progress?.status === "pending" && !!progress?.reviewed_at;
 
   const handleApprove = async () => {
@@ -363,10 +363,10 @@ function MilestoneItem({
                 Verified {formatDate(progress.reviewed_at)}
               </p>
             )}
-            {isPendingReview && progress?.achieved_at && (
+            {isPendingReview && progress?.updated_at && (
               <p className="text-xs text-amber-600 mt-2">
                 <Clock className="h-3 w-3 inline mr-1" />
-                Student claimed {formatDate(progress.achieved_at)}
+                Student submitted {formatDate(progress.updated_at)}
               </p>
             )}
             {isRejected && progress?.reviewed_at && (
@@ -512,7 +512,9 @@ function MilestoneHistoryEntry({ event }: { event: MilestoneReviewEvent }) {
         ? "Coach approved"
         : event_type === "rejected"
           ? "Coach rejected"
-          : "Status changed";
+          : event_type === "override"
+            ? "Admin override"
+            : "Status changed";
   const dotColor =
     event_type === "approved"
       ? "bg-emerald-500"
