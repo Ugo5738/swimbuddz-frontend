@@ -288,6 +288,7 @@ function MilestoneItem({
 
   const handleReject = async () => {
     if (!progress) return;
+    if (!notes.trim()) { alert("Please explain why the video evidence was rejected."); return; }
     setSaving(true);
     try {
       await onReview(progress.id, "reject", notes || undefined);
