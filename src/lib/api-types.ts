@@ -31915,6 +31915,8 @@ export interface components {
             historic_discount_kobo: number;
             /** Agreed Cash Total Kobo */
             agreed_cash_total_kobo: number;
+            /** Billing Mode */
+            billing_mode?: ("full" | "installments") | null;
         };
         /**
          * ComplexityScoreCalculateRequest

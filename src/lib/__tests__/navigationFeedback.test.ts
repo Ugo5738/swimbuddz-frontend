@@ -4,7 +4,9 @@ import { getNavigationDestination } from "../navigationFeedback";
 const current = new URL("https://swimbuddz.com/account");
 function click(anchor: HTMLAnchorElement, overrides: Partial<MouseEventInit> = {}) {
   document.body.appendChild(anchor);
-  const event = new MouseEvent("click", { button: 0, bubbles: true, ...overrides });
+  // Prevent jsdom from trying to perform real browser navigation.
+  anchor.addEventListener("click", (event) => event.preventDefault(), { once: true });
+  const event = new MouseEvent("click", { button: 0, bubbles: true, cancelable: true, ...overrides });
   anchor.dispatchEvent(event);
   const result = getNavigationDestination(event, current);
   anchor.remove();

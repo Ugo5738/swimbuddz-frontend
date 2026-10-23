@@ -998,7 +998,7 @@ function CheckoutContent() {
         <p className="text-center text-sm text-slate-500 -mt-2">
           {installmentPreview.subsequentAmount != null
             ? `Then ${installmentPreview.count - 1} × ${formatCurrency(installmentPreview.subsequentAmount)} every 4 weeks`
-            : "Remaining installments follow the cohort payment schedule"}{" "}
+            : "Remaining installments follow your agreed payment schedule"}{" "}
           —{" "}
           <button
             type="button"

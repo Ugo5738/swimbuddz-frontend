@@ -2,6 +2,7 @@
 
 import { AcademyApi, LocationType, type CoachAssignmentInput, type Program } from "@/lib/academy";
 import { apiPost } from "@/lib/api";
+import { AcademyQuizApi, type QuizAssignmentInput } from "@/lib/academy-quizzes";
 import { SessionLocation, SessionsApi, SessionType } from "@/lib/sessions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -24,6 +25,7 @@ type Params = {
   selectedProgram: Program | undefined;
   formData: CohortFormData;
   schedule: ScheduleItem[];
+  quizAssignments: QuizAssignmentInput[];
 };
 
 export function useCreateCohort({
@@ -31,6 +33,7 @@ export function useCreateCohort({
   selectedProgram,
   formData,
   schedule,
+  quizAssignments,
 }: Params) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -103,6 +106,19 @@ export function useCreateCohort({
         installment_count: formData.installment_count ?? undefined,
         installment_deposit_amount: formData.installment_deposit_amount ?? undefined,
       });
+
+      // Assign required quizzes before generating sessions. Fail visibly if an assignment fails.
+      // A created cohort remains editable if this step fails; no false success toast.
+      try {
+        for (const assignment of quizAssignments) {
+          await AcademyQuizApi.assignQuiz(cohort.id, assignment);
+        }
+      } catch (quizError) {
+        console.error("Cohort quiz assignment failed", quizError);
+        toast.error("Cohort created, but quiz assignment failed. Open the cohort to resolve this before publishing.");
+        router.push(`/admin/academy/cohorts/${cohort.id}`);
+        return;
+      }
 
       // Generate sessions based on schedule
       const startDate = new Date(formData.start_date);
