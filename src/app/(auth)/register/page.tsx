@@ -13,6 +13,7 @@ import {
   type MemberStartPath,
 } from "@/lib/memberPaths";
 import { isAcademyDestination, safeReturnPath } from "@/lib/returnPath";
+import { destinationForGoal } from "@/lib/journeys";
 import { createPendingRegistration } from "@/lib/registration";
 import clsx from "clsx";
 import dynamic from "next/dynamic";
@@ -187,14 +188,14 @@ function RegisterContent() {
   //     → final CTA href
   // Restricted to same-origin relative paths to avoid open-redirect.
   const nextParamRaw = searchParams.get("next");
-  const safeNext = safeReturnPath(nextParamRaw);
+  const safeNext = safeReturnPath(nextParamRaw) ?? destinationForGoal(searchParams.get("goal"));
 
   const isAcademyEntry =
     !isUpgrade &&
     !isCoachRegistration &&
     intendedStartPath === "academy" &&
     isAcademyDestination(safeNext);
-  const [currentStep, setCurrentStep] = useState(isAcademyEntry ? 1 : 0);
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -287,7 +288,6 @@ function RegisterContent() {
     }
 
     return [
-      { key: "tier", title: "Choose a Path", required: true },
       { key: "essentials", title: "Create Account", required: true },
       { key: "confirm", title: "Confirm & Finish", required: true },
     ];
@@ -401,9 +401,6 @@ function RegisterContent() {
         return;
       }
 
-      if (!formData.membershipTier && !isCoachRegistration) {
-        throw new Error("Please choose how you would like to start.");
-      }
 
       // Coach registration - create minimal account and redirect to /coach/apply
       if (isCoachRegistration) {
@@ -439,8 +436,9 @@ function RegisterContent() {
         /* Private browsing may disable session storage. */
       }
 
-      const selectedTier = formData.membershipTier!;
-      const requestedTiers = requestedProgrammesForPath(selectedTier);
+      const requestedTiers = formData.membershipTier
+        ? requestedProgrammesForPath(formData.membershipTier)
+        : [];
 
       const registrationPayload = {
         return_to: safeNext ?? undefined,
@@ -499,7 +497,8 @@ function RegisterContent() {
       case "essentials":
         return (
           <RegistrationEssentialsStep
-            includeAcquisitionSource={!isCoachRegistration}
+            includeAcquisitionSource={false}
+            includeSwimLevel={false}
             formData={{
               firstName: formData.firstName,
               lastName: formData.lastName,
