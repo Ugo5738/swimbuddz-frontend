@@ -141,6 +141,10 @@ export type AcademyCommercialTermsPreview = {
     id: string; number: number; amount_kobo: number;
     status: string; reference: string | null;
   }>;
+  suggested_installments?: Array<{
+    number: number; amount_kobo: number; due_at: string;
+  }>;
+  can_create_installments?: boolean;
   adjustments: Array<{
     id: string; reason: string; actor_auth_id: string;
     created_at: string; approved_terms: Record<string, unknown>;
@@ -155,6 +159,7 @@ export type AcademyCommercialTermsRequest = {
   unpaid_installment_amounts_kobo: number[];
   historic_discount_kobo: number;
   agreed_cash_total_kobo: number;
+  billing_mode?: "full" | "installments";
 };
 
 export const AdminAcademyApi = {

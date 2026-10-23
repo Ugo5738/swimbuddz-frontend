@@ -538,7 +538,7 @@ export default function EnrollmentDetailPage({ params }: { params: { id: string 
           </Card>
 
           {/* Existing enrollment commercial amendments, separate from transfers. */}
-          {enrollment.cohort_id && installments.length > 0 && (
+          {enrollment.cohort_id && (installments.length > 0 || paymentPath) && (
             <AcademyCommercialTerms enrollmentId={enrollment.id} onChanged={loadData} />
           )}
 

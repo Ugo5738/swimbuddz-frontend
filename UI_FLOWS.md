@@ -287,6 +287,11 @@ The implementation of pages should follow these flows closely.
 
 ## 8. Member → Enroll in Academy Program
 
+For an individually agreed price, an admin can set **Negotiated tuition terms**
+on an unpaid cohort enrollment before its first payment, including its initial
+installment plan. Save the agreed total and amounts, then share the enrollment's
+learner payment link. Checkout prices the frozen agreement.
+
 ### Flow: Academy → Program → Enrollment → Cohort
 
 1. Member navigates to `/academy`.

@@ -162,6 +162,29 @@ describe("Academy checkout enrollment preparation", () => {
     expect(mocks.preview).toHaveBeenCalledTimes(2);
   });
 
+  it("shows agreed tuition and the 45k first installment on the first checkout visit", async () => {
+    mocks.params += "&enrollment_id=agreed&billing=installments";
+    mocks.enrollments = [{ id: "agreed", cohort_id: "september", status: "pending_approval", payment_status: "pending" }];
+    mocks.get.mockImplementation(async (path: string) => {
+      if (path.endsWith("/my-enrollments")) return mocks.enrollments;
+      if (path.endsWith("/pricing")) return { community_annual: 20000 };
+      if (path.includes("/cohorts/")) return { id: "september", name: "Festac", price_override: 165000, installment_plan_enabled: true };
+      return { id: "member" };
+    });
+    mocks.preview.mockImplementation(async (_id: string, installment: boolean) => ({
+      currency: "NGN", total_kobo: installment ? 4_500_000 : 12_500_000,
+      subtotal_kobo: installment ? 4_500_000 : 12_500_000, additional_charges: [],
+      components: { academy: installment ? 4_500_000 : 12_500_000, total_installments: 3,
+        ...(installment ? { installment_number: 1 } : {}) },
+    }));
+    render(<CheckoutPage />);
+    expect(await screen.findByRole("button", { name: /^Pay ₦45,000/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Pay in full.*125,000/ })).toBeInTheDocument();
+    expect(screen.queryByText(/55,000/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/165,000/)).not.toBeInTheDocument();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+
   function setupBubblesQuotes() {
     mocks.params += "&enrollment_id=pending";
     mocks.enrollments = [{ id: "pending", cohort_id: "september", status: "pending_approval", payment_status: "pending" }];
