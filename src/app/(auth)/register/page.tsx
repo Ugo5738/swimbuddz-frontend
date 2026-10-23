@@ -334,10 +334,7 @@ function RegisterContent() {
           formData.phone &&
           formData.state &&
           formData.city &&
-          formData.country &&
-          formData.swimLevel &&
-          // Coach registration skips acquisition source — only members feed the funnel.
-          (isCoachRegistration || formData.acquisitionSource)
+          formData.country
         );
 
       case "confirm":
@@ -555,7 +552,7 @@ function RegisterContent() {
               ? "Create Coach Account"
               : isUpgrade
                 ? "Choose Your Next Programme"
-                : "Join SwimBuddz"}
+                : "Create Your SwimBuddz Account"}
           </h1>
           <p className="mt-2 text-sm text-slate-600">
             {isCoachRegistration
@@ -564,7 +561,7 @@ function RegisterContent() {
                 ? "Your SwimBuddz identity stays the same—choose what you want to join next."
                 : isAcademyEntry
                   ? "Create your Academy profile. After setup, we’ll return you to your selected cohort."
-                  : "Become part of our thriving swimming community."}
+                  : "Create an account to shop, explore programmes, book pools or join a swim. No membership purchase required."}
           </p>
         </div>
 
