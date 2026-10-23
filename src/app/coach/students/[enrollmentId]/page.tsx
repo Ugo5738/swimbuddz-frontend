@@ -407,7 +407,7 @@ function MilestoneItem({
           <button type="button" className="text-sm font-medium text-teal-700 underline" onClick={() => setRecordingOpen(!recordingOpen)}>{recordingOpen ? "Cancel recording" : "Submit coach-recorded video evidence"}</button>
           {recordingOpen && <div className="space-y-3">
             <p className="text-xs text-slate-600">Upload the student’s swim video with their permission. This submits evidence for review; it does not automatically verify the milestone.</p>
-            <MediaInput purpose="milestone_evidence" mode="upload-only" value={recordedVideoId} onChange={setRecordedVideoId} onUploadingChange={setUploadingVideo} label="Recorded student video" showPreview={true} />
+            <MediaInput purpose="milestone_evidence" linkedId={`${enrollmentId}:${milestone.id}`} mode="upload-only" value={recordedVideoId} onChange={setRecordedVideoId} onUploadingChange={setUploadingVideo} label="Recorded student video" showPreview={true} />
             <Textarea label="Evidence notes (optional)" value={recordingNotes} onChange={e => setRecordingNotes(e.target.value)} rows={2}/>
             <Button onClick={() => void submitRecordedVideo()} disabled={!recordedVideoId || uploadingVideo || saving}>{saving ? "Submitting…" : "Submit video for review"}</Button>
           </div>}
