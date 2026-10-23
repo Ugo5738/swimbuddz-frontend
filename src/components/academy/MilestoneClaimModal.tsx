@@ -123,7 +123,8 @@ export function MilestoneClaimModal({
           <div>
             <MediaInput
               purpose="milestone_evidence"
-              mode="both"
+              linkedId={`${enrollmentId}:${milestone.id}`}
+              mode="upload-only"
               value={evidenceMediaId}
               onChange={(mediaId) => {
                 setEvidenceMediaId(mediaId);
