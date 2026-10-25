@@ -1,5 +1,6 @@
 "use client";
 
+import { AcademySessionAllocations } from "@/components/admin/AcademySessionAllocations";
 import { CorrectMissingCohortFee } from "@/components/admin/CorrectMissingCohortFee";
 import {
   OfflineSessionPaymentModal,
@@ -1239,6 +1240,25 @@ export default function AdminAttendancePage() {
             />
           </div>
         ) : null}
+
+        {selectedSessionId && selectedSession?.cohort_id && sessionStarted && (
+          <AcademySessionAllocations
+            key={selectedSessionId}
+            cohortId={selectedSession.cohort_id}
+            sessionId={selectedSessionId}
+            memberNames={Object.fromEntries(roster.map((row) => [row.member_id, row.name]))}
+            onRecorded={() => {
+              setRosterRefreshVersion((version) => version + 1);
+              void Promise.all([
+                apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, { auth: true }),
+                apiGet<SessionBookingResponse[]>(`/api/v1/sessions/${selectedSessionId}/bookings`, { auth: true }),
+              ]).then(([currentAttendance, currentBookings]) => {
+                setAttendanceList(currentAttendance);
+                setBookings(currentBookings);
+              }).catch(() => setError("Participation recorded; refresh attendance to view the latest record."));
+            }}
+          />
+        )}
 
         {/* Print-only header */}
         {!loadingRoster && selectedSessionId && sessionStarted && (
