@@ -18,6 +18,7 @@ export function SessionParticipantManager({
   memberNames,
   defaultMemberFee,
   defaultGuestFee,
+  guestAdmissionEnabled = true,
   eligibleClubMembers,
   disabled,
   onRecordAcademy,
@@ -31,6 +32,7 @@ export function SessionParticipantManager({
   memberNames: Record<string, string>;
   defaultMemberFee: number;
   defaultGuestFee: number;
+  guestAdmissionEnabled?: boolean;
   eligibleClubMembers?: WalkInMember[];
   disabled: boolean;
   onRecordAcademy: () => void;
@@ -78,12 +80,17 @@ export function SessionParticipantManager({
           <span className="block text-sm font-semibold">Existing member</span>
           <span className="mt-1 block text-xs">Club, Community or guest visit</span>
         </button>
-        <button type="button" aria-pressed={choice === "guest"} onClick={() => setType("guest")}
+        <button type="button" disabled={!guestAdmissionEnabled} aria-pressed={choice === "guest"} onClick={() => setType("guest")}
           className={`rounded-lg border p-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-600 ${choice === "guest" ? "border-cyan-600 bg-cyan-50 text-cyan-900" : "border-slate-200 hover:bg-slate-50"}`}>
           <span className="block text-sm font-semibold">Unregistered guest</span>
           <span className="mt-1 block text-xs">Guest record, payment and waiver follow-up</span>
         </button>
       </div>
+      {!guestAdmissionEnabled && (
+        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          This session has not enabled guest admission. <Link href={`/admin/sessions/${sessionId}/edit`} className="font-semibold underline">Review session guest settings</Link> before adding unregistered guests.
+        </p>
+      )}
       {!sessionStarted ? (
         <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="status">
           Attendance recording becomes available after this session starts. Advance guest invitations can be managed below.
