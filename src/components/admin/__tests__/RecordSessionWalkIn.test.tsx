@@ -12,7 +12,7 @@ afterEach(() => {
 it("prefills and records the selected member's agreed fee, including a zero inclusion", async () => {
   vi.spyOn(window, "confirm").mockReturnValue(true);
   const record = vi.fn(async () => {});
-  render(<RecordSessionWalkIn defaultFee={15000} defaultGuestFee={15000} disabled={false}
+  render(<RecordSessionWalkIn sessionId="test-session" defaultFee={15000} defaultGuestFee={15000} disabled={false}
     eligibleMembers={[
       { id: "ay", first_name: "AY", last_name: "", email: "ay@example.com", fee_amount_kobo: 1000000 },
       { id: "prepaid", first_name: "Prepaid", last_name: "", email: "prepaid@example.com", fee_amount_kobo: 0 },
@@ -33,7 +33,7 @@ it("searches only the session's eligible Club members for a Club walk-in", async
   vi.mocked(apiGet).mockResolvedValue([
     { id: "academy", first_name: "Academy", last_name: "Only", email: "academy@example.com" },
   ]);
-  render(<RecordSessionWalkIn defaultFee={5200} defaultGuestFee={15000} disabled={false}
+  render(<RecordSessionWalkIn sessionId="test-session" defaultFee={5200} defaultGuestFee={15000} disabled={false}
     eligibleMembers={[
       { id: "comfort", first_name: "Comfort", last_name: "Example", email: "comfort@example.com" },
       { id: "uche", first_name: "Uche", last_name: "Example", email: "uche@example.com" },
