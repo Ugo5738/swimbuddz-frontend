@@ -1712,6 +1712,7 @@ function RosterTableRow({
   sessionPoolFeeNaira: number | null;
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
+  academyAllocationOnly: boolean;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
   onRecordOfflinePayment: (bookingId: string, memberName: string, amountNaira: number) => void;
   onBookingCorrected: (booking: SessionBookingResponse) => void;
