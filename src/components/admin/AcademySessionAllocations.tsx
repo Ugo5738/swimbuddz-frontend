@@ -213,6 +213,18 @@ export function AcademySessionAllocations({
           ))}
         </select>
       </label>
+      {selected && summary && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">
+            How this student is attending
+            <select value={kind} onChange={(e) => setKind(e.target.value as "prepaid" | "paid_extra")}
+              className="mt-1 w-full rounded border p-2">
+              <option value="prepaid">Use one purchased Academy class — ₦0 extra</option>
+              <option value="paid_extra">Separately paid extra class — no prepaid deduction</option>
+            </select>
+          </label>
+        </div>
+      )}
       {selected && summary && !summary.configured && kind === "prepaid" && (
         <div className="space-y-2 rounded border border-amber-300 p-3">
           <p className="text-sm font-semibold">Review suggested historical class balance</p>
@@ -277,14 +289,6 @@ export function AcademySessionAllocations({
             </p>
           )}
           {!summary.configured && <p className="text-sm text-amber-700">Paid extras can be booked now. To use an included programme class, review and save the opening balance above.</p>}
-          <label className="block text-sm font-medium">
-            How this student is attending
-            <select value={kind} onChange={(e) => setKind(e.target.value as "prepaid" | "paid_extra")}
-              className="mt-1 w-full rounded border p-2">
-              <option value="prepaid">Use one purchased Academy class — ₦0 extra</option>
-              <option value="paid_extra">Separately paid extra class — no prepaid deduction</option>
-            </select>
-          </label>
           {kind === "paid_extra" && (
             <label className="block text-sm">
               Agreed additional price in naira (₦)
