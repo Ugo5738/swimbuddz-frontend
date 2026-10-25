@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { apiGet } from "@/lib/api";
 import { RecordSessionWalkIn } from "../RecordSessionWalkIn";
 
 vi.mock("@/lib/api", () => ({ apiGet: vi.fn() }));
+beforeEach(() => {
 vi.mocked(apiGet).mockImplementation((url) => {
   if (String(url).includes("/admin/member-admission/")) {
     const id = String(url).split("/").at(-1);
@@ -18,6 +19,7 @@ vi.mocked(apiGet).mockImplementation((url) => {
   return Promise.resolve([
     { id: "member-1", first_name: "Ada", last_name: "Example", email: "ada@example.com" },
   ]);
+});
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -36,7 +38,7 @@ it("prefills and records the selected member's agreed fee, including a zero incl
   fireEvent.change(screen.getByLabelText("Find member by name or email"), { target: { value: "example.com" } });
   fireEvent.click(screen.getByRole("button", { name: "Search members" }));
   fireEvent.change(screen.getByLabelText("Member to record"), { target: { value: "ay" } });
-  await waitFor(() => expect(screen.getByRole("button", { name: "Record member walk-in" })).toBeEnabled());
+  await waitFor(() => expect(screen.getByText(/Verified standard rate/)).toBeInTheDocument());
   expect(screen.getByLabelText(/^Session fee owed for this swim/)).toHaveValue(10000);
   fireEvent.change(screen.getByLabelText(/^Attendance reconciliation note/), { target: { value: "Agreed fee for this swim" } });
   fireEvent.click(screen.getByRole("button", { name: "Record member walk-in" }));
