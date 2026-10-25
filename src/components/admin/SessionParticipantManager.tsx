@@ -34,20 +34,20 @@ export function SessionParticipantManager({
   eligibleClubMembers?: WalkInMember[];
   disabled: boolean;
   onRecordAcademy: () => void;
-  onRecordMember: (memberId: string, feeKobo: number, note: string) => Promise<void>;
+  onRecordMember: (memberId: string, feeKobo: number, note: string, overrideReason?: string) => Promise<void>;
   onRecordGuest: (input: GuestWalkInInput) => Promise<void>;
 }) {
   const [type, setType] = useState<ParticipantType>(isAcademy ? "academy" : "member");
   const choice: ParticipantType = !isAcademy && type === "academy" ? "member" : type;
   const enrolledMemberIds = new Set(enrollments.filter((row) => row.status === "enrolled").map((row) => row.member_id));
   const [memberError, setMemberError] = useState("");
-  async function recordNonStudent(memberId: string, feeKobo: number, note: string) {
+  async function recordNonStudent(memberId: string, feeKobo: number, note: string, overrideReason?: string) {
     if (isAcademy && enrolledMemberIds.has(memberId)) {
       setMemberError("This person is enrolled in the cohort. Use Academy student so their lesson balance and fee are correct.");
       return;
     }
     setMemberError("");
-    await onRecordMember(memberId, feeKobo, note);
+    await onRecordMember(memberId, feeKobo, note, overrideReason);
   }
 
   return (
@@ -111,6 +111,7 @@ export function SessionParticipantManager({
           )}
           {memberError && <p role="alert" className="text-sm text-rose-700">{memberError}</p>}
           <RecordSessionWalkIn
+            sessionId={sessionId}
             key={`${sessionId}-${choice}`}
             defaultFee={defaultMemberFee}
             defaultGuestFee={defaultGuestFee}
