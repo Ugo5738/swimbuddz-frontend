@@ -55,6 +55,8 @@ type Session = ClubSessionScope & {
   // on rows that aren't yet booked so the admin sees the cost up front.
   pool_fee: number | null;
   guest_fee?: number | null;
+  allows_guests?: boolean;
+  guest_booking_mode?: "disabled" | "public" | "member_invite" | "approval_required";
 };
 
 type Cohort = {
@@ -1240,6 +1242,7 @@ export default function AdminAttendancePage() {
             memberNames={Object.fromEntries(roster.map((row) => [row.member_id, row.name]))}
             defaultMemberFee={isCohortSession ? (selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0) : (selectedSession.pool_fee ?? 0)}
             defaultGuestFee={selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0}
+            guestAdmissionEnabled={Boolean(selectedSession.allows_guests || (selectedSession.guest_booking_mode && selectedSession.guest_booking_mode !== "disabled"))}
             eligibleClubMembers={isClubSession ? clubRosterMembers.map((member) => ({
               id: member.member_id, first_name: member.name, last_name: "",
               email: member.email, fee_amount_kobo: member.fee_amount_kobo,
