@@ -1,13 +1,13 @@
 "use client";
 
-import { AcademySessionAllocations } from "@/components/admin/AcademySessionAllocations";
+import { SessionParticipantManager } from "@/components/admin/SessionParticipantManager";
 import { CorrectMissingCohortFee } from "@/components/admin/CorrectMissingCohortFee";
 import {
   OfflineSessionPaymentModal,
   type OfflineSessionPaymentInput,
 } from "@/components/admin/OfflineSessionPaymentModal";
-import { RecordSessionWalkIn, type GuestWalkInInput } from "@/components/admin/RecordSessionWalkIn";
-import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
+import type { GuestWalkInInput } from "@/components/admin/RecordSessionWalkIn";
+
 import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -1202,18 +1202,6 @@ export default function AdminAttendancePage() {
           </select>
         </div>
 
-        {selectedSessionId && !isCohortSession && (
-          <>
-            <GuestSessionAdminCard
-              key={`guest-${selectedSessionId}`}
-              sessionId={selectedSessionId}
-            />
-            <SessionSwimmerRoster
-              key={`roster-${selectedSessionId}-${rosterRefreshVersion}`}
-              sessionId={selectedSessionId}
-            />
-          </>
-        )}
         {!loadingRoster && selectedSessionId ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:hidden">
             <ReconciliationStat label="Confirmed bookings" value={confirmedBookings.length} />
@@ -1241,13 +1229,22 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
-        {selectedSessionId && isCohortSession && selectedSession?.cohort_id && sessionStarted && !loadingRoster && (
-          <AcademySessionAllocations
+        {selectedSessionId && selectedSession && !loadingRoster && (
+          <SessionParticipantManager
             key={selectedSessionId}
-            enrollments={cohortRoster}
             sessionId={selectedSessionId}
+            isAcademy={isCohortSession}
+            sessionStarted={sessionStarted}
+            enrollments={cohortRoster}
             memberNames={Object.fromEntries(roster.map((row) => [row.member_id, row.name]))}
-            onRecorded={() => {
+            defaultMemberFee={isCohortSession ? (selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0) : (selectedSession.pool_fee ?? 0)}
+            defaultGuestFee={selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0}
+            eligibleClubMembers={isClubSession ? clubRosterMembers.map((member) => ({
+              id: member.member_id, first_name: member.name, last_name: "",
+              email: member.email, fee_amount_kobo: member.fee_amount_kobo,
+            })) : undefined}
+            disabled={submittingMark}
+            onRecordAcademy={() => {
               setRosterRefreshVersion((version) => version + 1);
               void Promise.all([
                 apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, { auth: true }),
@@ -1255,27 +1252,9 @@ export default function AdminAttendancePage() {
               ]).then(([currentAttendance, currentBookings]) => {
                 setAttendanceList(currentAttendance);
                 setBookings(currentBookings);
-              }).catch(() => setError("Participation recorded; refresh attendance to view the latest record."));
+              }).catch(() => setError("Participant recorded. Refresh the page to see updated attendance."));
             }}
-          />
-        )}
-
-        {/* Print-only header */}
-        {!loadingRoster && selectedSessionId && sessionStarted && !isCohortSession && (
-          <RecordSessionWalkIn
-            key={selectedSessionId}
-            defaultFee={
-              isCohortSession && selectedSession?.cohort_fee_mode !== "paid_extra"
-                ? 0
-                : (selectedSession?.pool_fee ?? 0)
-            }
-            defaultGuestFee={selectedSession?.guest_fee ?? selectedSession?.pool_fee ?? 0}
-            disabled={submittingMark}
-            eligibleMembers={isClubSession ? clubRosterMembers.map((member) => ({
-              id: member.member_id, first_name: member.name, last_name: "", email: member.email,
-              fee_amount_kobo: member.fee_amount_kobo,
-            })) : undefined}
-            onRecord={handleMarkWalkIn}
+            onRecordMember={handleMarkWalkIn}
             onRecordGuest={handleRecordGuestWalkIn}
           />
         )}
