@@ -1,6 +1,7 @@
 "use client";
 
 import { SessionParticipantManager } from "@/components/admin/SessionParticipantManager";
+import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
 import { CorrectMissingCohortFee } from "@/components/admin/CorrectMissingCohortFee";
 import {
   OfflineSessionPaymentModal,
@@ -1351,6 +1352,14 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
+        {selectedSessionId && !loadingRoster && (
+          <SessionSwimmerRoster
+            key={`guest-roster-${selectedSessionId}-${rosterRefreshVersion}`}
+            sessionId={selectedSessionId}
+            guestsOnly
+          />
+        )}
+        
         {loadingRoster && <LoadingPage text="Loading attendance..." />}
       </div>
 
