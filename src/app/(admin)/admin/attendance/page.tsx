@@ -1950,7 +1950,7 @@ function RosterTableRow({
       </td>
       <td className="px-4 py-3">
         <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${academyAllocationOnly && statusLabel === "Not scheduled" ? "bg-slate-100 text-slate-600" : statusBadgeClass(
             row.effectiveStatus === "awaiting" ? "absent" : row.effectiveStatus
           )}`}
         >
