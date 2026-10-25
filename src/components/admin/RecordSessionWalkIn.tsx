@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApi } from "@/hooks/useApi";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -22,26 +22,46 @@ export type GuestWalkInInput = {
 };
 
 export function RecordSessionWalkIn({
+  sessionId,
   defaultFee,
   defaultGuestFee,
   disabled,
   onRecord,
   onRecordGuest,
   eligibleMembers,
+  mode: controlledMode,
+  embedded = false,
 }: {
+  sessionId: string;
   defaultFee: number;
   defaultGuestFee: number;
   disabled: boolean;
-  onRecord: (memberId: string, feeKobo: number, note: string) => Promise<void>;
+  onRecord: (memberId: string, feeKobo: number, note: string, overrideReason?: string) => Promise<void>;
   onRecordGuest: (input: GuestWalkInInput) => Promise<void>;
   eligibleMembers?: WalkInMember[];
+  mode?: "member" | "guest";
+  embedded?: boolean;
 }) {
-  const [mode, setMode] = useState<"member" | "guest">("member");
+  const [localMode, setMode] = useState<"member" | "guest">("member");
+  const mode = controlledMode ?? localMode;
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
   const [fee, setFee] = useState(defaultFee);
   const [note, setNote] = useState("");
+  const [feeOverrideReason, setFeeOverrideReason] = useState("");
+  type Admission = { allowed: boolean; reason: string; fee_amount_kobo: number; access_source: string | null; pricing_audience: string | null };
+  const admission = useApi<Admission>(selected && mode === "member" ? `/api/v1/sessions/${sessionId}/admin/member-admission/${selected.id}` : null);
+  const quotedFee = admission.data?.fee_amount_kobo ?? null;
+  const quotedNaira = quotedFee === null ? null : quotedFee / 100;
+  const isOverride = quotedNaira !== null && Math.round(fee * 100) !== quotedFee;
+  useEffect(() => {
+    if (admission.data?.allowed && quotedNaira !== null) {
+      setFee(quotedNaira);
+      setFeeOverrideReason("");
+    }
+  }, [admission.data, quotedNaira]);
+
 
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -65,15 +85,15 @@ export function RecordSessionWalkIn({
   const guestFeeChanged = Math.round(guestFee * 100) !== Math.round(defaultGuestFee * 100);
 
   return (
-    <details className="rounded-xl border border-slate-200 bg-white p-4 print:hidden">
-      <summary className="cursor-pointer font-medium">Add walk-in</summary>
+    <details open={embedded ? true : undefined} className={embedded ? "print:hidden" : "rounded-xl border border-slate-200 bg-white p-4 print:hidden"}>
+      {!embedded && <summary className="cursor-pointer font-medium">Add walk-in</summary>}
       <p className="my-3 text-sm text-slate-600">
         Record someone who actually attended without an advance booking. Existing members keep
         their member history; unregistered guests get a guest walk-in record without inventing an
         account, booking, payment or waiver.
       </p>
 
-      <div className="mb-4 flex gap-2" role="group" aria-label="Walk-in type">
+      {controlledMode === undefined && <div className="mb-4 flex gap-2" role="group" aria-label="Walk-in type">
         <Button
           type="button"
           size="sm"
@@ -90,7 +110,7 @@ export function RecordSessionWalkIn({
         >
           Guest / not registered
         </Button>
-      </div>
+      </div>}
 
       {mode === "member" ? (
         <form
@@ -98,12 +118,13 @@ export function RecordSessionWalkIn({
           onSubmit={(event) => {
             event.preventDefault();
             if (
-              selected &&
+              selected && admission.data?.allowed && !admission.loading &&
+              (!isOverride || feeOverrideReason.trim().length >= 10) &&
               confirm(
                 `Record ${selected.first_name} as present in the selected session, with a session fee of ₦${fee.toLocaleString()}? No payment will be collected by this action.`
               )
             ) {
-              void onRecord(selected.id, Math.round(fee * 100), note);
+              void onRecord(selected.id, Math.round(fee * 100), note, isOverride ? feeOverrideReason.trim() : undefined);
             }
           }}
         >
@@ -142,6 +163,7 @@ export function RecordSessionWalkIn({
                 const member = data.find((item) => item.id === e.target.value) ?? null;
                 setSelected(member);
                 setFee(member?.fee_amount_kobo != null ? member.fee_amount_kobo / 100 : defaultFee);
+                setFeeOverrideReason("");
               }}
               className="w-full rounded border p-2"
             >
@@ -153,6 +175,12 @@ export function RecordSessionWalkIn({
               ))}
             </select>
           )}
+          {admission.loading && selected && <p role="status" className="text-sm text-slate-600">Checking member eligibility and rate…</p>}
+          {admission.error && <p role="alert" className="text-sm text-red-700">Could not verify membership: {String(admission.error)}</p>}
+          {admission.data && <div role="status" className={`rounded-lg p-3 text-sm ${admission.data.allowed ? "bg-emerald-50 text-emerald-900" : "bg-red-50 text-red-900"}`}>
+            <strong>{admission.data.allowed ? "Eligible" : "Not eligible"}</strong> · {admission.data.reason}.
+            {admission.data.allowed && <> Standard session fee: ₦{(admission.data.fee_amount_kobo / 100).toLocaleString("en-NG")}. <button type="button" className="font-semibold underline" onClick={() => setFee(admission.data!.fee_amount_kobo / 100)}>Use standard rate</button></>}
+          </div>}
           <Input
             label="Session fee owed for this swim (₦)"
             type="number"
@@ -162,6 +190,7 @@ export function RecordSessionWalkIn({
             value={fee}
             onChange={(e) => setFee(Number(e.target.value))}
           />
+          {isOverride && <Input label="Reason for agreed fee override (10+ characters)" value={feeOverrideReason} onChange={(event) => setFeeOverrideReason(event.target.value)} required maxLength={500} />}
           <Input
             label="Attendance reconciliation note"
             value={note}
@@ -169,7 +198,7 @@ export function RecordSessionWalkIn({
             required
             maxLength={500}
           />
-          <Button type="submit" disabled={disabled || !selected || !note.trim()}>
+          <Button type="submit" disabled={disabled || !selected || !note.trim() || admission.loading || !admission.data?.allowed || (isOverride && feeOverrideReason.trim().length < 10)}>
             Record member walk-in
           </Button>
         </form>

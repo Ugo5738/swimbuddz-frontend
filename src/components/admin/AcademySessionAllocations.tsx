@@ -34,11 +34,13 @@ export function AcademySessionAllocations({
   sessionId,
   memberNames,
   onRecorded,
+  embedded = false,
 }: {
   enrollments: Enrollment[];
   sessionId: string;
   memberNames: Record<string, string>;
   onRecorded: () => void;
+  embedded?: boolean;
 }) {
   // Reuse the same enrollment data as the visible Academy roster.
   // Separate requests previously allowed the two panels to disagree on students.
@@ -147,7 +149,7 @@ export function AcademySessionAllocations({
   }
 
   return (
-    <section id="academy-student-allocation" className="space-y-3 rounded-xl border border-cyan-200 bg-white p-4 print:hidden">
+    <section id="academy-student-allocation" className={embedded ? "space-y-3" : "space-y-3 rounded-xl border border-cyan-200 bg-white p-4 print:hidden"}>
       <h2 className="font-semibold text-slate-900">Academy · student class allocation</h2>
       <p className="text-sm text-slate-600">
         One shared physical session; classify each student independently.

@@ -1,14 +1,14 @@
 "use client";
 
-import { AcademySessionAllocations } from "@/components/admin/AcademySessionAllocations";
+import { SessionParticipantManager } from "@/components/admin/SessionParticipantManager";
+import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
 import { CorrectMissingCohortFee } from "@/components/admin/CorrectMissingCohortFee";
 import {
   OfflineSessionPaymentModal,
   type OfflineSessionPaymentInput,
 } from "@/components/admin/OfflineSessionPaymentModal";
-import { RecordSessionWalkIn, type GuestWalkInInput } from "@/components/admin/RecordSessionWalkIn";
-import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
-import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
+import type { GuestWalkInInput } from "@/components/admin/RecordSessionWalkIn";
+
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
@@ -55,6 +55,8 @@ type Session = ClubSessionScope & {
   // on rows that aren't yet booked so the admin sees the cost up front.
   pool_fee: number | null;
   guest_fee?: number | null;
+  allows_guests?: boolean;
+  guest_booking_mode?: "disabled" | "public" | "member_invite" | "approval_required";
 };
 
 type Cohort = {
@@ -746,7 +748,7 @@ export default function AdminAttendancePage() {
   // Mark walk-in: cohort member showed up without pre-booking. Creates an
   // admin-channel SessionBooking (fee defaulted by the backend to the
   // session's own pool_fee) and marks them PRESENT — all in one click.
-  const handleMarkWalkIn = async (memberId: string, feeAmountKobo?: number, note?: string) => {
+  const handleMarkWalkIn = async (memberId: string, feeAmountKobo?: number, note?: string, overrideReason?: string) => {
     if (!selectedSessionId) return;
     setSubmittingMark(true);
     setError(null);
@@ -759,6 +761,7 @@ export default function AdminAttendancePage() {
           member_id: memberId,
           ...(feeAmountKobo !== undefined ? { fee_amount_kobo: feeAmountKobo } : {}),
           ...(note ? { notes: note } : {}),
+          ...(overrideReason ? { fee_override_reason: overrideReason } : {}),
         },
         { auth: true }
       );
@@ -808,7 +811,7 @@ export default function AdminAttendancePage() {
       setMarkSuccess(
         result.attendance_recorded
           ? `Guest walk-in recorded for ${result.full_name_snapshot}.`
-          : `Guest saved for ${result.full_name_snapshot}, but attendance sync needs retry.`
+          : `Guest ${result.full_name_snapshot} recorded. Check waiver/permission before admitting to the pool; attendance was not confirmed.`
       );
       setRosterRefreshVersion((version) => version + 1);
     } catch (err) {
@@ -1202,18 +1205,6 @@ export default function AdminAttendancePage() {
           </select>
         </div>
 
-        {selectedSessionId && !isCohortSession && (
-          <>
-            <GuestSessionAdminCard
-              key={`guest-${selectedSessionId}`}
-              sessionId={selectedSessionId}
-            />
-            <SessionSwimmerRoster
-              key={`roster-${selectedSessionId}-${rosterRefreshVersion}`}
-              sessionId={selectedSessionId}
-            />
-          </>
-        )}
         {!loadingRoster && selectedSessionId ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:hidden">
             <ReconciliationStat label="Confirmed bookings" value={confirmedBookings.length} />
@@ -1241,13 +1232,23 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
-        {selectedSessionId && isCohortSession && selectedSession?.cohort_id && sessionStarted && !loadingRoster && (
-          <AcademySessionAllocations
+        {selectedSessionId && selectedSession && !loadingRoster && (
+          <SessionParticipantManager
             key={selectedSessionId}
-            enrollments={cohortRoster}
             sessionId={selectedSessionId}
+            isAcademy={isCohortSession}
+            sessionStarted={sessionStarted}
+            enrollments={cohortRoster}
             memberNames={Object.fromEntries(roster.map((row) => [row.member_id, row.name]))}
-            onRecorded={() => {
+            defaultMemberFee={isCohortSession ? (selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0) : (selectedSession.pool_fee ?? 0)}
+            defaultGuestFee={selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0}
+            guestAdmissionEnabled={Boolean(selectedSession.allows_guests || (selectedSession.guest_booking_mode && selectedSession.guest_booking_mode !== "disabled"))}
+            eligibleClubMembers={isClubSession ? clubRosterMembers.map((member) => ({
+              id: member.member_id, first_name: member.name, last_name: "",
+              email: member.email, fee_amount_kobo: member.fee_amount_kobo,
+            })) : undefined}
+            disabled={submittingMark}
+            onRecordAcademy={() => {
               setRosterRefreshVersion((version) => version + 1);
               void Promise.all([
                 apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, { auth: true }),
@@ -1255,27 +1256,9 @@ export default function AdminAttendancePage() {
               ]).then(([currentAttendance, currentBookings]) => {
                 setAttendanceList(currentAttendance);
                 setBookings(currentBookings);
-              }).catch(() => setError("Participation recorded; refresh attendance to view the latest record."));
+              }).catch(() => setError("Participant recorded. Refresh the page to see updated attendance."));
             }}
-          />
-        )}
-
-        {/* Print-only header */}
-        {!loadingRoster && selectedSessionId && sessionStarted && !isCohortSession && (
-          <RecordSessionWalkIn
-            key={selectedSessionId}
-            defaultFee={
-              isCohortSession && selectedSession?.cohort_fee_mode !== "paid_extra"
-                ? 0
-                : (selectedSession?.pool_fee ?? 0)
-            }
-            defaultGuestFee={selectedSession?.guest_fee ?? selectedSession?.pool_fee ?? 0}
-            disabled={submittingMark}
-            eligibleMembers={isClubSession ? clubRosterMembers.map((member) => ({
-              id: member.member_id, first_name: member.name, last_name: "", email: member.email,
-              fee_amount_kobo: member.fee_amount_kobo,
-            })) : undefined}
-            onRecord={handleMarkWalkIn}
+            onRecordMember={handleMarkWalkIn}
             onRecordGuest={handleRecordGuestWalkIn}
           />
         )}
@@ -1373,6 +1356,14 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
+        {selectedSessionId && !loadingRoster && (
+          <SessionSwimmerRoster
+            key={`guest-roster-${selectedSessionId}-${rosterRefreshVersion}`}
+            sessionId={selectedSessionId}
+            guestsOnly
+          />
+        )}
+        
         {loadingRoster && <LoadingPage text="Loading attendance..." />}
       </div>
 
