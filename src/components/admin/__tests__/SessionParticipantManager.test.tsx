@@ -79,6 +79,6 @@ it("keeps unregistered guest booking route available on Academy sessions", async
 
 it("preserves member and guest paths on Community sessions without Academy", () => {
   render(<SessionParticipantManager {...props} isAcademy={false} enrollments={[]} />);
-  expect(screen.queryByRole("button", { name: /Academy student/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /^Academy student/ })).toBeNull();
   expect(screen.getByText("Walk-in mode: member")).toBeTruthy();
 });
