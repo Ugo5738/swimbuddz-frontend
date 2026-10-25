@@ -42,7 +42,8 @@ it("shows AY's agreed walk-in fee while preserving the public fee for another me
 it("passes the agreed fee through to the add-walk-in member selector", async () => {
   render(<Page />);
   await screen.findByText("Ayodeji Esuruoso");
-  fireEvent.click(await screen.findByText("Add walk-in"));
+  // The unified participant panel exposes the member form directly for Club sessions.
+  await screen.findByRole("heading", { name: "Record a participant" });
   fireEvent.change(screen.getByLabelText("Find member by name or email"), { target: { value: "Ayodeji" } });
   fireEvent.click(screen.getByRole("button", { name: "Search members" }));
   fireEvent.change(screen.getByLabelText("Member to record"), { target: { value: "ay" } });
