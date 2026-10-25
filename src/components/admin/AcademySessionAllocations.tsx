@@ -9,6 +9,9 @@ type Summary = {
   purchased_classes?: number;
   opening_consumed?: number;
   applied_prepaid?: number;
+  routine_attendance_consumed?: number;
+  balance_verified?: boolean;
+  unverified_routine_session_ids?: string[];
   reserved_prepaid?: number;
   remaining?: number;
   allocations?: Array<{
@@ -216,10 +219,17 @@ export function AcademySessionAllocations({
           <p className="text-sm text-slate-800">
             Purchased: <strong>{summary.purchased_classes}</strong> ·
             Previously used: <strong>{summary.opening_consumed}</strong> ·
-            Newly used: <strong>{summary.applied_prepaid}</strong> ·
+            Individually allocated: <strong>{summary.applied_prepaid}</strong> ·
+            Regular attended classes: <strong>{summary.routine_attendance_consumed ?? 0}</strong> ·
             Reserved: <strong>{summary.reserved_prepaid}</strong> ·
             Remaining: <strong>{summary.remaining}</strong>
           </p>
+          {summary.balance_verified === false && (
+            <p role="alert" className="text-sm text-amber-800">
+              Attendance has not been verified for {summary.unverified_routine_session_ids?.length ?? 0} routine class(es).
+              Resolve these attendance records before consuming another prepaid class.
+            </p>
+          )}
           <label className="block text-sm font-medium">
             How this student is attending
             <select value={kind} onChange={(e) => setKind(e.target.value as "prepaid" | "paid_extra")}
@@ -241,7 +251,7 @@ export function AcademySessionAllocations({
             <textarea value={reason} onChange={(e) => setReason(e.target.value)}
               className="mt-1 w-full rounded border p-2" />
           </label>
-          <button type="button" disabled={busy || !summary.configured}
+          <button type="button" disabled={busy || !summary.configured || (kind === "prepaid" && summary.balance_verified === false)}
             onClick={() => void allocate()}
             className="rounded bg-cyan-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
             Record student participation
