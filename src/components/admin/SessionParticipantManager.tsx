@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AcademySessionAllocations } from "@/components/admin/AcademySessionAllocations";
 import { RecordSessionWalkIn, type GuestWalkInInput, type WalkInMember } from "@/components/admin/RecordSessionWalkIn";
 import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
-import { Button } from "@/components/ui/Button";
+
 
 type Enrollment = { id: string; member_id: string; status: string };
 type ParticipantType = "academy" | "member" | "guest";
@@ -38,6 +38,16 @@ export function SessionParticipantManager({
 }) {
   const [type, setType] = useState<ParticipantType>(isAcademy ? "academy" : "member");
   const choice: ParticipantType = !isAcademy && type === "academy" ? "member" : type;
+  const enrolledMemberIds = new Set(enrollments.filter((row) => row.status === "enrolled").map((row) => row.member_id));
+  const [memberError, setMemberError] = useState("");
+  async function recordNonStudent(memberId: string, feeKobo: number, note: string) {
+    if (isAcademy && enrolledMemberIds.has(memberId)) {
+      setMemberError("This person is enrolled in the cohort. Use Academy student so their lesson balance and fee are correct.");
+      throw new Error("Use Academy student for enrolled swimmers");
+    }
+    setMemberError("");
+    await onRecordMember(memberId, feeKobo, note);
+  }
 
   return (
     <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm print:hidden" aria-labelledby="session-participant-heading">
@@ -93,13 +103,14 @@ export function SessionParticipantManager({
               This route is only for other existing members attending as guests. Check eligibility and the agreed price.
             </p>
           )}
+          {memberError && <p role="alert" className="text-sm text-rose-700">{memberError}</p>}
           <RecordSessionWalkIn
             key={`${sessionId}-${choice}`}
             defaultFee={defaultMemberFee}
             defaultGuestFee={defaultGuestFee}
             disabled={disabled}
             eligibleMembers={eligibleClubMembers}
-            onRecord={onRecordMember}
+            onRecord={recordNonStudent}
             onRecordGuest={onRecordGuest}
             mode={choice === "guest" ? "guest" : "member"}
             embedded
