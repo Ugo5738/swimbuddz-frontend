@@ -28,6 +28,8 @@ export function RecordSessionWalkIn({
   onRecord,
   onRecordGuest,
   eligibleMembers,
+  mode: controlledMode,
+  embedded = false,
 }: {
   defaultFee: number;
   defaultGuestFee: number;
@@ -35,8 +37,11 @@ export function RecordSessionWalkIn({
   onRecord: (memberId: string, feeKobo: number, note: string) => Promise<void>;
   onRecordGuest: (input: GuestWalkInInput) => Promise<void>;
   eligibleMembers?: WalkInMember[];
+  mode?: "member" | "guest";
+  embedded?: boolean;
 }) {
-  const [mode, setMode] = useState<"member" | "guest">("member");
+  const [localMode, setMode] = useState<"member" | "guest">("member");
+  const mode = controlledMode ?? localMode;
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Member | null>(null);
@@ -65,15 +70,15 @@ export function RecordSessionWalkIn({
   const guestFeeChanged = Math.round(guestFee * 100) !== Math.round(defaultGuestFee * 100);
 
   return (
-    <details className="rounded-xl border border-slate-200 bg-white p-4 print:hidden">
-      <summary className="cursor-pointer font-medium">Add walk-in</summary>
+    <details open={embedded ? true : undefined} className={embedded ? "print:hidden" : "rounded-xl border border-slate-200 bg-white p-4 print:hidden"}>
+      {!embedded && <summary className="cursor-pointer font-medium">Add walk-in</summary>}
       <p className="my-3 text-sm text-slate-600">
         Record someone who actually attended without an advance booking. Existing members keep
         their member history; unregistered guests get a guest walk-in record without inventing an
         account, booking, payment or waiver.
       </p>
 
-      <div className="mb-4 flex gap-2" role="group" aria-label="Walk-in type">
+      {controlledMode === undefined && <div className="mb-4 flex gap-2" role="group" aria-label="Walk-in type">
         <Button
           type="button"
           size="sm"
@@ -90,7 +95,7 @@ export function RecordSessionWalkIn({
         >
           Guest / not registered
         </Button>
-      </div>
+      </div>}
 
       {mode === "member" ? (
         <form
