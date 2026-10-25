@@ -21,6 +21,18 @@ type Summary = {
     agreed_fee_kobo: number;
   }>;
 };
+type Preview = {
+  suggested_purchased_classes: number | null;
+  suggested_previously_consumed: number;
+  suggested_opening_as_of: string;
+  purchased_source: string | null;
+  recorded_regular_attendances: number;
+  applied_prepaid_allocations: number;
+  ordinary_sessions_reviewed: number;
+  unverified_sessions: Array<{ session_id: string; status: string }>;
+  pending_prepaid_session_ids: string[];
+  warning: string;
+};
 type Recorded = {
   booking_id: string;
   kind: string;
@@ -50,10 +62,12 @@ export function AcademySessionAllocations({
   );
   const [enrollmentId, setEnrollmentId] = useState("");
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [previewError, setPreviewError] = useState("");
   const [kind, setKind] = useState<"prepaid" | "paid_extra">("prepaid");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
-  const [purchased, setPurchased] = useState("12");
+  const [purchased, setPurchased] = useState("");
   const [consumed, setConsumed] = useState("");
   const [baselineReason, setBaselineReason] = useState("");
   const [baselineCutoff, setBaselineCutoff] = useState("");
@@ -72,15 +86,39 @@ export function AcademySessionAllocations({
     }
     let active = true;
     setSummary(null);
+    setPreview(null);
+    setPreviewError("");
     setError("");
     apiGet<Summary>(
       `/api/v1/academy/admin/enrollments/${enrollmentId}/class-entitlements`,
       { auth: true }
     )
-      .then((data) => { if (active) setSummary(data); })
+      .then((data) => {
+        if (!active) return;
+        setSummary(data);
+        if (!data.configured) {
+          apiGet<Preview>(
+            `/api/v1/academy/admin/enrollments/${enrollmentId}/class-entitlements/preview?session_id=${sessionId}`,
+            { auth: true }
+          ).then((result) => {
+            if (!active) return;
+            setPreview(result);
+            setPurchased(result.suggested_purchased_classes?.toString() ?? "");
+            setConsumed(result.suggested_previously_consumed.toString());
+            const date = new Date(result.suggested_opening_as_of);
+            const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            setBaselineCutoff(local.toISOString().slice(0, 16));
+            setBaselineReason(
+              `Reviewed cohort attendance: ${result.recorded_regular_attendances} regular present/late; ${result.applied_prepaid_allocations} applied prepaid allocations. Verified against original purchase agreement and historical attendance before cutoff.`
+            );
+          }).catch(() => {
+            if (active) setPreviewError("Historical attendance could not be loaded. Verify all figures manually before saving.");
+          });
+        }
+      })
       .catch(() => { if (active) setError("Unable to load student's class balance."); });
     return () => { active = false; };
-  }, [enrollmentId, message]);
+  }, [enrollmentId, message, sessionId]);
 
   async function establishBaseline() {
     if (!enrollmentId || !summary || summary.configured) return;
@@ -115,7 +153,7 @@ export function AcademySessionAllocations({
   }
 
   async function allocate() {
-    if (!selected || !summary?.configured) return;
+    if (!selected || !summary || (kind === "prepaid" && !summary.configured)) return;
     const agreedNaira = kind === "paid_extra" ? Number(amount) : 0;
     if ((kind === "paid_extra" && (amount.trim() === "" || agreedNaira <= 0)) ||
         !Number.isFinite(agreedNaira) || reason.trim().length < 10) {
@@ -175,11 +213,32 @@ export function AcademySessionAllocations({
           ))}
         </select>
       </label>
-      {selected && summary && !summary.configured && (
+      {selected && summary && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">
+            How this student is attending
+            <select value={kind} onChange={(e) => setKind(e.target.value as "prepaid" | "paid_extra")}
+              className="mt-1 w-full rounded border p-2">
+              <option value="prepaid">Use one purchased Academy class — ₦0 extra</option>
+              <option value="paid_extra">Separately paid extra class — no prepaid deduction</option>
+            </select>
+          </label>
+        </div>
+      )}
+      {selected && summary && !summary.configured && kind === "prepaid" && (
         <div className="space-y-2 rounded border border-amber-300 p-3">
-          <p className="text-sm font-semibold">Verify historical class balance first</p>
+          <p className="text-sm font-semibold">Review suggested historical class balance</p>
+          {preview && (
+            <p className="text-xs text-slate-700" role="status">
+              Found {preview.recorded_regular_attendances} confirmed regular attendances and {preview.applied_prepaid_allocations} applied prepaid allocations.
+              {preview.unverified_sessions.length > 0 && ` ${preview.unverified_sessions.length} session(s) need attendance review.`}
+              {preview.pending_prepaid_session_ids.length > 0 && ` ${preview.pending_prepaid_session_ids.length} pending prepaid allocations need review.`}
+              The suggested purchased quantity comes from programme duration, not a verified purchase agreement.
+            </p>
+          )}
+          {previewError && <p role="alert" className="text-xs text-amber-700">{previewError}</p>}
           <p className="text-xs text-slate-600">
-            Count previously consumed classes from real attendance records, excluding separately
+            Confirm suggested values against original class agreement and attendance history before saving. Count previously consumed classes from real attendance records, excluding separately
             paid extras and authorised support. Include older cohorts only under a reviewed
             transfer agreement. Do not guess or reset an existing plan.
           </p>
@@ -213,30 +272,23 @@ export function AcademySessionAllocations({
           </button>
         </div>
       )}
-      {selected && summary?.configured && (
+      {selected && summary && (
         <div className="space-y-3">
-          <p className="text-sm text-slate-800">
+          {summary.configured && <p className="text-sm text-slate-800">
             Purchased: <strong>{summary.purchased_classes}</strong> ·
             Previously used: <strong>{summary.opening_consumed}</strong> ·
             Individually allocated: <strong>{summary.applied_prepaid}</strong> ·
             Regular attended classes: <strong>{summary.routine_attendance_consumed ?? 0}</strong> ·
             Reserved: <strong>{summary.reserved_prepaid}</strong> ·
             Remaining: <strong>{summary.remaining}</strong>
-          </p>
+          </p>}
           {summary.balance_verified === false && (
             <p role="alert" className="text-sm text-amber-800">
               Attendance has not been verified for {summary.unverified_routine_session_ids?.length ?? 0} routine class(es).
               Resolve these attendance records before consuming another prepaid class.
             </p>
           )}
-          <label className="block text-sm font-medium">
-            How this student is attending
-            <select value={kind} onChange={(e) => setKind(e.target.value as "prepaid" | "paid_extra")}
-              className="mt-1 w-full rounded border p-2">
-              <option value="prepaid">Use one purchased Academy class — ₦0 extra</option>
-              <option value="paid_extra">Separately paid extra class — no prepaid deduction</option>
-            </select>
-          </label>
+          {!summary.configured && <p className="text-sm text-amber-700">Paid extras can be booked now. To use an included programme class, review and save the opening balance above.</p>}
           {kind === "paid_extra" && (
             <label className="block text-sm">
               Agreed additional price in naira (₦)
@@ -250,7 +302,7 @@ export function AcademySessionAllocations({
             <textarea value={reason} onChange={(e) => setReason(e.target.value)}
               className="mt-1 w-full rounded border p-2" />
           </label>
-          <button type="button" disabled={busy || !summary.configured || (kind === "prepaid" && summary.balance_verified === false)}
+          <button type="button" disabled={busy || (kind === "prepaid" && (!summary.configured || summary.balance_verified === false))}
             onClick={() => void allocate()}
             className="rounded bg-cyan-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
             Record student participation
