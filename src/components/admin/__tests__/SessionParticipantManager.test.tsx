@@ -66,7 +66,7 @@ it("blocks cohort students on the generic visitor route but allows real members"
   expect(await screen.findByRole("alert")).toHaveTextContent(/enrolled in the cohort/i);
   expect(mocks.onMember).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Choose visitor" }));
-  await waitFor(() => expect(mocks.onMember).toHaveBeenCalledWith("visitor", 1500000, "Guest visit"));
+  await waitFor(() => expect(mocks.onMember).toHaveBeenCalledWith("visitor", 1500000, "Guest visit", undefined));
 });
 
 it("keeps unregistered guest booking route available on Academy sessions", async () => {
