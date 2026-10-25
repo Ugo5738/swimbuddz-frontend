@@ -1202,7 +1202,7 @@ export default function AdminAttendancePage() {
           </select>
         </div>
 
-        {selectedSessionId && (
+        {selectedSessionId && !isCohortSession && (
           <>
             <GuestSessionAdminCard
               key={`guest-${selectedSessionId}`}
@@ -1222,7 +1222,7 @@ export default function AdminAttendancePage() {
               value={attendanceList.length}
             />
             <ReconciliationStat
-              label={sessionStarted ? "No-shows" : "Pending arrivals"}
+              label={isCohortSession && selectedSession?.cohort_fee_mode === "paid_extra" ? "Booked no-shows" : sessionStarted ? "No-shows" : "Pending arrivals"}
               value={unmatchedBookings.length}
               tone={unmatchedBookings.length === 0 ? "ok" : sessionStarted ? "warn" : "neutral"}
             />
@@ -1241,10 +1241,10 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
-        {selectedSessionId && selectedSession?.cohort_id && sessionStarted && (
+        {selectedSessionId && isCohortSession && selectedSession?.cohort_id && sessionStarted && !loadingRoster && (
           <AcademySessionAllocations
             key={selectedSessionId}
-            cohortId={selectedSession.cohort_id}
+            enrollments={cohortRoster}
             sessionId={selectedSessionId}
             memberNames={Object.fromEntries(roster.map((row) => [row.member_id, row.name]))}
             onRecorded={() => {
@@ -1261,7 +1261,7 @@ export default function AdminAttendancePage() {
         )}
 
         {/* Print-only header */}
-        {!loadingRoster && selectedSessionId && sessionStarted && (
+        {!loadingRoster && selectedSessionId && sessionStarted && !isCohortSession && (
           <RecordSessionWalkIn
             key={selectedSessionId}
             defaultFee={
@@ -1351,6 +1351,7 @@ export default function AdminAttendancePage() {
                 unmatchedBookingCount={unmatchedBookings.length}
                 onDraftStatus={handleDraftStatus}
                 onMarkWalkIn={handleMarkWalkIn}
+                academyAllocationOnly={isCohortSession && selectedSession?.cohort_fee_mode === "paid_extra"}
                 onGeneratePayLink={handleGeneratePayLink}
                 onBookingCorrected={(corrected) =>
                   setBookings((existing) =>
@@ -1558,6 +1559,7 @@ function UnifiedRoster({
   unmatchedBookingCount,
   onDraftStatus,
   onMarkWalkIn,
+  academyAllocationOnly,
   onGeneratePayLink,
   onRecordOfflinePayment,
   onBookingCorrected,
@@ -1577,6 +1579,7 @@ function UnifiedRoster({
   unmatchedBookingCount: number;
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
+  academyAllocationOnly: boolean;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
   onRecordOfflinePayment: (bookingId: string, memberName: string, amountNaira: number) => void;
   onBookingCorrected: (booking: SessionBookingResponse) => void;
@@ -1656,6 +1659,7 @@ function UnifiedRoster({
                 sessionPoolFeeNaira={sessionPoolFeeNaira}
                 onDraftStatus={onDraftStatus}
                 onMarkWalkIn={onMarkWalkIn}
+                academyAllocationOnly={academyAllocationOnly}
                 onGeneratePayLink={onGeneratePayLink}
                 onRecordOfflinePayment={onRecordOfflinePayment}
                 allowMissingFeeCorrection={
@@ -1695,6 +1699,7 @@ function RosterTableRow({
   sessionPoolFeeNaira,
   onDraftStatus,
   onMarkWalkIn,
+  academyAllocationOnly,
   onGeneratePayLink,
   onRecordOfflinePayment,
   onBookingCorrected,
@@ -1707,6 +1712,7 @@ function RosterTableRow({
   sessionPoolFeeNaira: number | null;
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
+  academyAllocationOnly: boolean;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
   onRecordOfflinePayment: (bookingId: string, memberName: string, amountNaira: number) => void;
   onBookingCorrected: (booking: SessionBookingResponse) => void;
@@ -1796,12 +1802,12 @@ function RosterTableRow({
   // attendance predates the booking/payment workflow. Once the booking exists,
   // its fee can be settled online or recorded as paid off-platform.
   const canCreateWalkInBooking =
-    !row.booking && (row.source === "cohort" || row.source === "club" || row.source === "walkin");
+    !academyAllocationOnly && !row.booking && (row.source === "cohort" || row.source === "club" || row.source === "walkin");
 
   // Disable the Set dropdown when there's no booking AND no attendance —
   // the workflow is "use Mark walk-in to bring them onto the roster
   // properly". Walk-in rows (have attendance) stay editable.
-  const setDisabled = disabled || (!row.booking && !row.attendance);
+  const setDisabled = disabled || (academyAllocationOnly && !row.booking) || (!row.booking && !row.attendance);
 
   const groupBadge =
     row.source === "cohort" ? (
@@ -1822,6 +1828,7 @@ function RosterTableRow({
   const memberFlagSelfExcused = isSelfExcused(row.booking?.notes);
 
   const statusLabel = (() => {
+    if (academyAllocationOnly && row.source === "cohort" && !row.booking && !row.attendance) return "Not scheduled";
     if (row.effectiveStatus === "awaiting") return "Awaiting";
     return row.effectiveStatus.charAt(0).toUpperCase() + row.effectiveStatus.slice(1);
   })();
@@ -1943,7 +1950,7 @@ function RosterTableRow({
       </td>
       <td className="px-4 py-3">
         <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${academyAllocationOnly && statusLabel === "Not scheduled" ? "bg-slate-100 text-slate-600" : statusBadgeClass(
             row.effectiveStatus === "awaiting" ? "absent" : row.effectiveStatus
           )}`}
         >
