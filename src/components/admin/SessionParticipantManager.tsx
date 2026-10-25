@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { AcademySessionAllocations } from "@/components/admin/AcademySessionAllocations";
 import { RecordSessionWalkIn, type GuestWalkInInput, type WalkInMember } from "@/components/admin/RecordSessionWalkIn";
 import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
@@ -95,6 +96,9 @@ export function SessionParticipantManager({
           onRecorded={onRecordAcademy}
           embedded
         />
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          Recording a make-up or approved support lesson? Use the existing <Link href="/admin/makeups" className="font-semibold text-cyan-700 underline">Make-ups workflow</Link> or its authorised Academy support process. Those credits are not interchangeable with a prepaid class or paid extra.
+        </div>
       ) : (
         <>
           {choice === "member" && isAcademy && (
