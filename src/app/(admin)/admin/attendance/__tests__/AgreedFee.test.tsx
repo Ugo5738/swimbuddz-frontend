@@ -31,6 +31,7 @@ it("shows AY's agreed walk-in fee while preserving the public fee for another me
   const walkInButton = within(ay).getByRole("button", { name: /Mark walk-in/ });
   // The roster can render before the selected session finishes loading;
   // clicking its disabled action would test nothing and race in CI.
+  await waitFor(() => expect(screen.getByLabelText("Session")).toHaveValue("vi"));
   await waitFor(() => expect(walkInButton).toBeEnabled());
   fireEvent.click(walkInButton);
   await waitFor(() => expect(mocks.post).toHaveBeenCalledWith(
