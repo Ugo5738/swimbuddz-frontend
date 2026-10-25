@@ -8,7 +8,6 @@ import {
 } from "@/components/admin/OfflineSessionPaymentModal";
 import type { GuestWalkInInput } from "@/components/admin/RecordSessionWalkIn";
 
-import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
