@@ -35,7 +35,7 @@ beforeEach(() => {
 it("records a paid Academy extra without consuming an included class", async () => {
   render(
     <AcademySessionAllocations
-      cohortId="cohort"
+      enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
       sessionId="physical"
       memberNames={{ member: "Student B" }}
       onRecorded={mocks.refreshed}
@@ -73,7 +73,7 @@ it("records a paid Academy extra without consuming an included class", async () 
 it("prepaid allocation records no additional charge", async () => {
   render(
     <AcademySessionAllocations
-      cohortId="cohort"
+      enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
       sessionId="physical"
       memberNames={{ member: "Student A" }}
       onRecorded={mocks.refreshed}
