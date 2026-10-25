@@ -49,7 +49,7 @@ const props = {
   onRecordGuest: mocks.onGuest,
 };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 it("shows exactly one participant entry point with an Academy route", () => {
   render(<SessionParticipantManager {...props} />);
