@@ -30,17 +30,22 @@ type Recorded = {
 };
 
 export function AcademySessionAllocations({
-  cohortId,
+  enrollments,
   sessionId,
   memberNames,
   onRecorded,
 }: {
-  cohortId: string;
+  enrollments: Enrollment[];
   sessionId: string;
   memberNames: Record<string, string>;
   onRecorded: () => void;
 }) {
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  // Reuse the same enrollment data as the visible Academy roster.
+  // Separate requests previously allowed the two panels to disagree on students.
+  const eligibleEnrollments = useMemo(
+    () => enrollments.filter((row) => row.status === "enrolled"),
+    [enrollments]
+  );
   const [enrollmentId, setEnrollmentId] = useState("");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [kind, setKind] = useState<"prepaid" | "paid_extra">("prepaid");
@@ -54,22 +59,9 @@ export function AcademySessionAllocations({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const selected = useMemo(
-    () => enrollments.find((item) => item.id === enrollmentId),
-    [enrollments, enrollmentId]
+    () => eligibleEnrollments.find((item) => item.id === enrollmentId),
+    [eligibleEnrollments, enrollmentId]
   );
-
-  useEffect(() => {
-    let active = true;
-    apiGet<Enrollment[]>(`/api/v1/academy/cohorts/${cohortId}/enrollments`, { auth: true })
-      .then((rows) => {
-        if (active) {
-          setEnrollments(rows.filter((row) => row.status === "enrolled"));
-          setEnrollmentId("");
-        }
-      })
-      .catch(() => { if (active) setError("Unable to load enrolled students."); });
-    return () => { active = false; };
-  }, [cohortId]);
 
   useEffect(() => {
     if (!enrollmentId) {
@@ -155,12 +147,17 @@ export function AcademySessionAllocations({
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-cyan-200 bg-white p-4 print:hidden">
+    <section id="academy-student-allocation" className="space-y-3 rounded-xl border border-cyan-200 bg-white p-4 print:hidden">
       <h2 className="font-semibold text-slate-900">Academy · student class allocation</h2>
       <p className="text-sm text-slate-600">
         One shared physical session; classify each student independently.
         Attendance does not mean an additional payment was received.
       </p>
+      {eligibleEnrollments.length === 0 && (
+        <p role="status" className="text-sm text-amber-700">
+          No active cohort enrollments were loaded. Verify the selected session and its cohort before recording attendance.
+        </p>
+      )}
       <label className="block text-sm font-medium">
         Student
         <select
@@ -169,7 +166,7 @@ export function AcademySessionAllocations({
           className="mt-1 w-full rounded border p-2"
         >
           <option value="">Select enrolled student</option>
-          {enrollments.map((item) => (
+          {eligibleEnrollments.map((item) => (
             <option key={item.id} value={item.id}>
               {memberNames[item.member_id] || item.member_id}
             </option>
