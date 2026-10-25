@@ -1241,7 +1241,7 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
-        {selectedSessionId && selectedSession?.cohort_id && (
+        {selectedSessionId && selectedSession?.cohort_id && sessionStarted && (
           <AcademySessionAllocations
             key={selectedSessionId}
             cohortId={selectedSession.cohort_id}
