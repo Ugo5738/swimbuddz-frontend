@@ -809,7 +809,7 @@ export default function AdminAttendancePage() {
       setMarkSuccess(
         result.attendance_recorded
           ? `Guest walk-in recorded for ${result.full_name_snapshot}.`
-          : `Guest saved for ${result.full_name_snapshot}, but attendance sync needs retry.`
+          : `Guest ${result.full_name_snapshot} recorded. Check waiver/permission before admitting to the pool; attendance was not confirmed.`
       );
       setRosterRefreshVersion((version) => version + 1);
     } catch (err) {
