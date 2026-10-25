@@ -47,9 +47,6 @@ it("prefills and records the selected member's agreed fee, including a zero incl
 });
 
 it("searches only the session's eligible Club members for a Club walk-in", async () => {
-  vi.mocked(apiGet).mockResolvedValue([
-    { id: "academy", first_name: "Academy", last_name: "Only", email: "academy@example.com" },
-  ]);
   render(<RecordSessionWalkIn sessionId="test-session" defaultFee={5200} defaultGuestFee={15000} disabled={false}
     eligibleMembers={[
       { id: "comfort", first_name: "Comfort", last_name: "Example", email: "comfort@example.com" },
@@ -68,9 +65,6 @@ it("searches only the session's eligible Club members for a Club walk-in", async
 });
 
 it("finds a registered member outside the roster and records attendance, not a payment", async () => {
-  vi.mocked(apiGet).mockResolvedValue([
-    { id: "member-1", first_name: "Ada", last_name: "Example", email: "ada@example.com" },
-  ]);
   vi.spyOn(window, "confirm").mockReturnValue(true);
   const record = vi.fn(async () => {});
   render(
