@@ -89,6 +89,7 @@ export function SessionParticipantManager({
           Attendance recording becomes available after this session starts. Advance guest invitations can be managed below.
         </p>
       ) : choice === "academy" && isAcademy ? (
+        <>
         <AcademySessionAllocations
           sessionId={sessionId}
           enrollments={enrollments}
@@ -99,6 +100,7 @@ export function SessionParticipantManager({
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
           Recording a make-up or approved support lesson? Use the existing <Link href="/admin/makeups" className="font-semibold text-cyan-700 underline">Make-ups workflow</Link> or its authorised Academy support process. Those credits are not interchangeable with a prepaid class or paid extra.
         </div>
+        </>
       ) : (
         <>
           {choice === "member" && isAcademy && (
