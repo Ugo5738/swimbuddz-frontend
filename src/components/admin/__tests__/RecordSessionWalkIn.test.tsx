@@ -1,9 +1,26 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { apiGet } from "@/lib/api";
 import { RecordSessionWalkIn } from "../RecordSessionWalkIn";
 
 vi.mock("@/lib/api", () => ({ apiGet: vi.fn() }));
+beforeEach(() => {
+vi.mocked(apiGet).mockImplementation((url) => {
+  if (String(url).includes("/admin/member-admission/")) {
+    const id = String(url).split("/").at(-1);
+    return Promise.resolve({
+      allowed: true,
+      reason: "Verified standard rate",
+      fee_amount_kobo: id === "ay" ? 1000000 : id === "prepaid" ? 0 : 520000,
+      access_source: "club_enrollment",
+      pricing_audience: "club",
+    });
+  }
+  return Promise.resolve([
+    { id: "member-1", first_name: "Ada", last_name: "Example", email: "ada@example.com" },
+  ]);
+});
+});
 afterEach(() => {
   vi.restoreAllMocks();
   vi.clearAllMocks();
@@ -12,7 +29,7 @@ afterEach(() => {
 it("prefills and records the selected member's agreed fee, including a zero inclusion", async () => {
   vi.spyOn(window, "confirm").mockReturnValue(true);
   const record = vi.fn(async () => {});
-  render(<RecordSessionWalkIn defaultFee={15000} defaultGuestFee={15000} disabled={false}
+  render(<RecordSessionWalkIn sessionId="test-session" defaultFee={15000} defaultGuestFee={15000} disabled={false}
     eligibleMembers={[
       { id: "ay", first_name: "AY", last_name: "", email: "ay@example.com", fee_amount_kobo: 1000000 },
       { id: "prepaid", first_name: "Prepaid", last_name: "", email: "prepaid@example.com", fee_amount_kobo: 0 },
@@ -21,19 +38,18 @@ it("prefills and records the selected member's agreed fee, including a zero incl
   fireEvent.change(screen.getByLabelText("Find member by name or email"), { target: { value: "example.com" } });
   fireEvent.click(screen.getByRole("button", { name: "Search members" }));
   fireEvent.change(screen.getByLabelText("Member to record"), { target: { value: "ay" } });
+  await waitFor(() => expect(screen.getByText(/Verified standard rate/)).toBeInTheDocument());
   expect(screen.getByLabelText(/^Session fee owed for this swim/)).toHaveValue(10000);
   fireEvent.change(screen.getByLabelText(/^Attendance reconciliation note/), { target: { value: "Agreed fee for this swim" } });
   fireEvent.click(screen.getByRole("button", { name: "Record member walk-in" }));
-  await waitFor(() => expect(record).toHaveBeenCalledWith("ay", 1000000, "Agreed fee for this swim"));
+  await waitFor(() => expect(record).toHaveBeenCalledWith("ay", 1000000, "Agreed fee for this swim", undefined));
   fireEvent.change(screen.getByLabelText("Member to record"), { target: { value: "prepaid" } });
+  await screen.findByText(/Verified standard rate/);
   expect(screen.getByLabelText(/^Session fee owed for this swim/)).toHaveValue(0);
 });
 
 it("searches only the session's eligible Club members for a Club walk-in", async () => {
-  vi.mocked(apiGet).mockResolvedValue([
-    { id: "academy", first_name: "Academy", last_name: "Only", email: "academy@example.com" },
-  ]);
-  render(<RecordSessionWalkIn defaultFee={5200} defaultGuestFee={15000} disabled={false}
+  render(<RecordSessionWalkIn sessionId="test-session" defaultFee={5200} defaultGuestFee={15000} disabled={false}
     eligibleMembers={[
       { id: "comfort", first_name: "Comfort", last_name: "Example", email: "comfort@example.com" },
       { id: "uche", first_name: "Uche", last_name: "Example", email: "uche@example.com" },
@@ -51,13 +67,11 @@ it("searches only the session's eligible Club members for a Club walk-in", async
 });
 
 it("finds a registered member outside the roster and records attendance, not a payment", async () => {
-  vi.mocked(apiGet).mockResolvedValue([
-    { id: "member-1", first_name: "Ada", last_name: "Example", email: "ada@example.com" },
-  ]);
   vi.spyOn(window, "confirm").mockReturnValue(true);
   const record = vi.fn(async () => {});
   render(
     <RecordSessionWalkIn
+      sessionId="test-session"
       defaultFee={5200}
       defaultGuestFee={15000}
       disabled={false}
@@ -76,9 +90,10 @@ it("finds a registered member outside the roster and records attendance, not a p
   fireEvent.change(screen.getByLabelText(/^Attendance reconciliation note/), {
     target: { value: "Verified actual Saturday attendance" },
   });
+  await waitFor(() => expect(screen.getByRole("button", { name: "Record member walk-in" })).toBeEnabled());
   fireEvent.click(screen.getByRole("button", { name: "Record member walk-in" }));
   await waitFor(() =>
-    expect(record).toHaveBeenCalledWith("member-1", 520000, "Verified actual Saturday attendance")
+    expect(record).toHaveBeenCalledWith("member-1", 520000, "Verified actual Saturday attendance", undefined)
   );
   expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("No payment will be collected"));
   fireEvent.change(screen.getByLabelText("Find member by name or email"), {
@@ -91,6 +106,7 @@ it("records an unregistered guest without fabricating payment or waiver acceptan
   const recordGuest = vi.fn(async () => {});
   render(
     <RecordSessionWalkIn
+      sessionId="test-session"
       defaultFee={10000}
       defaultGuestFee={15000}
       disabled={false}
@@ -122,6 +138,7 @@ it("requires an explanation when overriding the configured guest rate", async ()
   const recordGuest = vi.fn(async () => {});
   render(
     <RecordSessionWalkIn
+      sessionId="test-session"
       defaultFee={10000}
       defaultGuestFee={15000}
       disabled={false}
