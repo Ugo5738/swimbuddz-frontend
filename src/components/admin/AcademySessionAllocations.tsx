@@ -46,6 +46,7 @@ export function AcademySessionAllocations({
   const [purchased, setPurchased] = useState("12");
   const [consumed, setConsumed] = useState("");
   const [baselineReason, setBaselineReason] = useState("");
+  const [baselineCutoff, setBaselineCutoff] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -90,7 +91,7 @@ export function AcademySessionAllocations({
     const previous = Number(consumed);
     if (!Number.isInteger(purchasedClasses) || purchasedClasses <= 0 ||
         consumed.trim() === "" || !Number.isInteger(previous) || previous < 0 ||
-        previous > purchasedClasses || baselineReason.trim().length < 15) {
+        previous > purchasedClasses || baselineReason.trim().length < 15 || !baselineCutoff) {
       setError("Enter the verified purchased and previously used class counts and a reason.");
       return;
     }
@@ -103,6 +104,7 @@ export function AcademySessionAllocations({
         {
           purchased_classes: purchasedClasses,
           previously_consumed: previous,
+          opening_as_of: new Date(baselineCutoff).toISOString(),
           reason: baselineReason.trim(),
         },
         { auth: true }
@@ -189,6 +191,12 @@ export function AcademySessionAllocations({
             Previously consumed prepaid classes
             <input type="number" min={0} value={consumed}
               onChange={(e) => setConsumed(e.target.value)}
+              className="mt-1 w-full rounded border p-2" />
+          </label>
+          <label className="block text-sm">
+            Historical cutoff — classes before this point are counted in the opening balance
+            <input type="datetime-local" value={baselineCutoff}
+              onChange={(e) => setBaselineCutoff(e.target.value)}
               className="mt-1 w-full rounded border p-2" />
           </label>
           <label className="block text-sm">
