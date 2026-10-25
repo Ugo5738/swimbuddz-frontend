@@ -5,7 +5,10 @@ import { useApi } from "@/hooks/useApi";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-export type WalkInMember = { id: string; first_name: string; last_name: string; email: string };
+export type WalkInMember = {
+  id: string; first_name: string; last_name: string; email: string;
+  fee_amount_kobo?: number | null;
+};
 type Member = WalkInMember;
 
 export type GuestWalkInInput = {
@@ -135,7 +138,11 @@ export function RecordSessionWalkIn({
               aria-label="Member to record"
               required
               value={selected?.id ?? ""}
-              onChange={(e) => setSelected(data.find((member) => member.id === e.target.value) ?? null)}
+              onChange={(e) => {
+                const member = data.find((item) => item.id === e.target.value) ?? null;
+                setSelected(member);
+                setFee(member?.fee_amount_kobo != null ? member.fee_amount_kobo / 100 : defaultFee);
+              }}
               className="w-full rounded border p-2"
             >
               <option value="">{data.length ? "Select the member" : "No matching members"}</option>

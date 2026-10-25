@@ -9,6 +9,26 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+it("prefills and records the selected member's agreed fee, including a zero inclusion", async () => {
+  vi.spyOn(window, "confirm").mockReturnValue(true);
+  const record = vi.fn(async () => {});
+  render(<RecordSessionWalkIn defaultFee={15000} defaultGuestFee={15000} disabled={false}
+    eligibleMembers={[
+      { id: "ay", first_name: "AY", last_name: "", email: "ay@example.com", fee_amount_kobo: 1000000 },
+      { id: "prepaid", first_name: "Prepaid", last_name: "", email: "prepaid@example.com", fee_amount_kobo: 0 },
+    ]} onRecord={record} onRecordGuest={vi.fn(async () => {})} />);
+  fireEvent.click(screen.getByText("Add walk-in"));
+  fireEvent.change(screen.getByLabelText("Find member by name or email"), { target: { value: "example.com" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search members" }));
+  fireEvent.change(screen.getByLabelText("Member to record"), { target: { value: "ay" } });
+  expect(screen.getByLabelText(/^Session fee owed for this swim/)).toHaveValue(10000);
+  fireEvent.change(screen.getByLabelText(/^Attendance reconciliation note/), { target: { value: "Agreed fee for this swim" } });
+  fireEvent.click(screen.getByRole("button", { name: "Record member walk-in" }));
+  await waitFor(() => expect(record).toHaveBeenCalledWith("ay", 1000000, "Agreed fee for this swim"));
+  fireEvent.change(screen.getByLabelText("Member to record"), { target: { value: "prepaid" } });
+  expect(screen.getByLabelText(/^Session fee owed for this swim/)).toHaveValue(0);
+});
+
 it("searches only the session's eligible Club members for a Club walk-in", async () => {
   vi.mocked(apiGet).mockResolvedValue([
     { id: "academy", first_name: "Academy", last_name: "Only", email: "academy@example.com" },
