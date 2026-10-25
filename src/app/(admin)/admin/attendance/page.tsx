@@ -129,6 +129,7 @@ type RosterRow = {
   member_id: string;
   name: string;
   email: string;
+  quotedFeeAmountKobo?: number | null;
   source: RosterSource;
   // The attendance record, if one exists. Absence of a row + cohort source =
   // default-present (the cohort attendance model).
@@ -621,6 +622,7 @@ export default function AdminAttendancePage() {
           member_id: member.member_id,
           name: member.name,
           email: member.email,
+          quotedFeeAmountKobo: member.fee_amount_kobo,
           source: "club",
           attendance,
           booking,
@@ -1251,6 +1253,7 @@ export default function AdminAttendancePage() {
             disabled={submittingMark}
             eligibleMembers={isClubSession ? clubRosterMembers.map((member) => ({
               id: member.member_id, first_name: member.name, last_name: "", email: member.email,
+              fee_amount_kobo: member.fee_amount_kobo,
             })) : undefined}
             onRecord={handleMarkWalkIn}
             onRecordGuest={handleRecordGuestWalkIn}
@@ -1715,6 +1718,10 @@ function RosterTableRow({
     !row.booking.payment_intent_id &&
     !row.booking.wallet_transaction_id;
 
+  const walkInFeeNaira = row.quotedFeeAmountKobo != null
+    ? row.quotedFeeAmountKobo / 100
+    : sessionPoolFeeNaira;
+
   // Pool-fee refund — the make-up / rain-out case. Offer it when a PAID,
   // confirmed, fee-bearing booking belongs to someone who didn't attend
   // (absent/excused) and hasn't already been refunded. The refund routes the
@@ -1841,15 +1848,15 @@ function RosterTableRow({
               onClick={() => onMarkWalkIn(row.member_id)}
               className="mt-1 inline-flex w-fit rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 print:hidden"
               title={
-                sessionPoolFeeNaira !== null && sessionPoolFeeNaira > 0
-                  ? `Create a fee-bearing booking for ₦${sessionPoolFeeNaira.toLocaleString("en-NG")}`
+                walkInFeeNaira !== null && walkInFeeNaira > 0
+                  ? `Create a fee-bearing booking for ₦${walkInFeeNaira.toLocaleString("en-NG")}`
                   : "Create a booking + mark present"
               }
             >
               {row.attendance ? "+ Create booking" : "+ Mark walk-in"}
-              {sessionPoolFeeNaira !== null && sessionPoolFeeNaira > 0 ? (
+              {walkInFeeNaira !== null && walkInFeeNaira > 0 ? (
                 <span className="ml-1 opacity-70">
-                  (₦{sessionPoolFeeNaira.toLocaleString("en-NG")})
+                  (₦{walkInFeeNaira.toLocaleString("en-NG")})
                 </span>
               ) : null}
             </button>
