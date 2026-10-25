@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApi } from "@/hooks/useApi";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -55,6 +55,12 @@ export function RecordSessionWalkIn({
   const quotedFee = admission.data?.fee_amount_kobo ?? null;
   const quotedNaira = quotedFee === null ? null : quotedFee / 100;
   const isOverride = quotedNaira !== null && Math.round(fee * 100) !== quotedFee;
+  useEffect(() => {
+    if (admission.data?.allowed && quotedNaira !== null) {
+      setFee(quotedNaira);
+      setFeeOverrideReason("");
+    }
+  }, [admission.data, quotedNaira]);
 
 
   const [guestName, setGuestName] = useState("");
