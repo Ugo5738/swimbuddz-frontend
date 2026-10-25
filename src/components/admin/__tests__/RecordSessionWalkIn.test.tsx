@@ -4,6 +4,21 @@ import { apiGet } from "@/lib/api";
 import { RecordSessionWalkIn } from "../RecordSessionWalkIn";
 
 vi.mock("@/lib/api", () => ({ apiGet: vi.fn() }));
+vi.mocked(apiGet).mockImplementation((url) => {
+  if (String(url).includes("/admin/member-admission/")) {
+    const id = String(url).split("/").at(-1);
+    return Promise.resolve({
+      allowed: true,
+      reason: "Verified standard rate",
+      fee_amount_kobo: id === "ay" ? 1000000 : id === "prepaid" ? 0 : 520000,
+      access_source: "club_enrollment",
+      pricing_audience: "club",
+    });
+  }
+  return Promise.resolve([
+    { id: "member-1", first_name: "Ada", last_name: "Example", email: "ada@example.com" },
+  ]);
+});
 afterEach(() => {
   vi.restoreAllMocks();
   vi.clearAllMocks();
@@ -21,11 +36,13 @@ it("prefills and records the selected member's agreed fee, including a zero incl
   fireEvent.change(screen.getByLabelText("Find member by name or email"), { target: { value: "example.com" } });
   fireEvent.click(screen.getByRole("button", { name: "Search members" }));
   fireEvent.change(screen.getByLabelText("Member to record"), { target: { value: "ay" } });
+  await waitFor(() => expect(screen.getByRole("button", { name: "Record member walk-in" })).toBeEnabled());
   expect(screen.getByLabelText(/^Session fee owed for this swim/)).toHaveValue(10000);
   fireEvent.change(screen.getByLabelText(/^Attendance reconciliation note/), { target: { value: "Agreed fee for this swim" } });
   fireEvent.click(screen.getByRole("button", { name: "Record member walk-in" }));
-  await waitFor(() => expect(record).toHaveBeenCalledWith("ay", 1000000, "Agreed fee for this swim"));
+  await waitFor(() => expect(record).toHaveBeenCalledWith("ay", 1000000, "Agreed fee for this swim", undefined));
   fireEvent.change(screen.getByLabelText("Member to record"), { target: { value: "prepaid" } });
+  await screen.findByText(/Verified standard rate/);
   expect(screen.getByLabelText(/^Session fee owed for this swim/)).toHaveValue(0);
 });
 
@@ -77,9 +94,10 @@ it("finds a registered member outside the roster and records attendance, not a p
   fireEvent.change(screen.getByLabelText(/^Attendance reconciliation note/), {
     target: { value: "Verified actual Saturday attendance" },
   });
+  await waitFor(() => expect(screen.getByRole("button", { name: "Record member walk-in" })).toBeEnabled());
   fireEvent.click(screen.getByRole("button", { name: "Record member walk-in" }));
   await waitFor(() =>
-    expect(record).toHaveBeenCalledWith("member-1", 520000, "Verified actual Saturday attendance")
+    expect(record).toHaveBeenCalledWith("member-1", 520000, "Verified actual Saturday attendance", undefined)
   );
   expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("No payment will be collected"));
   fireEvent.change(screen.getByLabelText("Find member by name or email"), {
