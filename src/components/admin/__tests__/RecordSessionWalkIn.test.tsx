@@ -58,6 +58,7 @@ it("finds a registered member outside the roster and records attendance, not a p
   const record = vi.fn(async () => {});
   render(
     <RecordSessionWalkIn
+      sessionId="test-session"
       defaultFee={5200}
       defaultGuestFee={15000}
       disabled={false}
@@ -91,6 +92,7 @@ it("records an unregistered guest without fabricating payment or waiver acceptan
   const recordGuest = vi.fn(async () => {});
   render(
     <RecordSessionWalkIn
+      sessionId="test-session"
       defaultFee={10000}
       defaultGuestFee={15000}
       disabled={false}
@@ -122,6 +124,7 @@ it("requires an explanation when overriding the configured guest rate", async ()
   const recordGuest = vi.fn(async () => {});
   render(
     <RecordSessionWalkIn
+      sessionId="test-session"
       defaultFee={10000}
       defaultGuestFee={15000}
       disabled={false}
