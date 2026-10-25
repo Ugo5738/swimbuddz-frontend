@@ -746,7 +746,7 @@ export default function AdminAttendancePage() {
   // Mark walk-in: cohort member showed up without pre-booking. Creates an
   // admin-channel SessionBooking (fee defaulted by the backend to the
   // session's own pool_fee) and marks them PRESENT — all in one click.
-  const handleMarkWalkIn = async (memberId: string, feeAmountKobo?: number, note?: string) => {
+  const handleMarkWalkIn = async (memberId: string, feeAmountKobo?: number, note?: string, overrideReason?: string) => {
     if (!selectedSessionId) return;
     setSubmittingMark(true);
     setError(null);
@@ -759,6 +759,7 @@ export default function AdminAttendancePage() {
           member_id: memberId,
           ...(feeAmountKobo !== undefined ? { fee_amount_kobo: feeAmountKobo } : {}),
           ...(note ? { notes: note } : {}),
+          ...(overrideReason ? { fee_override_reason: overrideReason } : {}),
         },
         { auth: true }
       );
