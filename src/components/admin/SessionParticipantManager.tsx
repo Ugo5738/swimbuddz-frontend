@@ -43,7 +43,7 @@ export function SessionParticipantManager({
   async function recordNonStudent(memberId: string, feeKobo: number, note: string) {
     if (isAcademy && enrolledMemberIds.has(memberId)) {
       setMemberError("This person is enrolled in the cohort. Use Academy student so their lesson balance and fee are correct.");
-      throw new Error("Use Academy student for enrolled swimmers");
+      return;
     }
     setMemberError("");
     await onRecordMember(memberId, feeKobo, note);
