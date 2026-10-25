@@ -28,7 +28,12 @@ it("shows AY's agreed walk-in fee while preserving the public fee for another me
   expect(within(ay).getByRole("button", { name: /Mark walk-in/ })).toHaveTextContent("₦10,000");
   const normal = (await screen.findByText("Normal Member")).closest("tr")!;
   expect(within(normal).getByRole("button", { name: /Mark walk-in/ })).toHaveTextContent("₦15,000");
-  fireEvent.click(within(ay).getByRole("button", { name: /Mark walk-in/ }));
+  const walkInButton = within(ay).getByRole("button", { name: /Mark walk-in/ });
+  // The roster can render before the selected session finishes loading;
+  // clicking its disabled action would test nothing and race in CI.
+  await waitFor(() => expect(screen.getByLabelText("Session")).toHaveValue("vi"));
+  await waitFor(() => expect(walkInButton).toBeEnabled());
+  fireEvent.click(walkInButton);
   await waitFor(() => expect(mocks.post).toHaveBeenCalledWith(
     "/api/v1/sessions/vi/admin/walk-in", { member_id: "ay" }, { auth: true }
   ));
