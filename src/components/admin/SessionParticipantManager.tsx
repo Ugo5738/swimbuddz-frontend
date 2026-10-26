@@ -17,7 +17,7 @@ export function SessionParticipantManager({
   enrollments,
   memberNames,
   defaultMemberFee,
-  academyStandardFee,
+  academyStandardFee = null,
   defaultGuestFee,
   guestAdmissionEnabled = true,
   eligibleClubMembers,
@@ -32,7 +32,7 @@ export function SessionParticipantManager({
   enrollments: Enrollment[];
   memberNames: Record<string, string>;
   defaultMemberFee: number;
-  academyStandardFee: number | null;
+  academyStandardFee?: number | null;
   defaultGuestFee: number;
   guestAdmissionEnabled?: boolean;
   eligibleClubMembers?: WalkInMember[];
