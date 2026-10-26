@@ -47,6 +47,34 @@ describe("private bank transfer receipt", () => {
     expect(mocks.upload.mock.calls[0][1].get("access_token")).toBe("private-capability");
     expect(screen.queryByText(/Your access has been confirmed/)).not.toBeInTheDocument();
   });
+  it("submits receipt-only proof without forcing a bank transaction ID", async () => {
+    render(<TransferPage />);
+    await screen.findByText("6567710856");
+    fireEvent.change(screen.getByLabelText(/Transfer date/), {
+      target: { value: "2026-09-13" },
+    });
+    fireEvent.change(screen.getByLabelText("Receipt image or PDF"), {
+      target: { files: [new File(["proof"], "receipt.pdf", { type: "application/pdf" })] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
+    await screen.findByText(/Transfer submitted for Admin verification/);
+    expect(mocks.upload).toHaveBeenCalledOnce();
+    expect(mocks.post).toHaveBeenCalledWith("/api/v1/payments/manual-transfer/PAY-TEST/submit", {
+      access_token: "private-capability",
+      external_reference: null,
+      received_date: "2026-09-13",
+    });
+  });
+  it("rejects submission without a receipt or transaction reference", async () => {
+    render(<TransferPage />);
+    await screen.findByText("6567710856");
+    fireEvent.change(screen.getByLabelText(/Transfer date/), {
+      target: { value: "2026-09-13" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
+    expect(await screen.findByText(/Upload a receipt or enter the bank transaction reference/)).toBeInTheDocument();
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
   it("retains a successful upload if transfer submission fails, without uploading twice", async () => {
     mocks.post.mockImplementation(async (path: string) => {
       if (path.endsWith("/submit")) throw new Error("Try again");
