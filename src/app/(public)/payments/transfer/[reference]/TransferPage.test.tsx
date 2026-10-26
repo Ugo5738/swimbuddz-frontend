@@ -61,7 +61,7 @@ describe("private bank transfer receipt", () => {
     expect(mocks.upload).toHaveBeenCalledOnce();
     expect(mocks.post).toHaveBeenCalledWith("/api/v1/payments/manual-transfer/PAY-TEST/submit", {
       access_token: "private-capability",
-      external_reference: "",
+      external_reference: null,
       received_date: "2026-09-13",
     });
   });
