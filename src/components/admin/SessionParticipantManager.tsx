@@ -17,6 +17,7 @@ export function SessionParticipantManager({
   enrollments,
   memberNames,
   defaultMemberFee,
+  academyStandardFee,
   defaultGuestFee,
   guestAdmissionEnabled = true,
   eligibleClubMembers,
@@ -31,6 +32,7 @@ export function SessionParticipantManager({
   enrollments: Enrollment[];
   memberNames: Record<string, string>;
   defaultMemberFee: number;
+  academyStandardFee: number | null;
   defaultGuestFee: number;
   guestAdmissionEnabled?: boolean;
   eligibleClubMembers?: WalkInMember[];
@@ -99,6 +101,7 @@ export function SessionParticipantManager({
         <>
         <AcademySessionAllocations
           sessionId={sessionId}
+          standardFeeNaira={academyStandardFee}
           enrollments={enrollments}
           memberNames={memberNames}
           onRecorded={onRecordAcademy}
