@@ -147,7 +147,7 @@ export function OfflineSessionPaymentModal({
           onChange={(event) => setExternalReference(event.target.value)}
           required={referenceRequired}
           maxLength={128}
-          hint={referenceRequired ? undefined : "Optional for this payment method"}
+          hint={referenceRequired ? "Use the actual verified bank/POS reference" : "Optional for this payment method"}
         />
 
         <Textarea
