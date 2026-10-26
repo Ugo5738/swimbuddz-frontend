@@ -55,7 +55,7 @@ export function OfflineSessionPaymentModal({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploaded, setUploaded] = useState<string | null>(null);
-  const referenceRequired = method === "bank_transfer" || method === "pos";
+  const referenceRequired = (method === "bank_transfer" || method === "pos") && !receiptFile && !uploaded;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -147,7 +147,7 @@ export function OfflineSessionPaymentModal({
           onChange={(event) => setExternalReference(event.target.value)}
           required={referenceRequired}
           maxLength={128}
-          hint={referenceRequired ? undefined : "Optional for this payment method"}
+          hint={referenceRequired ? "Alternatively attach a receipt below" : "Optional when receipt is attached"}
         />
 
         <Textarea
