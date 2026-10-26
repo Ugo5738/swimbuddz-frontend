@@ -22,7 +22,7 @@ type Payment = {
   entitlement_applied_at: string | null;
   entitlement_error: string | null;
   payment_metadata?: {
-    submitted_transfer?: { external_reference: string; received_date: string; note?: string };
+    submitted_transfer?: { external_reference: string | null; received_date: string; note?: string };
   };
 };
 
