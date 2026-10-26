@@ -26,6 +26,23 @@ interface Payment {
   created_at: string;
 }
 
+function ReceiptHints({ reference, hasReceipt }: { reference: string; hasReceipt: boolean }) {
+  const { data } = useApi<{
+    status: string;
+    reference_suggestion?: string | null;
+    amount_suggestion?: string | null;
+  }>(hasReceipt ? `/api/v1/payments/admin/${encodeURIComponent(reference)}/receipt-hints` : null);
+  if (!data?.reference_suggestion && !data?.amount_suggestion) return null;
+  return (
+    <div className="mt-2 rounded border border-slate-200 p-3 text-sm">
+      <p className="font-medium">Receipt OCR suggestions (unverified)</p>
+      {data.reference_suggestion && <p>Possible reference: {data.reference_suggestion}</p>}
+      {data.amount_suggestion && <p>Possible amount: ₦{data.amount_suggestion}</p>}
+      <p>Verify every value against the actual bank credit before approving.</p>
+    </div>
+  );
+}
+
 export default function AdminPaymentsPage() {
   const {
     data,
@@ -145,6 +162,7 @@ export default function AdminPaymentsPage() {
               <div className="border-t border-slate-200 pt-4">
                 <h4 className="text-sm font-medium text-slate-700 mb-2">Proof of Payment</h4>
                 <PaymentProofLink mediaId={payment.proof_of_payment_media_id} />
+                <ReceiptHints reference={payment.reference} hasReceipt={Boolean(payment.proof_of_payment_media_id)} />
               </div>
 
               {/* Actions */}
