@@ -37,6 +37,7 @@ it("records a paid Academy extra without consuming an included class", async () 
     <AcademySessionAllocations
       enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
       sessionId="physical"
+      standardFeeNaira={15000}
       memberNames={{ member: "Student B" }}
       onRecorded={mocks.refreshed}
     />
@@ -62,6 +63,8 @@ it("records a paid Academy extra without consuming an included class", async () 
         enrollment_id: "enrollment",
         kind: "paid_extra",
         agreed_fee_kobo: 1_500_000,
+        expected_standard_fee_kobo: 1_500_000,
+        override_reason: null,
         reason: "Separate Saturday extra lesson",
       },
       { auth: true }
@@ -75,6 +78,7 @@ it("prepaid allocation records no additional charge", async () => {
     <AcademySessionAllocations
       enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
       sessionId="physical"
+      standardFeeNaira={15000}
       memberNames={{ member: "Student A" }}
       onRecorded={mocks.refreshed}
     />
@@ -102,7 +106,7 @@ it("prepaid allocation records no additional charge", async () => {
 it.each(["prepaid", "paid_extra"])("requires a clear reason for %s participation", async (kind) => {
   render(<AcademySessionAllocations
     enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
-    sessionId="physical" memberNames={{ member: "Bello" }} onRecorded={mocks.refreshed}
+    sessionId="physical" standardFeeNaira={15000} memberNames={{ member: "Bello" }} onRecorded={mocks.refreshed}
   />);
   fireEvent.change(screen.getByLabelText("Student"), { target: { value: "enrollment" } });
   await screen.findByText(/Remaining:/);
@@ -119,4 +123,34 @@ it.each(["prepaid", "paid_extra"])("requires a clear reason for %s participation
   expect(mocks.post).not.toHaveBeenCalled();
   fireEvent.change(reason, { target: { value: "Saturday lesson from purchased classes" } });
   expect(reason).toHaveAttribute("aria-invalid", "false");
+});
+
+it("prefills the standard Academy price and requires a reason for overrides", async () => {
+  render(<AcademySessionAllocations
+    enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
+    sessionId="physical" standardFeeNaira={15000} memberNames={{ member: "Ajibola" }}
+    onRecorded={mocks.refreshed}
+  />);
+  fireEvent.change(screen.getByLabelText("Student"), { target: { value: "enrollment" } });
+  await screen.findByText(/Remaining:/);
+  fireEvent.change(screen.getByLabelText("How this student is attending"), { target: { value: "paid_extra" } });
+  const price = screen.getByLabelText(/Agreed additional price in naira/);
+  expect(price).toHaveValue(15000);
+  fireEvent.change(price, { target: { value: "10000" } });
+  expect(screen.getByText(/5,000 reduction/)).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText(/Reason \/ agreement/), { target: { value: "Extra class agreed with student" } });
+  fireEvent.click(screen.getByRole("button", { name: "Record student participation" }));
+  expect(mocks.post).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText(/Reason for price override/), { target: { value: "Approved partial scholarship" } });
+  fireEvent.click(screen.getByRole("button", { name: "Record student participation" }));
+  await waitFor(() => expect(mocks.post).toHaveBeenCalledWith(
+    "/api/v1/sessions/physical/admin/academy-participation",
+    expect.objectContaining({
+      kind: "paid_extra",
+      agreed_fee_kobo: 1_000_000,
+      expected_standard_fee_kobo: 1_500_000,
+      override_reason: "Approved partial scholarship",
+    }),
+    { auth: true }
+  ));
 });

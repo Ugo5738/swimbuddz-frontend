@@ -1241,6 +1241,7 @@ export default function AdminAttendancePage() {
             enrollments={cohortRoster}
             memberNames={Object.fromEntries(roster.map((row) => [row.member_id, row.name]))}
             defaultMemberFee={isCohortSession ? (selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0) : (selectedSession.pool_fee ?? 0)}
+            academyStandardFee={selectedSession.pool_fee}
             defaultGuestFee={selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0}
             guestAdmissionEnabled={Boolean(selectedSession.allows_guests || (selectedSession.guest_booking_mode && selectedSession.guest_booking_mode !== "disabled"))}
             eligibleClubMembers={isClubSession ? clubRosterMembers.map((member) => ({
