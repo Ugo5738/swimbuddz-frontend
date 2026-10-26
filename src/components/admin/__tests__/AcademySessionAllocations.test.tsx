@@ -50,7 +50,7 @@ it("records a paid Academy extra without consuming an included class", async () 
   fireEvent.change(screen.getByLabelText(/Agreed additional price in naira/), {
     target: { value: "15000" },
   });
-  fireEvent.change(screen.getByLabelText("Reason / agreement"), {
+  fireEvent.change(screen.getByLabelText(/Reason \/ agreement/), {
     target: { value: "Separate Saturday extra lesson" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Record student participation" }));
@@ -82,7 +82,7 @@ it("prepaid allocation records no additional charge", async () => {
   await screen.findByRole("option", { name: "Student A" });
   fireEvent.change(screen.getByLabelText("Student"), { target: { value: "enrollment" } });
   await screen.findByText(/Remaining:/);
-  fireEvent.change(screen.getByLabelText("Reason / agreement"), {
+  fireEvent.change(screen.getByLabelText(/Reason \/ agreement/), {
     target: { value: "Twice weekly from existing tuition" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Record student participation" }));
@@ -97,4 +97,26 @@ it("prepaid allocation records no additional charge", async () => {
     },
     { auth: true }
   ));
+});
+
+it.each(["prepaid", "paid_extra"])("requires a clear reason for %s participation", async (kind) => {
+  render(<AcademySessionAllocations
+    enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
+    sessionId="physical" memberNames={{ member: "Bello" }} onRecorded={mocks.refreshed}
+  />);
+  fireEvent.change(screen.getByLabelText("Student"), { target: { value: "enrollment" } });
+  await screen.findByText(/Remaining:/);
+  fireEvent.change(screen.getByLabelText("How this student is attending"), { target: { value: kind } });
+  const reason = screen.getByLabelText(/Reason \/ agreement/);
+  expect(reason).toBeRequired();
+  fireEvent.click(screen.getByRole("button", { name: "Record student participation" }));
+  expect(reason).toHaveFocus();
+  expect(reason).toHaveAttribute("aria-invalid", "true");
+  expect(screen.getByRole("alert")).toHaveTextContent("at least 10 characters");
+  expect(mocks.post).not.toHaveBeenCalled();
+  fireEvent.change(reason, { target: { value: "   short  " } });
+  fireEvent.click(screen.getByRole("button", { name: "Record student participation" }));
+  expect(mocks.post).not.toHaveBeenCalled();
+  fireEvent.change(reason, { target: { value: "Saturday lesson from purchased classes" } });
+  expect(reason).toHaveAttribute("aria-invalid", "false");
 });

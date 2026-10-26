@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api";
 
 type Enrollment = { id: string; member_id: string; status: string };
@@ -67,6 +67,9 @@ export function AcademySessionAllocations({
   const [kind, setKind] = useState<"prepaid" | "paid_extra">("prepaid");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
+  const [reasonTouched, setReasonTouched] = useState(false);
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
+  const reasonInvalid = reasonTouched && reason.trim().length < 10;
   const [purchased, setPurchased] = useState("");
   const [consumed, setConsumed] = useState("");
   const [baselineReason, setBaselineReason] = useState("");
@@ -154,10 +157,16 @@ export function AcademySessionAllocations({
 
   async function allocate() {
     if (!selected || !summary || (kind === "prepaid" && !summary.configured)) return;
+    setReasonTouched(true);
+    if (reason.trim().length < 10) {
+      setError("");
+      reasonRef.current?.focus();
+      return;
+    }
     const agreedNaira = kind === "paid_extra" ? Number(amount) : 0;
     if ((kind === "paid_extra" && (amount.trim() === "" || agreedNaira <= 0)) ||
-        !Number.isFinite(agreedNaira) || reason.trim().length < 10) {
-      setError("Enter the agreed positive extra-class price and a clear reason.");
+        !Number.isFinite(agreedNaira)) {
+      setError("Enter the agreed positive extra-class price.");
       return;
     }
     setBusy(true);
@@ -298,10 +307,21 @@ export function AcademySessionAllocations({
             </label>
           )}
           <label className="block text-sm">
-            Reason / agreement
-            <textarea value={reason} onChange={(e) => setReason(e.target.value)}
-              className="mt-1 w-full rounded border p-2" />
+            Reason / agreement (required)
+            <textarea ref={reasonRef} value={reason} required minLength={10}
+              aria-invalid={reasonInvalid}
+              aria-describedby="academy-participation-reason-help"
+              onBlur={() => setReasonTouched(true)}
+              onChange={(e) => setReason(e.target.value)}
+              className={`mt-1 w-full rounded border p-2 ${reasonInvalid ? "border-rose-500" : ""}`} />
           </label>
+          <p id="academy-participation-reason-help"
+            role={reasonInvalid ? "alert" : undefined}
+            className={`text-xs ${reasonInvalid ? "text-rose-700" : "text-slate-600"}`}>
+            {reasonInvalid
+              ? "Enter a reason or agreement of at least 10 characters before recording participation."
+              : "Required: at least 10 characters explaining the class agreement."}
+          </p>
           <button type="button" disabled={busy || (kind === "prepaid" && (!summary.configured || summary.balance_verified === false))}
             onClick={() => void allocate()}
             className="rounded bg-cyan-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
