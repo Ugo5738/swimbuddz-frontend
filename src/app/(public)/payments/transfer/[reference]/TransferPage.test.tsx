@@ -132,7 +132,7 @@ describe("private bank transfer receipt", () => {
     await screen.findByText("6567710856");
     fireEvent.change(screen.getByLabelText(/Transfer date/), { target: { value: "2026-09-13" } });
     fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
-    expect(await screen.findByText(/Upload a receipt or enter/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Bank transaction reference/)).toBeRequired();
     expect(mocks.post.mock.calls.filter((call) => call[0].endsWith("/submit"))).toHaveLength(0);
   });
   it("does not expose payment data without a private link", async () => {
