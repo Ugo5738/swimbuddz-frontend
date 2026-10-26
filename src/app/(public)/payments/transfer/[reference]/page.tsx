@@ -55,6 +55,10 @@ export default function TransferPage() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (busy) return;
+    if (!bankReference.trim() && !file && !payment?.receipt_attached) {
+      setError("Upload a receipt or enter your bank transaction reference.");
+      return;
+    }
     setProgress(0);
     setBusy(true);
     setError("");
@@ -128,7 +132,7 @@ export default function TransferPage() {
                 <p>{BANK_TRANSFER_ACCOUNT.accountName}</p>
               </div>
               <p className="text-sm">
-                Already transferred? Submit the existing transaction reference; do not transfer
+                Already transferred? Upload your receipt or enter a transaction reference; do not transfer
                 again. If the amount differs or covers multiple purchases, contact Admin for
                 allocation. Reservations keep their stated expiry; contact Admin before paying an
                 expired reservation.
@@ -143,13 +147,14 @@ export default function TransferPage() {
               )}
               <form onSubmit={submit} className="space-y-4">
                 <Input
-                  label="Bank transaction reference"
+                  label="Bank transaction reference (optional with receipt)"
                   name="bank_reference"
                   value={bankReference}
                   onChange={(e) => setBankReference(e.target.value)}
                   minLength={3}
                   maxLength={128}
-                  required
+                  required={!file && !payment.receipt_attached}
+                  hint="Optional if you upload a receipt"
                 />
                 <Input
                   label="Transfer date"
@@ -165,7 +170,7 @@ export default function TransferPage() {
                   <FileUpload
                     label="Receipt image or PDF"
                     accept="image/*,.pdf"
-                    helpText="Receipt image or PDF (optional, up to 10 MB)"
+                    helpText="Image or PDF, up to 10 MB. Required if no bank reference is provided"
                     filename={file?.name}
                     disabled={busy}
                     uploading={busy && Boolean(file)}
