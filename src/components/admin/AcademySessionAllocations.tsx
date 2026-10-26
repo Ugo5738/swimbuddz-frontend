@@ -27,6 +27,7 @@ type Preview = {
   suggested_opening_as_of: string;
   purchased_source: string | null;
   recorded_regular_attendances: number;
+  recorded_unexcused_absences?: number;
   applied_prepaid_allocations: number;
   ordinary_sessions_reviewed: number;
   unverified_sessions: Array<{ session_id: string; status: string }>;
@@ -120,7 +121,7 @@ export function AcademySessionAllocations({
             const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
             setBaselineCutoff(local.toISOString().slice(0, 16));
             setBaselineReason(
-              `Reviewed cohort attendance: ${result.recorded_regular_attendances} regular present/late; ${result.applied_prepaid_allocations} applied prepaid allocations. Verified against original purchase agreement and historical attendance before cutoff.`
+              `Reviewed cohort attendance: ${result.recorded_regular_attendances} regular present/late; ${result.recorded_unexcused_absences ?? 0} unexcused absences; ${result.applied_prepaid_allocations} applied prepaid allocations. Verified against original purchase agreement and historical attendance before cutoff.`
             );
           }).catch(() => {
             if (active) setPreviewError("Historical attendance could not be loaded. Verify all figures manually before saving.");
@@ -263,7 +264,7 @@ export function AcademySessionAllocations({
           <p className="text-sm font-semibold">Review suggested historical class balance</p>
           {preview && (
             <p className="text-xs text-slate-700" role="status">
-              Found {preview.recorded_regular_attendances} confirmed regular attendances and {preview.applied_prepaid_allocations} applied prepaid allocations.
+              Found {preview.recorded_regular_attendances} confirmed regular attendances, {preview.recorded_unexcused_absences ?? 0} unexcused absences and {preview.applied_prepaid_allocations} applied prepaid allocations.
               {preview.unverified_sessions.length > 0 && ` ${preview.unverified_sessions.length} session(s) need attendance review.`}
               {preview.pending_prepaid_session_ids.length > 0 && ` ${preview.pending_prepaid_session_ids.length} pending prepaid allocations need review.`}
               The suggested purchased quantity comes from programme duration, not a verified purchase agreement.
@@ -271,7 +272,7 @@ export function AcademySessionAllocations({
           )}
           {previewError && <p role="alert" className="text-xs text-amber-700">{previewError}</p>}
           <p className="text-xs text-slate-600">
-            Confirm suggested values against original class agreement and attendance history before saving. Count previously consumed classes from real attendance records, excluding separately
+            Confirm suggested values against original class agreement and attendance history before saving. Count present, late and unexcused absent classes as used. Excused or cancelled classes use no credit. Review the attendance records, excluding separately
             paid extras and authorised support. Include older cohorts only under a reviewed
             transfer agreement. Do not guess or reset an existing plan.
           </p>
@@ -311,9 +312,12 @@ export function AcademySessionAllocations({
             Purchased: <strong>{summary.purchased_classes}</strong> ·
             Previously used: <strong>{summary.opening_consumed}</strong> ·
             Individually allocated: <strong>{summary.applied_prepaid}</strong> ·
-            Regular attended classes: <strong>{summary.routine_attendance_consumed ?? 0}</strong> ·
+            Regular classes used: <strong>{summary.routine_attendance_consumed ?? 0}</strong> ·
             Reserved: <strong>{summary.reserved_prepaid}</strong> ·
             Remaining: <strong>{summary.remaining}</strong>
+          </p>}
+          {summary.configured && <p className="text-xs text-slate-600">
+            Present, late and unexcused absent classes use one credit. Excused or cancelled classes use none.
           </p>}
           {summary.balance_verified === false && (
             <p role="alert" className="text-sm text-amber-800">
