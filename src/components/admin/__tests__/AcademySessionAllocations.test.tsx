@@ -63,6 +63,8 @@ it("records a paid Academy extra without consuming an included class", async () 
         enrollment_id: "enrollment",
         kind: "paid_extra",
         agreed_fee_kobo: 1_500_000,
+        expected_standard_fee_kobo: 1_500_000,
+        override_reason: null,
         reason: "Separate Saturday extra lesson",
       },
       { auth: true }
