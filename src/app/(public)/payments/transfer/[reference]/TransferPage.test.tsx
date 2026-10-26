@@ -50,7 +50,7 @@ describe("private bank transfer receipt", () => {
   it("submits receipt-only proof without forcing a bank transaction ID", async () => {
     render(<TransferPage />);
     await screen.findByText("6567710856");
-    fireEvent.change(screen.getByLabelText("Transfer date"), {
+    fireEvent.change(screen.getByLabelText(/Transfer date/), {
       target: { value: "2026-09-13" },
     });
     fireEvent.change(screen.getByLabelText("Receipt image or PDF"), {
@@ -68,6 +68,9 @@ describe("private bank transfer receipt", () => {
   it("rejects submission without a receipt or transaction reference", async () => {
     render(<TransferPage />);
     await screen.findByText("6567710856");
+    fireEvent.change(screen.getByLabelText(/Transfer date/), {
+      target: { value: "2026-09-13" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
     expect(await screen.findByText(/Upload a receipt or enter the bank transaction reference/)).toBeInTheDocument();
     expect(mocks.upload).not.toHaveBeenCalled();
