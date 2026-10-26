@@ -38,6 +38,7 @@ export default function AdminPaymentsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState<{ [key: string]: string }>({});
   const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
+  const [verifiedBankReference, setVerifiedBankReference] = useState<Record<string, string>>({});
 
   const handleApprove = async (reference: string) => {
     if (
@@ -46,12 +47,16 @@ export default function AdminPaymentsPage() {
       )
     )
       return;
+    if (!verifiedBankReference[reference]?.trim()) {
+      setError("Enter the verified bank transaction reference before approving.");
+      return;
+    }
     setProcessingId(reference);
     setError("");
     try {
       await apiPost(
         `/api/v1/payments/admin/${reference}/approve`,
-        { note: reviewNote[reference]?.trim() || "Bank credit verified via admin panel" },
+        { note: reviewNote[reference]?.trim() || "Bank credit verified via admin panel", verified_bank_reference: verifiedBankReference[reference].trim() },
         { auth: true }
       );
       fetchPendingPayments();
@@ -144,6 +149,14 @@ export default function AdminPaymentsPage() {
 
               {/* Actions */}
               <div className="border-t border-slate-200 pt-4 space-y-3">
+                <Input
+                  label="Verified bank transaction reference"
+                  value={verifiedBankReference[payment.reference] ?? ""}
+                  onChange={(event) => setVerifiedBankReference({ ...verifiedBankReference, [payment.reference]: event.target.value })}
+                  required
+                  minLength={3}
+                  hint="Check the actual bank credit first. Do not use the SwimBuddz checkout reference or invent one."
+                />
                 <Input
                   label="Verification / allocation note"
                   value={reviewNote[payment.reference] ?? ""}
