@@ -111,6 +111,29 @@ describe("private bank transfer receipt", () => {
     expect(mocks.upload).toHaveBeenCalledTimes(2);
     expect(mocks.upload.mock.calls[1][1].get("file")).toBe(receipt);
   });
+  it("submits receipt-only transfers without forcing a bank reference", async () => {
+    render(<TransferPage />);
+    await screen.findByText("6567710856");
+    fireEvent.change(screen.getByLabelText(/Transfer date/), { target: { value: "2026-09-13" } });
+    fireEvent.change(screen.getByLabelText("Receipt image or PDF"), {
+      target: { files: [new File(["proof"], "receipt.pdf", { type: "application/pdf" })] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
+    await screen.findByText(/Transfer submitted for Admin verification/);
+    expect(mocks.upload).toHaveBeenCalledOnce();
+    expect(mocks.post).toHaveBeenCalledWith("/api/v1/payments/manual-transfer/PAY-TEST/submit", {
+      access_token: "private-capability",
+      external_reference: "",
+      received_date: "2026-09-13",
+    });
+  });
+  it("blocks a transfer without either evidence option", async () => {
+    render(<TransferPage />);
+    await screen.findByText("6567710856");
+    fireEvent.click(screen.getByRole("button", { name: "Submit transfer for review" }));
+    expect(await screen.findByText(/Upload a receipt or enter/)).toBeInTheDocument();
+    expect(mocks.post.mock.calls.filter((call) => call[0].endsWith("/submit"))).toHaveLength(0);
+  });
   it("does not expose payment data without a private link", async () => {
     window.location.hash = "";
     render(<TransferPage />);
