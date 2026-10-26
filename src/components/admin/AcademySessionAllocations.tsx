@@ -44,12 +44,14 @@ type Recorded = {
 export function AcademySessionAllocations({
   enrollments,
   sessionId,
+  standardFeeNaira,
   memberNames,
   onRecorded,
   embedded = false,
 }: {
   enrollments: Enrollment[];
   sessionId: string;
+  standardFeeNaira: number | null;
   memberNames: Record<string, string>;
   onRecorded: () => void;
   embedded?: boolean;
@@ -65,7 +67,13 @@ export function AcademySessionAllocations({
   const [preview, setPreview] = useState<Preview | null>(null);
   const [previewError, setPreviewError] = useState("");
   const [kind, setKind] = useState<"prepaid" | "paid_extra">("prepaid");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(() => standardFeeNaira != null && standardFeeNaira > 0 ? String(standardFeeNaira) : "");
+  const [overrideReason, setOverrideReason] = useState("");
+  const standardKobo = standardFeeNaira == null ? null : Math.round(standardFeeNaira * 100);
+  const agreedKobo = amount.trim() === "" ? null : Math.round(Number(amount) * 100);
+  const priceChanged = kind === "paid_extra" && standardKobo != null && agreedKobo != null && agreedKobo !== standardKobo;
+  const priceDelta = priceChanged && agreedKobo != null && standardKobo != null ? agreedKobo - standardKobo : 0;
+  const formatNaira = (value: number) => "₦" + value.toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   const [reason, setReason] = useState("");
   const [reasonTouched, setReasonTouched] = useState(false);
   const reasonRef = useRef<HTMLTextAreaElement>(null);
@@ -158,6 +166,14 @@ export function AcademySessionAllocations({
   async function allocate() {
     if (!selected || !summary || (kind === "prepaid" && !summary.configured)) return;
     setReasonTouched(true);
+    if (kind === "paid_extra" && (standardKobo == null || standardKobo <= 0)) {
+      setError("The session has no valid standard booking price. Set one before recording a paid extra.");
+      return;
+    }
+    if (priceChanged && overrideReason.trim().length < 10) {
+      setError("Explain the price override in at least 10 characters.");
+      return;
+    }
     if (reason.trim().length < 10) {
       setError("");
       reasonRef.current?.focus();
@@ -180,6 +196,10 @@ export function AcademySessionAllocations({
           enrollment_id: selected.id,
           kind,
           agreed_fee_kobo: Math.round(agreedNaira * 100),
+          ...(kind === "paid_extra" ? {
+            expected_standard_fee_kobo: standardKobo,
+            override_reason: priceChanged ? overrideReason.trim() : null,
+          } : {}),
           reason: reason.trim(),
         },
         { auth: true }
@@ -226,7 +246,11 @@ export function AcademySessionAllocations({
         <div className="space-y-2">
           <label className="block text-sm font-medium">
             How this student is attending
-            <select value={kind} onChange={(e) => setKind(e.target.value as "prepaid" | "paid_extra")}
+            <select value={kind} onChange={(e) => {
+              setKind(e.target.value as "prepaid" | "paid_extra");
+              setAmount(standardFeeNaira != null && standardFeeNaira > 0 ? String(standardFeeNaira) : "");
+              setOverrideReason("");
+            }}
               className="mt-1 w-full rounded border p-2">
               <option value="prepaid">Use one purchased Academy class — ₦0 extra</option>
               <option value="paid_extra">Separately paid extra class — no prepaid deduction</option>
@@ -299,12 +323,31 @@ export function AcademySessionAllocations({
           )}
           {!summary.configured && <p className="text-sm text-amber-700">Paid extras can be booked now. To use an included programme class, review and save the opening balance above.</p>}
           {kind === "paid_extra" && (
-            <label className="block text-sm">
-              Agreed additional price in naira (₦)
-              <input type="number" min="0.01" step="0.01" value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="mt-1 w-full rounded border p-2" />
-            </label>
+            <div className="space-y-2">
+              <p className="text-sm" data-testid="academy-standard-price">
+                Standard session price: <strong>{standardKobo != null && standardKobo > 0 ? formatNaira(standardKobo / 100) : "Not configured"}</strong>
+              </p>
+              <label className="block text-sm">
+                Agreed additional price in naira (₦)
+                <input type="number" min="0.01" step="0.01" value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="mt-1 w-full rounded border p-2" />
+              </label>
+              {priceChanged && (
+                <div className="space-y-2 rounded border border-amber-400 p-3" role="status">
+                  <p className="text-sm">
+                    Standard price: {formatNaira(standardKobo! / 100)} → Agreed price: {formatNaira(agreedKobo! / 100)}
+                    {" "}({formatNaira(Math.abs(priceDelta) / 100)} {priceDelta < 0 ? "reduction" : "increase"})
+                  </p>
+                  <label className="block text-sm">
+                    Reason for price override (required)
+                    <textarea value={overrideReason} minLength={10} required
+                      onChange={(e) => setOverrideReason(e.target.value)}
+                      className="mt-1 w-full rounded border p-2" />
+                  </label>
+                </div>
+              )}
+            </div>
           )}
           <label className="block text-sm">
             Reason / agreement (required)
