@@ -80,7 +80,7 @@ export default function TransferPage() {
           `/api/v1/payments/manual-transfer/${encodeURIComponent(reference)}/submit`,
           {
             access_token: token,
-            external_reference: bankReference.trim(),
+            external_reference: bankReference.trim() || null,
             received_date: date,
           }
         )
