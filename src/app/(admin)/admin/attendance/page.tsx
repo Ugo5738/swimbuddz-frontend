@@ -1249,6 +1249,14 @@ export default function AdminAttendancePage() {
               email: member.email, fee_amount_kobo: member.fee_amount_kobo,
             })) : undefined}
             disabled={submittingMark}
+            routineSessions={Object.fromEntries(sessions.map((session) => [session.id, {
+              title: session.title || "Academy class", starts_at: session.starts_at,
+            }]))}
+            onReviewAcademySession={(sessionId) => {
+              setSessionQuery("");
+              setSessionTypeFilter("all");
+              setSelectedSessionId(sessionId);
+            }}
             onRecordAcademy={() => {
               setRosterRefreshVersion((version) => version + 1);
               void Promise.all([
