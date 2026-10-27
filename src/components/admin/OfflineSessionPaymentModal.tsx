@@ -34,6 +34,7 @@ export function OfflineSessionPaymentModal({
   paymentLabel = "Session fee",
   noteRequired = false,
   currency = "NGN",
+  onSubmitEvidence,
 }: {
   memberName: string;
   amountNaira: number;
@@ -44,6 +45,7 @@ export function OfflineSessionPaymentModal({
   paymentLabel?: string;
   noteRequired?: boolean;
   currency?: string;
+  onSubmitEvidence?: (input: { external_reference: string | null; proof_media_id?: string; note: string | null }) => Promise<void>;
 }) {
   const [method, setMethod] =
     useState<OfflineSessionPaymentInput["payment_method"]>("bank_transfer");
@@ -55,11 +57,16 @@ export function OfflineSessionPaymentModal({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploaded, setUploaded] = useState<string | null>(null);
+  const [mode, setMode] = useState<"review" | "settle">("settle");
   const referenceRequired = method === "bank_transfer" || method === "pos";
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (submitting || uploading) return;
+    if (mode === "review" && !externalReference.trim() && !receiptFile && !uploaded) {
+      setUploadError("Attach a receipt or provide a transaction reference.");
+      return;
+    }
     setProgress(0);
     setUploading(true);
     setUploadError("");
@@ -77,6 +84,14 @@ export function OfflineSessionPaymentModal({
           )
         ).id;
         setUploaded(mediaId);
+      }
+      if (mode === "review" && onSubmitEvidence) {
+        await onSubmitEvidence({
+          external_reference: externalReference.trim() || null,
+          note: note.trim() || null,
+          ...(mediaId ? { proof_media_id: mediaId } : {}),
+        });
+        return;
       }
       await onSubmit({
         payment_method: method,
@@ -116,6 +131,13 @@ export function OfflineSessionPaymentModal({
           </span>
         </div>
 
+        {onSubmitEvidence && (
+          <Select label="What would you like to do?" value={mode} onChange={(event) => setMode(event.target.value as "review" | "settle")}>
+            <option value="settle">Record verified payment</option>
+            <option value="review">Submit receipt for review (not paid)</option>
+          </Select>
+        )}
+        {mode === "review" && <p className="text-sm text-amber-700">Receipt submission does not mark the booking as paid. An admin must verify the bank credit later.</p>}
         <Select
           label="Payment method"
           name="payment_method"
@@ -145,9 +167,9 @@ export function OfflineSessionPaymentModal({
           name="external_reference"
           value={externalReference}
           onChange={(event) => setExternalReference(event.target.value)}
-          required={referenceRequired}
+          required={mode === "settle" && referenceRequired}
           maxLength={128}
-          hint={referenceRequired ? "Use the actual verified bank/POS reference" : "Optional for this payment method"}
+          hint={mode === "review" ? "Optional when a receipt is attached" : referenceRequired ? "Use the actual verified bank/POS reference" : "Optional for this payment method"}
         />
 
         <Textarea
@@ -155,7 +177,7 @@ export function OfflineSessionPaymentModal({
           name="note"
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          required={noteRequired || method === "other"}
+          required={mode === "settle" && (noteRequired || method === "other")}
           minLength={noteRequired ? 10 : undefined}
           maxLength={500}
           rows={3}
@@ -182,7 +204,7 @@ export function OfflineSessionPaymentModal({
             Cancel
           </Button>
           <Button type="submit" disabled={submitting || uploading}>
-            {submitting || uploading ? "Recording..." : "Record payment"}
+            {submitting || uploading ? "Saving..." : mode === "review" ? "Submit for review" : "Record payment"}
           </Button>
         </div>
       </form>
