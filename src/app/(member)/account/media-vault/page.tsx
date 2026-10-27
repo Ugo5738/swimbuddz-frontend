@@ -48,7 +48,7 @@ export default function MemberMediaVaultPage() {
 
       <Link href="/community/volunteers" className="inline-block text-sm font-semibold text-cyan-700 underline">Volunteer media tools are managed in Volunteer Hub</Link>
       <FilterTabs options={[{ value: "videos", label: "My Media" }, { value: "upload", label: "Upload My Swim" }, { value: "collections", label: "My Collections" }, { value: "session", label: "By Swim Session" }]} value={view} onChange={setView} />
-      {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "collections" ? <MyCollections /> : view === "session" ? (session ? <SessionMediaWorkspace sessionId={session} action={sessionAction}/> : <SessionMediaHistory onSelect={(id)=>{setSession(id);setSessionAction("view");}} />) : view === "all" ? <VolunteerMediaWorkspace library/> : <VolunteerMediaWorkspace />
+      {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "collections" ? <MyCollections /> : view === "session" ? (session ? <SessionMediaWorkspace sessionId={session} action={sessionAction}/> : <SessionMediaHistory onSelect={(id)=>{setSession(id);setSessionAction("view");}} />) : view === "all" ? <VolunteerMediaWorkspace library/> : <VolunteerMediaWorkspace />}
     </div>
   );
 }
