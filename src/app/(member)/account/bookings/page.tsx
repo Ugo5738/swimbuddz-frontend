@@ -61,7 +61,7 @@ function SessionsHub() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
   const [myCohortsOnly, setMyCohortsOnly] = useState(false);
-  const [relevantOnly, setRelevantOnly] = useState(true);
+  const [relevantOnly, setRelevantOnly] = useState(false);
 
   // Multi-select for bundle booking
   const [selectMode, setSelectMode] = useState(false);
