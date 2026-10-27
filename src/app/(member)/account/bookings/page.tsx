@@ -231,7 +231,8 @@ function SessionsHub() {
     const now = new Date();
 
     if (activeTab === "booked") {
-      result = myUpcomingSessions;
+      // Upcoming is the discoverable session calendar, not only confirmed bookings.
+      result = sessions.filter((session) => new Date(session.starts_at) > now);
     } else if (activeTab === "past") {
       result = [];
     } else {
@@ -400,9 +401,9 @@ function SessionsHub() {
               }`}
             >
               {label}
-              {key === "booked" && myUpcomingSessions.length > 0 && (
+              {key === "booked" && filteredSessions.length > 0 && (
                 <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-100 px-1.5 text-xs font-semibold text-cyan-700">
-                  {myUpcomingSessions.length}
+                  {filteredSessions.length}
                 </span>
               )}
             </button>
