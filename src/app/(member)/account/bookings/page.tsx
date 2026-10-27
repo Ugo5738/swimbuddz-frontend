@@ -65,7 +65,7 @@ function SessionsHub() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
   const [myCohortsOnly, setMyCohortsOnly] = useState(false);
-  const [relevantOnly, setRelevantOnly] = useState(true);
+  const [relevantOnly, setRelevantOnly] = useState(false);
 
   // Multi-select for bundle booking
   const [selectMode, setSelectMode] = useState(false);
@@ -392,6 +392,22 @@ function SessionsHub() {
             {myPodName ? `, ${myPodName} Pod` : ""}
             {enrolledCohortIds.size > 0 ? ", and Academy cohort" : ""}. Remove the Recommended
             filter to explore every published session.
+          </p>
+        </div>
+      )}
+
+      {supportsRelevance && (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            aria-pressed={relevantOnly}
+            onClick={() => setRelevantOnly((current) => !current)}
+            className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${relevantOnly ? "border-cyan-600 bg-cyan-600 text-white" : "border-cyan-700/50 text-cyan-700 hover:bg-cyan-50"}`}
+          >
+            Recommended for you {relevantOnly ? "✓" : ""}
+          </button>
+          <p className="text-xs text-slate-500">
+            {relevantOnly ? "Showing sessions matched to your Club, Academy and eligible access." : "Showing all published sessions. Select recommendations to narrow the list."}
           </p>
         </div>
       )}
