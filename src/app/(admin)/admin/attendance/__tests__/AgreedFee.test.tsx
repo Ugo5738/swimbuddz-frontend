@@ -28,11 +28,15 @@ it("shows AY's agreed walk-in fee while preserving the public fee for another me
   expect(within(ay).getByRole("button", { name: /Mark walk-in/ })).toHaveTextContent("₦10,000");
   const normal = (await screen.findByText("Normal Member")).closest("tr")!;
   expect(within(normal).getByRole("button", { name: /Mark walk-in/ })).toHaveTextContent("₦15,000");
-  const walkInButton = within(ay).getByRole("button", { name: /Mark walk-in/ });
-  // The roster can render before the selected session finishes loading;
-  // clicking its disabled action would test nothing and race in CI.
+  // The Club roster may render, unmount and render again while its session
+  // and attendance data load. Wait for the complete participant interface,
+  // then resolve the live button rather than clicking a detached DOM node.
+  await screen.findByRole("heading", { name: "Record a participant" });
   await waitFor(() => expect(screen.getByLabelText("Session")).toHaveValue("vi"));
-  await waitFor(() => expect(walkInButton).toBeEnabled());
+  const liveAy = screen.getByText("Ayodeji Esuruoso").closest("tr")!;
+  const walkInButton = within(liveAy).getByRole("button", { name: /Mark walk-in/ });
+  expect(walkInButton).toBeInTheDocument();
+  expect(walkInButton).toBeEnabled();
   fireEvent.click(walkInButton);
   await waitFor(() => expect(mocks.post).toHaveBeenCalledWith(
     "/api/v1/sessions/vi/admin/walk-in", { member_id: "ay" }, { auth: true }
