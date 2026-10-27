@@ -34,6 +34,8 @@ type Preview = {
   pending_prepaid_session_ids: string[];
   warning: string;
 };
+export type AcademyRoutineSession = { title: string; starts_at: string };
+
 type Recorded = {
   booking_id: string;
   kind: string;
@@ -48,6 +50,8 @@ export function AcademySessionAllocations({
   standardFeeNaira,
   memberNames,
   onRecorded,
+  routineSessions = {},
+  onReviewSession,
   embedded = false,
 }: {
   enrollments: Enrollment[];
@@ -55,6 +59,8 @@ export function AcademySessionAllocations({
   standardFeeNaira: number | null;
   memberNames: Record<string, string>;
   onRecorded: () => void;
+  routineSessions?: Record<string, AcademyRoutineSession>;
+  onReviewSession?: (sessionId: string) => void;
   embedded?: boolean;
 }) {
   // Reuse the same enrollment data as the visible Academy roster.
@@ -86,10 +92,20 @@ export function AcademySessionAllocations({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [balanceRefresh, setBalanceRefresh] = useState(0);
+  const [balanceLoading, setBalanceLoading] = useState(false);
   const selected = useMemo(
     () => eligibleEnrollments.find((item) => item.id === enrollmentId),
     [eligibleEnrollments, enrollmentId]
   );
+
+  const unresolvedSessions = summary?.unverified_routine_session_ids ?? [];
+  const otherUnresolvedSessions = unresolvedSessions.filter((id) => id !== sessionId);
+  // The booking API resolves the selected class as part of saving participation.
+  // Other missing attendance must still be reconciled before using more credit.
+  const attendanceBlocked = summary?.balance_verified === false &&
+    (unresolvedSessions.length === 0 || otherUnresolvedSessions.length > 0);
+  const existingAllocation = summary?.allocations?.find((item) => item.session_id === sessionId);
 
   useEffect(() => {
     if (!enrollmentId) {
@@ -97,7 +113,7 @@ export function AcademySessionAllocations({
       return;
     }
     let active = true;
-    setSummary(null);
+    setBalanceLoading(true);
     setPreview(null);
     setPreviewError("");
     setError("");
@@ -128,9 +144,10 @@ export function AcademySessionAllocations({
           });
         }
       })
-      .catch(() => { if (active) setError("Unable to load student's class balance."); });
+      .catch(() => { if (active) { setSummary(null); setError("Unable to load student's class balance."); } })
+      .finally(() => { if (active) setBalanceLoading(false); });
     return () => { active = false; };
-  }, [enrollmentId, message, sessionId]);
+  }, [enrollmentId, message, sessionId, balanceRefresh]);
 
   async function establishBaseline() {
     if (!enrollmentId || !summary || summary.configured) return;
@@ -206,7 +223,9 @@ export function AcademySessionAllocations({
         { auth: true }
       );
       setMessage(
-        `Recorded ${result.kind} participation; ${result.payment_status}. Booking ${result.booking_id}.`
+        result.kind === "prepaid"
+          ? "Attendance recorded. One purchased class used; no extra fee."
+          : "Attendance recorded. The agreed extra-class fee is recorded separately."
       );
       onRecorded();
     } catch (e) {
@@ -232,7 +251,7 @@ export function AcademySessionAllocations({
         Student
         <select
           value={enrollmentId}
-          onChange={(e) => { setEnrollmentId(e.target.value); setMessage(""); }}
+          onChange={(e) => { setEnrollmentId(e.target.value); setSummary(null); setMessage(""); setReason(""); setReasonTouched(false); }}
           className="mt-1 w-full rounded border p-2"
         >
           <option value="">Select enrolled student</option>
@@ -243,6 +262,13 @@ export function AcademySessionAllocations({
           ))}
         </select>
       </label>
+      {selected && (
+        <button type="button" disabled={balanceLoading || busy}
+          onClick={() => setBalanceRefresh((value) => value + 1)}
+          className="text-sm font-semibold text-cyan-700 underline disabled:opacity-50">
+          {balanceLoading ? "Refreshing class balance…" : "Refresh class balance"}
+        </button>
+      )}
       {selected && summary && (
         <div className="space-y-2">
           <label className="block text-sm font-medium">
@@ -257,6 +283,10 @@ export function AcademySessionAllocations({
               <option value="paid_extra">Separately paid extra class — no prepaid deduction</option>
             </select>
           </label>
+          {kind === "prepaid" && <p className="text-xs text-slate-600">
+            This uses one purchased class and adds no extra fee. Enter the agreement below;
+            saving participation also records attendance.
+          </p>}
         </div>
       )}
       {selected && summary && !summary.configured && kind === "prepaid" && (
@@ -319,10 +349,27 @@ export function AcademySessionAllocations({
           {summary.configured && <p className="text-xs text-slate-600">
             Present, late and unexcused absent classes use one credit. Excused or cancelled classes use none.
           </p>}
-          {summary.balance_verified === false && (
-            <p role="alert" className="text-sm text-amber-800">
-              Attendance has not been verified for {summary.unverified_routine_session_ids?.length ?? 0} routine class(es).
-              Resolve these attendance records before consuming another prepaid class.
+          {kind === "prepaid" && attendanceBlocked && (
+            <div role="alert" className="space-y-2 rounded border border-amber-300 p-3 text-sm text-amber-900">
+              <p>Recording is blocked until the other unverified class attendance is reviewed.
+                Adding a reason does not resolve those attendance records.</p>
+              {otherUnresolvedSessions.map((id) => {
+                const session = routineSessions[id];
+                const date = session ? new Date(session.starts_at).toLocaleDateString("en-GB", {
+                  day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Lagos",
+                }) : "Unverified class";
+                return <p key={id}>
+                  {session ? `${date} · ${session.title}` : date}
+                  {session && onReviewSession && <button type="button" className="ml-2 font-semibold underline"
+                    onClick={() => onReviewSession(id)}>Review attendance for {date}</button>}
+                </p>;
+              })}
+              <p>After correcting attendance, return here and select Refresh class balance.</p>
+            </div>
+          )}
+          {summary.balance_verified === false && !attendanceBlocked && (
+            <p className="text-sm text-slate-600">
+              This session&apos;s attendance will be confirmed when you record participation.
             </p>
           )}
           {!summary.configured && <p className="text-sm text-amber-700">Paid extras can be booked now. To use an included programme class, review and save the opening balance above.</p>}
@@ -369,12 +416,17 @@ export function AcademySessionAllocations({
               ? "Enter a reason or agreement of at least 10 characters before recording participation."
               : "Required: at least 10 characters explaining the class agreement."}
           </p>
-          <button type="button" disabled={busy || (kind === "prepaid" && (!summary.configured || summary.balance_verified === false))}
+          <button type="button" disabled={busy || balanceLoading || (kind === "prepaid" && (!summary.configured || attendanceBlocked))}
             onClick={() => void allocate()}
             className="rounded bg-cyan-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
             Record student participation
           </button>
-          {summary.allocations?.filter((item) => item.session_id === sessionId).map((item) => (
+          {existingAllocation?.status === "applied" && existingAllocation.kind === "prepaid" && (
+            <p role="status" className="text-sm text-emerald-700">
+              This session already uses one purchased class, counted once in the balance above. No extra fee.
+            </p>
+          )}
+          {summary.allocations?.filter((item) => item.session_id === sessionId && !(item.kind === "prepaid" && item.status === "applied")).map((item) => (
             <p className="text-xs text-slate-600" key={item.session_id}>
               Existing allocation: {item.kind} · {item.status} ·
               ₦{(item.agreed_fee_kobo / 100).toLocaleString("en-NG")}

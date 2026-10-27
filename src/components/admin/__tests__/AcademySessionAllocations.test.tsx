@@ -154,3 +154,89 @@ it("prefills the standard Academy price and requires a reason for overrides", as
     { auth: true }
   ));
 });
+
+it("can record the selected unverified class while preserving the backend attendance guard", async () => {
+  mocks.get.mockResolvedValue({
+    configured: true, purchased_classes: 12, opening_consumed: 0,
+    applied_prepaid: 0, routine_attendance_consumed: 4, remaining: 8,
+    balance_verified: false, unverified_routine_session_ids: ["physical"],
+  });
+  render(<AcademySessionAllocations
+    enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
+    sessionId="physical" standardFeeNaira={15000} memberNames={{ member: "Isabella" }}
+    onRecorded={mocks.refreshed}
+  />);
+  fireEvent.change(screen.getByLabelText("Student"), { target: { value: "enrollment" } });
+  await screen.findByText(/Remaining:/);
+  expect(screen.getByText(/This session's attendance will be confirmed/)).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText(/Reason \/ agreement/), {
+    target: { value: "First class from purchased Academy lessons" },
+  });
+  const record = screen.getByRole("button", { name: "Record student participation" });
+  await waitFor(() => expect(record).toBeEnabled());
+  fireEvent.click(record);
+  await waitFor(() => expect(mocks.post).toHaveBeenCalledWith(
+    "/api/v1/sessions/physical/admin/academy-participation",
+    expect.objectContaining({ kind: "prepaid", agreed_fee_kobo: 0 }),
+    { auth: true },
+  ));
+});
+
+it("identifies other unresolved attendance and refreshes without losing the entered reason", async () => {
+  const review = vi.fn();
+  mocks.get.mockResolvedValueOnce({
+    configured: true, purchased_classes: 12, remaining: 8,
+    balance_verified: false, unverified_routine_session_ids: ["earlier", "physical"],
+  }).mockResolvedValue({
+    configured: true, purchased_classes: 12, remaining: 7,
+    balance_verified: true, unverified_routine_session_ids: [],
+  });
+  render(<AcademySessionAllocations
+    enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
+    sessionId="physical" standardFeeNaira={15000} memberNames={{ member: "Isabella" }}
+    routineSessions={{ earlier: { title: "Sunday Academy class", starts_at: "2026-10-11T15:00:00Z" } }}
+    onReviewSession={review} onRecorded={mocks.refreshed}
+  />);
+  fireEvent.change(screen.getByLabelText("Student"), { target: { value: "enrollment" } });
+  await screen.findByText(/Adding a reason does not resolve/);
+  const reason = screen.getByLabelText(/Reason \/ agreement/);
+  fireEvent.change(reason, { target: { value: "Saturday class from purchased lessons" } });
+  expect(screen.getByRole("button", { name: "Record student participation" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Review attendance for 11 Oct 2026" }));
+  expect(review).toHaveBeenCalledWith("earlier");
+  expect(mocks.post).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Refresh class balance" }));
+  await waitFor(() => expect(screen.queryByText(/Adding a reason does not resolve/)).not.toBeInTheDocument());
+  expect(reason).toHaveValue("Saturday class from purchased lessons");
+  expect(screen.getByRole("button", { name: "Record student participation" })).toBeEnabled();
+  expect(mocks.get).toHaveBeenCalledTimes(2);
+});
+
+it("keeps recording blocked when verification fails without identifying the missing sessions", async () => {
+  mocks.get.mockResolvedValue({ configured: true, remaining: 8, balance_verified: false });
+  render(<AcademySessionAllocations
+    enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
+    sessionId="physical" standardFeeNaira={15000} memberNames={{ member: "Isabella" }}
+    onRecorded={mocks.refreshed}
+  />);
+  fireEvent.change(screen.getByLabelText("Student"), { target: { value: "enrollment" } });
+  await screen.findByText(/Adding a reason does not resolve/);
+  expect(screen.getByRole("button", { name: "Record student participation" })).toBeDisabled();
+});
+
+it("does not block a separately paid extra on unrelated prepaid attendance review", async () => {
+  mocks.get.mockResolvedValue({
+    configured: true, remaining: 8, balance_verified: false,
+    unverified_routine_session_ids: ["earlier"],
+  });
+  render(<AcademySessionAllocations
+    enrollments={[{ id: "enrollment", member_id: "member", status: "enrolled" }]}
+    sessionId="physical" standardFeeNaira={15000} memberNames={{ member: "Isabella" }}
+    onRecorded={mocks.refreshed}
+  />);
+  fireEvent.change(screen.getByLabelText("Student"), { target: { value: "enrollment" } });
+  await screen.findByText(/Adding a reason does not resolve/);
+  fireEvent.change(screen.getByLabelText("How this student is attending"), { target: { value: "paid_extra" } });
+  expect(screen.queryByText(/Recording is blocked/)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Record student participation" })).toBeEnabled();
+});
