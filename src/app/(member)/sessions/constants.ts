@@ -12,8 +12,10 @@ export const SESSION_TYPES_QUERY = [
 ].join(",");
 
 export const TABS: { key: ViewTab; label: string }[] = [
-  { key: "booked", label: "Upcoming" },
+  { key: "upcoming", label: "Upcoming" },
+  { key: "booked", label: "Booked" },
   { key: "past", label: "History" },
+  { key: "all", label: "All" },
 ];
 
 export const DATE_FILTERS: { key: DateFilter; label: string }[] = [
