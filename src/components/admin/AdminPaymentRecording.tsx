@@ -16,6 +16,7 @@ type Payment = {
   payer_email: string | null;
   purpose: string;
   status: string;
+  payment_method?: string | null;
   currency: string;
   amount: number;
   proof_of_payment_media_id: string | null;
@@ -36,6 +37,8 @@ export function AdminPaymentRecording() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [evidenceReferences, setEvidenceReferences] = useState<Record<string, string>>({});
+  const [evidenceNotes, setEvidenceNotes] = useState<Record<string, string>>({});
   return (
     <Card className="space-y-4">
       <h2 className="text-xl font-semibold">Record an offline payment or attach a receipt</h2>
@@ -88,7 +91,7 @@ export function AdminPaymentRecording() {
           </p>
           {payment.payment_metadata?.submitted_transfer && (
             <p className="break-all text-sm">
-              Submitted transfer: {payment.payment_metadata.submitted_transfer.external_reference} ·{" "}
+              Submitted transfer: {payment.payment_metadata.submitted_transfer.external_reference || "Receipt only"} ·{" "}
               {payment.payment_metadata.submitted_transfer.received_date}
             </p>
           )}
@@ -124,6 +127,58 @@ export function AdminPaymentRecording() {
                 } finally { setBusy(false); }
               }}
             />
+          )}
+          {["pending", "failed"].includes(payment.status) && payment.payment_method !== "paystack" && (
+            <div className="space-y-3 rounded-md border border-slate-200 p-3">
+              <p className="font-semibold">Submit payment evidence for review</p>
+              <p className="text-sm text-slate-600">
+                Attach a receipt above, enter a transaction reference below, or use both.
+                This does not record money as received or activate access.
+              </p>
+              <Input
+                label="Bank reference (optional with receipt)"
+                value={evidenceReferences[payment.reference] || ""}
+                onChange={(event) => setEvidenceReferences((current) => ({
+                  ...current, [payment.reference]: event.target.value,
+                }))}
+                maxLength={128}
+              />
+              <Input
+                label="Evidence note (optional)"
+                value={evidenceNotes[payment.reference] || ""}
+                onChange={(event) => setEvidenceNotes((current) => ({
+                  ...current, [payment.reference]: event.target.value,
+                }))}
+                maxLength={500}
+              />
+              <Button
+                disabled={busy || (!payment.proof_of_payment_media_id && !evidenceReferences[payment.reference]?.trim())}
+                onClick={async () => {
+                  setBusy(true);
+                  setError("");
+                  setMessage("");
+                  try {
+                    await apiPost(
+                      `/api/v1/payments/admin/${encodeURIComponent(payment.reference)}/evidence`,
+                      {
+                        external_reference: evidenceReferences[payment.reference]?.trim() || null,
+                        note: evidenceNotes[payment.reference]?.trim() || null,
+                        proof_media_id: payment.proof_of_payment_media_id,
+                      },
+                      { auth: true }
+                    );
+                    await result.refetch();
+                    setMessage("Evidence submitted for review. Payment has not been marked as paid.");
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "Could not submit evidence");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Submit evidence for review
+              </Button>
+            </div>
           )}
           {["pending", "pending_review"].includes(payment.status) && (
             <Button
