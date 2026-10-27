@@ -152,6 +152,7 @@ export function useSessionsHubData({ loadPast }: { loadPast: boolean }) {
     enrolledCohortIds,
     myPodId: podQuery.data?.id ?? null,
     myPodName: podQuery.data ? podDisplayName(podQuery.data) : null,
+    preferences: profileQuery.data?.availability ?? null,
     membership,
     membershipLabel,
     upcomingLoading: upcomingQuery.isLoading,

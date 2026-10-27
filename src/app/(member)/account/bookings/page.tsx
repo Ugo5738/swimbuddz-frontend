@@ -32,15 +32,8 @@ function SessionsHub() {
   const searchParams = useSearchParams();
   const rawView = searchParams.get("view");
 
-  // Map view param to tab. Default is "upcoming". Legacy "my" → "booked".
-  const activeTab: ViewTab =
-    rawView === "booked" || rawView === "my"
-      ? "booked"
-      : rawView === "past" || rawView === "history"
-        ? "past"
-        : rawView === "all"
-          ? "all"
-          : "upcoming";
+  // My Swims owns personal commitments. Keep legacy values readable.
+  const activeTab: ViewTab = rawView === "past" || rawView === "history" ? "past" : rawView === "all" ? "all" : "booked";
 
   const {
     sessions,
@@ -96,7 +89,7 @@ function SessionsHub() {
     setSelectedIds(new Set());
   }, []);
 
-  const supportsRelevance = activeTab === "upcoming" || activeTab === "all";
+  const supportsRelevance = activeTab === "booked" || activeTab === "all";
   const hasActiveFilters =
     dateFilter !== "all" ||
     typeFilters.size > 0 ||
@@ -237,10 +230,7 @@ function SessionsHub() {
     let result: SessionWithRides[];
     const now = new Date();
 
-    if (activeTab === "upcoming") {
-      // Only future sessions (strict filter)
-      result = sessions.filter((s) => new Date(s.starts_at) > now);
-    } else if (activeTab === "booked") {
+    if (activeTab === "booked") {
       result = myUpcomingSessions;
     } else if (activeTab === "past") {
       result = [];
@@ -282,11 +272,11 @@ function SessionsHub() {
   const setTab = useCallback(
     (tab: ViewTab) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (tab === "upcoming") {
+      if (tab === "booked") {
         // Upcoming is the default — no param needed
         params.delete("view");
       } else {
-        params.set("view", tab);
+        params.set("view", tab === "past" ? "history" : tab);
       }
       const qs = params.toString();
       router.replace(`/account/bookings${qs ? `?${qs}` : ""}`, { scroll: false });
@@ -367,13 +357,13 @@ function SessionsHub() {
           <Badge variant="info">{membershipLabel}</Badge>
         </div>
         <p className="text-base text-slate-600">
-          Browse, book and manage your swimming sessions, including attendance and session history.
+          See your upcoming reservations, assigned classes and swimming history.
         </p>
         <p className="text-sm text-slate-500">
-          Your Club, Academy, pool reservations and recorded attendance are together in the Booked and Past tabs.
+          Your Club, Academy, pool visits and recorded attendance are together in Upcoming and History.
         </p>
         <p className="text-sm text-slate-500">
-          Need independent pool access? <Link href="/pool-access" className="font-medium text-cyan-700 hover:underline">Explore Pool Access</Link>.{" "}
+          Want to book your next swim? <Link href="/account/book-next-swim" className="font-semibold text-cyan-700 hover:underline">Book My Next Swim</Link>. Need independent pool access? <Link href="/pool-access" className="font-medium text-cyan-700 hover:underline">Explore Pool Access</Link>.{" "}
           Know a pool we should partner with?{" "}
           <Link href="/account/pools/suggest" className="font-medium text-cyan-700 hover:underline">
             Suggest a pool &rarr;
@@ -422,7 +412,7 @@ function SessionsHub() {
         {/* Action buttons */}
         <div className="flex items-center gap-2">
           {/* Multi-select toggle — only on upcoming/all tabs */}
-          {(activeTab === "upcoming" || activeTab === "all") && (
+          {(activeTab === "booked" || activeTab === "all") && (
             <button
               onClick={() => {
                 if (selectMode) {

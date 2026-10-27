@@ -216,7 +216,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
           <h2 className="text-lg font-semibold text-slate-900">My swimming history</h2>
           <div className="grid gap-3 md:grid-cols-2">
             {personalHistory.map((record) => (
-              <article key={record.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <article key={record.key} className="relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-cyan-300 focus-within:ring-2 focus-within:ring-cyan-400">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-semibold capitalize text-cyan-700">{record.kind === "pool" ? "Pool access" : record.kind}</span>
                   {record.attendanceStatus && (
@@ -225,7 +225,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
                     </span>
                   )}
                 </div>
-                <h3 className="mt-2 font-semibold text-slate-900">{record.title}</h3>
+                <h3 className="mt-2 font-semibold text-slate-900">{record.sessionId ? <Link href={`/sessions/${record.sessionId}`} className="after:absolute after:inset-0 focus-visible:outline-none">{record.title}<span className="sr-only"> — view session details</span></Link> : record.title}</h3>
                 <p className="mt-1 text-sm text-slate-600">
                   {formatSwimDate(record.date)} · {record.location || "Location unavailable"}
                 </p>
@@ -236,18 +236,18 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
                 )}
                 <div className="mt-3 flex flex-wrap gap-2">
                   {record.sessionId && (
-                    <Link href={`/sessions/${record.sessionId}`} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700">Session details</Link>
+                    <span className="text-xs text-slate-500">Select the card to view session details</span>
                   )}
                   {record.sessionId && ["present", "late", "checked_in"].includes(record.attendanceStatus?.toLowerCase() ?? "") && (
                     <>
                       <Link href={`/account/media-vault?session=${record.sessionId}&action=view`}
-                        className="rounded-lg border border-cyan-700 px-3 py-2 text-sm font-semibold text-cyan-800">View session media</Link>
+                        className="relative z-10 rounded-lg border border-cyan-700 px-3 py-2 text-sm font-semibold text-cyan-800">View session media</Link>
                       <Link href={`/account/media-vault?session=${record.sessionId}&action=contribute`}
-                        className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white">Contribute media</Link>
+                        className="relative z-10 rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white">Contribute media</Link>
                     </>
                   )}
                 </div>
-                {record.activity?.pool && <div className="mt-3"><PoolVisitActions booking={record.activity.pool} onChanged={load}/></div>}
+                {record.activity?.pool && <div className="relative z-10 mt-3"><PoolVisitActions booking={record.activity.pool} onChanged={load}/></div>}
               </article>
             ))}
           </div>
