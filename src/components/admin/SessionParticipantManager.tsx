@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AcademySessionAllocations } from "@/components/admin/AcademySessionAllocations";
+import { AcademySessionAllocations, type AcademyRoutineSession } from "@/components/admin/AcademySessionAllocations";
 import { RecordSessionWalkIn, type GuestWalkInInput, type WalkInMember } from "@/components/admin/RecordSessionWalkIn";
 import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
 
@@ -23,6 +23,8 @@ export function SessionParticipantManager({
   eligibleClubMembers,
   disabled,
   onRecordAcademy,
+  routineSessions,
+  onReviewAcademySession,
   onRecordMember,
   onRecordGuest,
 }: {
@@ -38,6 +40,8 @@ export function SessionParticipantManager({
   eligibleClubMembers?: WalkInMember[];
   disabled: boolean;
   onRecordAcademy: () => void;
+  routineSessions?: Record<string, AcademyRoutineSession>;
+  onReviewAcademySession?: (sessionId: string) => void;
   onRecordMember: (memberId: string, feeKobo: number, note: string, overrideReason?: string) => Promise<void>;
   onRecordGuest: (input: GuestWalkInInput) => Promise<void>;
 }) {
@@ -105,6 +109,8 @@ export function SessionParticipantManager({
           enrollments={enrollments}
           memberNames={memberNames}
           onRecorded={onRecordAcademy}
+          routineSessions={routineSessions}
+          onReviewSession={onReviewAcademySession}
           embedded
         />
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
