@@ -12,7 +12,19 @@ const attendedStatuses = new Set(["present","late","checked_in"]);
 export function SessionMediaHistory({ onSelect }: { onSelect: (sessionId: string) => void }) {
   const attendance = useQuery({
     queryKey: ["my-media","full-attendance-history"],
-    queryFn: () => apiGet<HistoricalAttendance[]>("/api/v1/attendance/me?include_session=true&limit=500", {auth:true}),
+    queryFn: async () => {
+      const all: HistoricalAttendance[] = [];
+      // Attendance API limits each response to 200 and supports offset pagination.
+      for (let offset = 0; offset < 4000; offset += 200) {
+        const page = await apiGet<HistoricalAttendance[]>(
+          `/api/v1/attendance/me?include_session=true&limit=200&offset=${offset}`,
+          { auth: true },
+        );
+        all.push(...page);
+        if (page.length < 200) break;
+      }
+      return all;
+    },
   });
   const history = useMemo(() => buildPersonalSwimHistory({
     activities: [],
