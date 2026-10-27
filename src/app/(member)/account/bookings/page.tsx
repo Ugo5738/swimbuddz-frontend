@@ -89,7 +89,7 @@ function SessionsHub() {
     setSelectedIds(new Set());
   }, []);
 
-  const supportsRelevance = activeTab === "upcoming" || activeTab === "all";
+  const supportsRelevance = activeTab === "booked" || activeTab === "all";
   const hasActiveFilters =
     dateFilter !== "all" ||
     typeFilters.size > 0 ||
@@ -230,7 +230,7 @@ function SessionsHub() {
     let result: SessionWithRides[];
     const now = new Date();
 
-    if (activeTab === "upcoming") {
+    if (activeTab === "booked") {
       // Only future sessions (strict filter)
       result = sessions.filter((s) => new Date(s.starts_at) > now);
     } else if (activeTab === "booked") {
@@ -415,7 +415,7 @@ function SessionsHub() {
         {/* Action buttons */}
         <div className="flex items-center gap-2">
           {/* Multi-select toggle — only on upcoming/all tabs */}
-          {(activeTab === "upcoming" || activeTab === "all") && (
+          {(activeTab === "booked" || activeTab === "all") && (
             <button
               onClick={() => {
                 if (selectMode) {
