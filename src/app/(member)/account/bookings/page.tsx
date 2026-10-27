@@ -231,9 +231,6 @@ function SessionsHub() {
     const now = new Date();
 
     if (activeTab === "booked") {
-      // Only future sessions (strict filter)
-      result = sessions.filter((s) => new Date(s.starts_at) > now);
-    } else if (activeTab === "booked") {
       result = myUpcomingSessions;
     } else if (activeTab === "past") {
       result = [];
