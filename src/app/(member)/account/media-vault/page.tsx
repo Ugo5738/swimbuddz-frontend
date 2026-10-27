@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { VaultLibrary } from "@/components/media-vault/VaultLibrary";
+import { SessionMediaHistory } from "@/components/media-vault/SessionMediaHistory";
 import { MySessionVideos } from "@/components/media-vault/MySessionVideos";
 import { UploadMySwim } from "@/components/media-vault/UploadMySwim";
 import { MyCollections } from "@/components/media-vault/MyCollections";
@@ -36,16 +37,16 @@ export default function MemberMediaVaultPage() {
             <CloudUpload className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-950">My Media & volunteer assignments</h1>
+            <h1 className="text-2xl font-bold text-slate-950">My Media</h1>
             <p className="text-sm text-slate-600">
-              See your shared swim videos and photos, personal uploads, and media assignments.
+              Browse photos and videos from your swims, session history and personal uploads.
             </p>
           </div>
         </div>
       </div>
 
-      <FilterTabs options={[{ value: "videos", label: "My Media" }, { value: "upload", label: "Upload My Swim" }, { value: "collections", label: "My Collections" }, { value: "session", label: "Session Media" }, { value: "all", label: "Volunteer media" }, { value: "vaults", label: "My assigned vaults" }]} value={view} onChange={setView} />
-      {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "collections" ? <MyCollections /> : view === "session" ? (session ? <SessionMediaWorkspace sessionId={session} action={sessionAction}/> : <div className="rounded-xl border bg-white p-5 text-sm">Open a session from My Swims → History to view or contribute its media.</div>) : view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
+      <FilterTabs options={[{ value: "videos", label: "My Media" }, { value: "upload", label: "Upload My Swim" }, { value: "collections", label: "My Collections" }, { value: "session", label: "By Swim Session" }]} value={view} onChange={setView} />
+      {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "collections" ? <MyCollections /> : view === "session" ? (session ? <SessionMediaWorkspace sessionId={session} action={sessionAction}/> : <SessionMediaHistory onSelect={(id)=>{setSession(id);setSessionAction("view");}} />) : view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
       {loading && (
         <div className="grid gap-4 md:grid-cols-2">
           {[0, 1, 2].map((item) => (
