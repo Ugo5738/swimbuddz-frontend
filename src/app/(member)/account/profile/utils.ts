@@ -72,6 +72,8 @@ export function mapMemberResponseToProfile(data: MemberResponse): Profile {
   return {
     id: data.id,
     name: `${data.first_name} ${data.last_name}`,
+    firstName: data.first_name,
+    lastName: data.last_name,
     joinedAt: data.created_at,
     email: data.email,
     phone: profile.phone || "",

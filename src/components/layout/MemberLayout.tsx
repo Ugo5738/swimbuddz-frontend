@@ -19,6 +19,7 @@ import {
   Briefcase,
   Calendar,
   CalendarDays,
+  CalendarPlus,
   CheckCircle,
   ChevronDown,
   ChevronRight,
@@ -78,16 +79,11 @@ const navSections: NavSection[] = [
     title: "",
     items: [
       { href: "/account", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/account/book-next-swim", label: "Book My Next Swim", icon: CalendarPlus },
       { href: "/account/find-a-swim", label: "Find a Swim", icon: Waves },
+      { href: "/account/bookings", label: "My Swims", icon: CalendarDays },
       { href: "/account/calendar", label: "SwimBuddz Calendar", icon: CalendarDays },
       { href: "/account/onboarding", label: "Complete Setup", icon: CheckCircle },
-    ],
-  },
-  {
-    title: "My Swims",
-    icon: CalendarDays,
-    items: [
-      { href: "/account/bookings", label: "Sessions & Swimming History", icon: CalendarDays },
     ],
   },
   {
@@ -179,7 +175,6 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    "My Swims": true,
     Community: true,
   });
   const profile = useApi<MemberInfo>("/api/v1/members/me");
@@ -383,14 +378,6 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             : section.items.filter((item) => item.href !== "/account/onboarding"),
         };
       }
-      if (section.title === "My Swims") {
-        return {
-          ...section,
-          items: section.items.filter(
-            (item) => item.href !== "/account/club" || clubEntitled
-          ),
-        };
-      }
       if (section.title === "My Academy") {
         return {
           ...section,
@@ -525,7 +512,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                             aria-current={active ? "page" : undefined}
                             title={item.label}
                             {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
+                            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : item.href === "/account/book-next-swim" ? "bg-white/95 text-cyan-900 font-semibold shadow-sm ring-2 ring-white/30 hover:bg-white" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
                           >
                             <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                             <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{item.label}</span>
