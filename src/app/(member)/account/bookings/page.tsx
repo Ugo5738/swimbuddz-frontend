@@ -33,7 +33,14 @@ function SessionsHub() {
   const rawView = searchParams.get("view");
 
   // My Swims owns personal commitments. Keep legacy values readable.
-  const activeTab: ViewTab = rawView === "past" || rawView === "history" ? "past" : rawView === "all" ? "all" : "booked";
+  const activeTab: ViewTab =
+    rawView === "booked" || rawView === "my"
+      ? "booked"
+      : rawView === "past" || rawView === "history"
+        ? "past"
+        : rawView === "all"
+          ? "all"
+          : "upcoming";
 
   const {
     sessions,
@@ -89,7 +96,7 @@ function SessionsHub() {
     setSelectedIds(new Set());
   }, []);
 
-  const supportsRelevance = activeTab === "booked" || activeTab === "all";
+  const supportsRelevance = activeTab === "upcoming" || activeTab === "all";
   const hasActiveFilters =
     dateFilter !== "all" ||
     typeFilters.size > 0 ||
@@ -120,7 +127,7 @@ function SessionsHub() {
       ? upcomingLoading || bookingsLoading || attendanceLoading
       : activeTab === "past"
         ? false
-        : upcomingLoading || (supportsRelevance && personalizationLoading);
+        : upcomingLoading || (supportsRelevance && relevantOnly && personalizationLoading);
   const error = (activeTab === "past" ? false : upcomingError)
     ? "Unable to load sessions. Please try again later."
     : null;
@@ -230,9 +237,12 @@ function SessionsHub() {
     let result: SessionWithRides[];
     const now = new Date();
 
-    if (activeTab === "booked") {
-      // Upcoming is the discoverable session calendar, not only confirmed bookings.
+    if (activeTab === "upcoming") {
+      // Browse all future sessions without requiring a reservation.
       result = sessions.filter((session) => new Date(session.starts_at) > now);
+    } else if (activeTab === "booked") {
+      // Keep booked commitments separate from general discovery.
+      result = myUpcomingSessions;
     } else if (activeTab === "past") {
       result = [];
     } else {
@@ -273,7 +283,7 @@ function SessionsHub() {
   const setTab = useCallback(
     (tab: ViewTab) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (tab === "booked") {
+      if (tab === "upcoming") {
         // Upcoming is the default — no param needed
         params.delete("view");
       } else {
@@ -298,7 +308,11 @@ function SessionsHub() {
           <p className="text-slate-600">
             {hasActiveFilters
               ? "No sessions match your filters. Try adjusting them."
-              : "No upcoming sessions found."}
+              : activeTab === "booked"
+                ? "You have no upcoming confirmed reservations here. Assigned Academy, Club-quarter and pool swims appear below."
+                : activeTab === "all"
+                  ? "No sessions found."
+                  : "No upcoming sessions found."}
           </p>
           {hasActiveFilters && (
             <button
@@ -361,7 +375,7 @@ function SessionsHub() {
           See your upcoming reservations, assigned classes and swimming history.
         </p>
         <p className="text-sm text-slate-500">
-          Your Club, Academy, pool visits and recorded attendance are together in Upcoming and History.
+          Discover sessions in Upcoming, manage confirmed and assigned swims in Booked, and revisit attendance and media in History.
         </p>
         <p className="text-sm text-slate-500">
           Want to book your next swim? <Link href="/account/book-next-swim" className="font-semibold text-cyan-700 hover:underline">Book My Next Swim</Link>. Need independent pool access? <Link href="/pool-access" className="font-medium text-cyan-700 hover:underline">Explore Pool Access</Link>.{" "}
@@ -401,9 +415,14 @@ function SessionsHub() {
               }`}
             >
               {label}
-              {key === "booked" && filteredSessions.length > 0 && (
+              {key === "upcoming" && activeTab === "upcoming" && filteredSessions.length > 0 && (
                 <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-100 px-1.5 text-xs font-semibold text-cyan-700">
                   {filteredSessions.length}
+                </span>
+              )}
+              {key === "booked" && myUpcomingSessions.length > 0 && (
+                <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-100 px-1.5 text-xs font-semibold text-cyan-700">
+                  {myUpcomingSessions.length}
                 </span>
               )}
             </button>
@@ -411,9 +430,23 @@ function SessionsHub() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {supportsRelevance && (
+            <button
+              type="button"
+              aria-pressed={relevantOnly}
+              onClick={() => setRelevantOnly((current) => !current)}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                relevantOnly
+                  ? "border-cyan-500 bg-cyan-50 text-cyan-800"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              Recommended for You
+            </button>
+          )}
           {/* Multi-select toggle — only on upcoming/all tabs */}
-          {(activeTab === "booked" || activeTab === "all") && (
+          {(activeTab === "upcoming" || activeTab === "all") && (
             <button
               onClick={() => {
                 if (selectMode) {
