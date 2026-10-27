@@ -1388,6 +1388,28 @@ export default function AdminAttendancePage() {
             setOfflinePaymentModal(null);
             setOfflinePaymentError(null);
           }}
+          onSubmitEvidence={async (input) => {
+            if (!offlinePaymentModal || !selectedSessionId) return;
+            setRecordingOfflinePayment(true);
+            setOfflinePaymentError(null);
+            try {
+              const payment = await apiPost<PaymentResponse>(
+                `/api/v1/payments/admin/bookings/${offlinePaymentModal.bookingId}/evidence`,
+                input,
+                { auth: true }
+              );
+              setOfflinePaymentModal(null);
+              setMarkSuccess(
+                `Receipt ${payment.reference} submitted for review. Payment is not yet verified.`
+              );
+            } catch (err) {
+              setOfflinePaymentError(
+                err instanceof Error ? err.message : "Could not submit receipt"
+              );
+            } finally {
+              setRecordingOfflinePayment(false);
+            }
+          }}
           onSubmit={handleRecordOfflinePayment}
         />
       )}
