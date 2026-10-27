@@ -240,7 +240,12 @@ export default function VolunteerHubPage() {
         </p>
       </header>
 
-      {error && <Alert variant="error">{error}</Alert>}
+      <div className="flex flex-wrap gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-4">
+        <div className="min-w-0 flex-1"><p className="font-semibold text-cyan-900">Volunteer media assignments</p><p className="text-sm text-cyan-800">Access your assigned vaults, contribute media and use the shared vault library where your role permits.</p></div>
+        <Link href="/account/media-vault?view=assignments" className="inline-flex min-h-11 items-center rounded-lg bg-cyan-700 px-4 text-sm font-semibold text-white">My assigned vaults</Link>
+        <Link href="/account/media-vault?view=volunteer" className="inline-flex min-h-11 items-center rounded-lg border border-cyan-700 px-4 text-sm font-semibold text-cyan-800">Volunteer media library</Link>
+      </div>
+      {error && <Alert variant="error">{error}</Alert>
       {actionMsg && <Alert variant="success">{actionMsg}</Alert>}
 
       {/* Always-visible profile context */}
