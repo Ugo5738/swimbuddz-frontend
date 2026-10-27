@@ -32,8 +32,12 @@ function SessionsHub() {
   const searchParams = useSearchParams();
   const rawView = searchParams.get("view");
 
-  // My Swims owns personal commitments. Keep legacy values readable.
-  const activeTab: ViewTab = rawView === "past" || rawView === "history" ? "past" : rawView === "all" ? "all" : "booked";
+  // Restore four distinct views while continuing to accept legacy links.
+  const activeTab: ViewTab =
+    rawView === "past" || rawView === "history" ? "past"
+    : rawView === "booked" || rawView === "my" ? "booked"
+    : rawView === "all" ? "all"
+    : "upcoming";
 
   const {
     sessions,
@@ -61,7 +65,7 @@ function SessionsHub() {
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
   const [myCohortsOnly, setMyCohortsOnly] = useState(false);
-  const [relevantOnly, setRelevantOnly] = useState(false);
+  const [relevantOnly, setRelevantOnly] = useState(true);
 
   // Multi-select for bundle booking
   const [selectMode, setSelectMode] = useState(false);
@@ -89,7 +93,7 @@ function SessionsHub() {
     setSelectedIds(new Set());
   }, []);
 
-  const supportsRelevance = activeTab === "booked" || activeTab === "all";
+  const supportsRelevance = activeTab === "upcoming" || activeTab === "all";
   const hasActiveFilters =
     dateFilter !== "all" ||
     typeFilters.size > 0 ||
@@ -230,9 +234,10 @@ function SessionsHub() {
     let result: SessionWithRides[];
     const now = new Date();
 
-    if (activeTab === "booked") {
-      // Upcoming is the discoverable session calendar, not only confirmed bookings.
+    if (activeTab === "upcoming") {
       result = sessions.filter((session) => new Date(session.starts_at) > now);
+    } else if (activeTab === "booked") {
+      result = myUpcomingSessions;
     } else if (activeTab === "past") {
       result = [];
     } else {
@@ -273,7 +278,7 @@ function SessionsHub() {
   const setTab = useCallback(
     (tab: ViewTab) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (tab === "booked") {
+      if (tab === "upcoming") {
         // Upcoming is the default — no param needed
         params.delete("view");
       } else {
@@ -298,7 +303,11 @@ function SessionsHub() {
           <p className="text-slate-600">
             {hasActiveFilters
               ? "No sessions match your filters. Try adjusting them."
-              : "No upcoming sessions found."}
+              : activeTab === "booked"
+                ? "No confirmed upcoming bookings found."
+                : activeTab === "all"
+                  ? "No sessions found."
+                  : "No upcoming sessions found."}
           </p>
           {hasActiveFilters && (
             <button
@@ -361,7 +370,7 @@ function SessionsHub() {
           See your upcoming reservations, assigned classes and swimming history.
         </p>
         <p className="text-sm text-slate-500">
-          Your Club, Academy, pool visits and recorded attendance are together in Upcoming and History.
+          Explore upcoming swims, manage confirmed bookings, review history and browse all sessions.
         </p>
         <p className="text-sm text-slate-500">
           Want to book your next swim? <Link href="/account/book-next-swim" className="font-semibold text-cyan-700 hover:underline">Book My Next Swim</Link>. Need independent pool access? <Link href="/pool-access" className="font-medium text-cyan-700 hover:underline">Explore Pool Access</Link>.{" "}
@@ -401,9 +410,9 @@ function SessionsHub() {
               }`}
             >
               {label}
-              {key === "booked" && filteredSessions.length > 0 && (
+              {key === "booked" && myUpcomingSessions.length > 0 && (
                 <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-100 px-1.5 text-xs font-semibold text-cyan-700">
-                  {filteredSessions.length}
+                  {myUpcomingSessions.length}
                 </span>
               )}
             </button>
@@ -413,7 +422,7 @@ function SessionsHub() {
         {/* Action buttons */}
         <div className="flex items-center gap-2">
           {/* Multi-select toggle — only on upcoming/all tabs */}
-          {(activeTab === "booked" || activeTab === "all") && (
+          {(activeTab === "upcoming" || activeTab === "all") && (
             <button
               onClick={() => {
                 if (selectMode) {
