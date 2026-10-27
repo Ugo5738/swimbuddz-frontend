@@ -512,7 +512,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                             aria-current={active ? "page" : undefined}
                             title={item.label}
                             {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : item.href === "/account/book-next-swim" ? "bg-white/95 text-cyan-900 font-semibold shadow-sm ring-2 ring-white/30 hover:bg-white" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
+                            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : item.href === "/account/book-next-swim" ? "border border-white/50 text-white font-semibold hover:bg-white/10" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
                           >
                             <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                             <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{item.label}</span>

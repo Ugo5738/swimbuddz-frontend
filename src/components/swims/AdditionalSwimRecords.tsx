@@ -122,7 +122,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
   };
 
   const activityCard = (activity: SwimActivity) => (
-    <article key={activity.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <article key={activity.key} className="relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-cyan-300 focus-within:ring-2 focus-within:ring-cyan-400">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-cyan-700">
           {activity.kind === "pool" ? "Independent pool visit" : activity.kind}
@@ -131,7 +131,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
           {statusLabel(activity.status)}
         </span>
       </div>
-      <h3 className="mt-2 font-semibold text-slate-900">{activity.title}</h3>
+      <h3 className="mt-2 font-semibold text-slate-900">{activity.sessionId ? <Link href={`/sessions/${activity.sessionId}`} className="after:absolute after:inset-0 focus-visible:outline-none">{activity.title}<span className="sr-only"> — view session details</span></Link> : activity.title}</h3>
       <p className="mt-1 text-sm text-slate-600">
         {formatSwimDate(activity.date)}
         {activity.location ? ` · ${activity.location}` : ""}
@@ -142,18 +142,12 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-3">
-        {activity.sessionId && (
-          <Link href={`/sessions/${activity.sessionId}`}
-            className="text-sm font-semibold text-cyan-700 hover:underline">
-            View session details
-          </Link>
-        )}
         {activity.club?.status === "confirmed" &&
           activity.club.session_status === "scheduled" &&
           activity.date && new Date(activity.date).getTime() >= Date.now() && (
             <button type="button" disabled={busy !== null}
               onClick={() => void cancelClub(activity)}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50">
+              className="relative z-10 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50">
               {busy === activity.bookingId ? "Cancelling…" : "Can't attend? Cancel"}
             </button>
           )}
@@ -161,7 +155,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
           activity.club.session_status === "scheduled" &&
           activity.date && new Date(activity.date).getTime() >= Date.now() && activity.sessionId && (
             <Link href={`/sessions/${activity.sessionId}/book`}
-              className="text-sm font-semibold text-cyan-700 hover:underline">
+              className="relative z-10 text-sm font-semibold text-cyan-700 hover:underline">
               Reserve again if available
             </Link>
           )}
@@ -177,7 +171,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
         </p>
       )}
       {activity.pool && (
-        <div className="mt-3 border-t border-slate-200 pt-3">
+        <div className="relative z-10 mt-3 border-t border-slate-200 pt-3">
           <PoolVisitActions booking={activity.pool} onChanged={load} />
         </div>
       )}
