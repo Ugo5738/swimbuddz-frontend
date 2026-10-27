@@ -21,6 +21,9 @@ export default function MemberMediaVaultPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session") || "";
+    const viewParam = params.get("view");
+    if (viewParam === "assignments") setView("vaults");
+    if (viewParam === "volunteer") setView("all");
     if (/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(sessionId)) {
       setSession(sessionId);
       setSessionAction(params.get("action") === "contribute" ? "contribute" : "view");
@@ -45,6 +48,7 @@ export default function MemberMediaVaultPage() {
         </div>
       </div>
 
+      <Link href="/community/volunteers" className="inline-block text-sm font-semibold text-cyan-700 underline">Volunteer media tools are managed in Volunteer Hub</Link>
       <FilterTabs options={[{ value: "videos", label: "My Media" }, { value: "upload", label: "Upload My Swim" }, { value: "collections", label: "My Collections" }, { value: "session", label: "By Swim Session" }]} value={view} onChange={setView} />
       {view === "videos" ? <MySessionVideos /> : view === "upload" ? <UploadMySwim /> : view === "collections" ? <MyCollections /> : view === "session" ? (session ? <SessionMediaWorkspace sessionId={session} action={sessionAction}/> : <SessionMediaHistory onSelect={(id)=>{setSession(id);setSessionAction("view");}} />) : view === "all" ? <VaultLibrary vaults={data?.items ?? []} /> : <>
       {loading && (
