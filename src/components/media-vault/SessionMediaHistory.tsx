@@ -8,7 +8,7 @@ import Link from "next/link";
 export function SessionMediaHistory({ onSelect }: { onSelect: (sessionId: string) => void }) {
   const data = useSessionsHubData({ loadPast: true });
   const attended = useMemo(() => {
-    const records = new Map(data.attendance.filter(a => ["present","late","checked_in"].includes(a.status?.toLowerCase())).map(a => [a.session_id,a]));
+    const records = new Map(data.attendance.filter(a => ["present","late","checked_in"].includes(a.status?.toLowerCase()) && !!a.session_id).map(a => [a.session_id!,a]));
     return data.pastSessions.filter(s => records.has(s.id))
       .sort((a,b)=>new Date(b.starts_at).getTime()-new Date(a.starts_at).getTime());
   }, [data.attendance, data.pastSessions]);
