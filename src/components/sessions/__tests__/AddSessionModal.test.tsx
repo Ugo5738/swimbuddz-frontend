@@ -25,8 +25,17 @@ it.each(["included", "paid_extra"])(
     fireEvent.click(screen.getByRole("button", { name: "Add Session" }));
     await waitFor(() =>
       expect(SessionsApi.createSession).toHaveBeenCalledWith(
-        expect.objectContaining({ cohort_id: "cohort-1", cohort_fee_mode: mode, pool_fee: 15000.5 })
+        expect.objectContaining({ cohort_id: "cohort-1", cohort_fee_mode: mode, cohort_attendance_mode: "individual", pool_fee: 15000.5 })
       )
     );
   }
 );
+
+
+it("can explicitly create a regular cohort class with automatic attendance", async () => {
+  render(<AddSessionModal isOpen onClose={vi.fn()} onSuccess={vi.fn()} cohortId="cohort-1" />);
+  expect(screen.getByLabelText(/^Class attendance/)).toHaveValue("individual");
+  fireEvent.change(screen.getByLabelText(/^Class attendance/), { target: { value: "automatic" } });
+  fireEvent.click(screen.getByRole("button", { name: "Add Session" }));
+  await waitFor(() => expect(SessionsApi.createSession).toHaveBeenCalledWith(expect.objectContaining({cohort_attendance_mode: "automatic", cohort_fee_mode: "included"})));
+});

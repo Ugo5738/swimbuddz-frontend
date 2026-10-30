@@ -158,6 +158,7 @@ export function useCreateCohort({
                 title: `Week ${weekNumber} - ${selectedProgram?.name || "Session"}`,
                 session_type: SessionType.COHORT_CLASS,
                 cohort_fee_mode: "included",
+                cohort_attendance_mode: "automatic",
                 cohort_id: cohort.id,
                 week_number: weekNumber,
                 starts_at: sessionStart.toISOString(),
