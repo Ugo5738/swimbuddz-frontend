@@ -128,7 +128,7 @@ export default function CoachCohortAttendancePage() {
           const rec = recordByMember.get(s.member_id);
           const selected = sessions.find((session) => session.id === selectedSessionId);
           const individual = selected?.cohort_attendance_mode === "individual" || selected?.cohort_fee_mode === "paid_extra";
-          const status = !rec && individual ? "" : academyAttendanceStatus({
+          const status = !rec && individual && !bookedSet.has(s.member_id) ? "" : academyAttendanceStatus({
             recordedStatus: rec?.status,
             feeMode: selected?.cohort_fee_mode,
             attendanceMode: selected?.cohort_attendance_mode,
@@ -238,9 +238,8 @@ export default function CoachCohortAttendancePage() {
       {/* Help card explaining default-present */}
       <Alert variant="info">
         Regular cohort classes default to <em>Present</em>; record exceptions as needed.
-        Extra classes start unrecorded. Select attendance only for the students
-        attending that class, then <strong>Save</strong>. Unselected students stay
-        unrecorded and use no class credit.
+        Extra classes default to Present only for confirmed bookings. Unassigned students
+        stay unrecorded. Record Absent or Excused if a booked student misses class.
       </Alert>
 
       {/* Session picker */}
