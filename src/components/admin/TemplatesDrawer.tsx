@@ -38,6 +38,7 @@ export type TemplateFormPayload = {
   admission_settings: TemplateAdmission;
   cohort_id: string | null;
   cohort_fee_mode: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   club_access_mode?: Template["club_access_mode"];
   pricing_settings?: Template["pricing_settings"];
   title: string;
@@ -293,6 +294,7 @@ function TemplateFormInline({
     admission_settings: { ...defaultAdmission, ...template?.admission_settings },
     cohort_id: template?.cohort_id ?? null,
     cohort_fee_mode: template?.cohort_fee_mode ?? "included",
+    cohort_attendance_mode: template?.cohort_attendance_mode ?? "automatic",
     club_access_mode: template?.club_access_mode ?? "plan_included",
     title: template?.title || "",
     session_type: template?.session_type || "club",
@@ -373,6 +375,7 @@ function TemplateFormInline({
       ...form,
       cohort_id: form.session_type === "cohort_class" ? form.cohort_id : null,
       cohort_fee_mode: form.session_type === "cohort_class" ? form.cohort_fee_mode : "included",
+      cohort_attendance_mode: form.session_type === "cohort_class" ? (form.cohort_fee_mode === "paid_extra" ? "individual" : form.cohort_attendance_mode) : "automatic",
       week_of_month: form.frequency === "weekly" ? null : form.week_of_month,
       day_of_month: null,
       month_of_year: form.frequency === "annual" ? form.month_of_year : null,
@@ -429,6 +432,7 @@ function TemplateFormInline({
             session_type: sessionType,
             cohort_id: sessionType === "cohort_class" ? form.cohort_id : null,
             cohort_fee_mode: "included",
+            cohort_attendance_mode: "automatic",
             club_id: sessionType === "club" ? form.club_id : null,
             pod_id: sessionType === "club" ? form.pod_id : null,
             admission_settings:
@@ -457,6 +461,8 @@ function TemplateFormInline({
         <AcademyTemplateFields
           cohortId={form.cohort_id}
           feeMode={form.cohort_fee_mode}
+          attendanceMode={form.cohort_attendance_mode}
+          onAttendanceModeChange={(mode) => setForm({ ...form, cohort_attendance_mode: mode })}
           onCohortChange={(id) => setForm({ ...form, cohort_id: id })}
           onFeeModeChange={(mode) => setForm({ ...form, cohort_fee_mode: mode })}
         />

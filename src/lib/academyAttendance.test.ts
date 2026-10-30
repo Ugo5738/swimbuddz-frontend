@@ -8,9 +8,13 @@ describe("Academy attendance policy", () => {
   it.each(["absent", "excused", "late", "cancelled"])("preserves a coach/admin %s exception", status => {
     expect(academyAttendanceStatus({ recordedStatus: status, hasConfirmedBooking: true })).toBe(status);
   });
-  it("retains booking requirements for optional paid extras", () => {
+  it("does not treat an extra booking as proof of attendance", () => {
     expect(academyAttendanceStatus({ feeMode: "paid_extra", hasConfirmedBooking: false })).toBe("absent");
-    expect(academyAttendanceStatus({ feeMode: "paid_extra", hasConfirmedBooking: true })).toBe("present");
+    expect(academyAttendanceStatus({ feeMode: "paid_extra", hasConfirmedBooking: true })).toBe("absent");
+  });
+  it.each([true, false])("leaves an included individual extra unrecorded even when booked=%s", hasConfirmedBooking => {
+    expect(academyAttendanceStatus({ feeMode: "included", attendanceMode: "individual", hasConfirmedBooking })).toBe("absent");
+    expect(academyAttendanceStatus({ recordedStatus: "present", attendanceMode: "individual", hasConfirmedBooking })).toBe("present");
   });
   it("does not invent presence for an inactive enrolment or erase its saved exception", () => {
     expect(academyAttendanceStatus({ eligibleEnrollment: false, hasConfirmedBooking: false })).toBe("absent");

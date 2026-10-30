@@ -23,6 +23,7 @@ export interface SessionCostLine {
 
 export interface Session extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   id: string;
   title: string;
@@ -87,6 +88,7 @@ export interface SessionRideConfig {
  */
 export interface SessionPayload extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   title: string;
   session_type: SessionType;
@@ -118,6 +120,7 @@ export interface Template {
   admission_settings?: import("@/components/admin/TemplateAdmissionFields").TemplateAdmission;
   cohort_id?: string | null;
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   club_access_mode?: "plan_included" | "active_club" | "paid_addon";
   pricing_settings?: ClubTemplatePricing | null;
   id: string;

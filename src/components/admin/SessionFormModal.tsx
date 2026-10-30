@@ -5,6 +5,7 @@
 
 "use client";
 
+import { CohortAttendanceFields } from "@/components/admin/CohortAttendanceFields";
 import { ClubAccessModeHint } from "@/components/admin/ClubAccessModeHint";
 import { ClubSessionScopeFields } from "@/components/admin/ClubSessionScopeFields";
 import { PoolPicker } from "@/components/admin/PoolPicker";
@@ -119,6 +120,7 @@ export function SessionFormModal({
       : formatDateTimeLocal(defaultEnd),
     pool_fee: session?.pool_fee ?? 2000,
     cohort_fee_mode: session?.cohort_fee_mode ?? "included",
+    cohort_attendance_mode: session?.cohort_attendance_mode ?? (session ? "automatic" : "individual"),
     guest_fee: session?.guest_fee == null ? "" : String(session.guest_fee),
     community_dropin_fee:
       session?.community_dropin_fee == null ? "" : String(session.community_dropin_fee),
@@ -377,6 +379,7 @@ export function SessionFormModal({
       title: form.title,
       session_type: form.session_type,
       cohort_fee_mode: form.session_type === "cohort_class" ? form.cohort_fee_mode : "included",
+      cohort_attendance_mode: form.session_type === "cohort_class" ? (form.cohort_fee_mode === "paid_extra" ? "individual" : form.cohort_attendance_mode) : "automatic",
       // Send ONLY the context FK that matches the session_type so we
       // never ship a discriminator-violating combination.
       cohort_id: form.session_type === "cohort_class" ? form.cohort_id : null,
@@ -472,6 +475,7 @@ export function SessionFormModal({
             ...form,
             session_type: sessionType,
             cohort_fee_mode: "included",
+            cohort_attendance_mode: "individual",
             club_id: sessionType === "club" ? form.club_id : null,
             pod_id: sessionType === "club" ? form.pod_id : null,
           });
@@ -512,6 +516,11 @@ export function SessionFormModal({
             <option value="included">Included in tuition / no extra charge</option>
             <option value="paid_extra">Paid extra class — charge separately</option>
           </Select>
+          <CohortAttendanceFields
+            value={form.cohort_attendance_mode}
+            paidExtra={form.cohort_fee_mode === "paid_extra"}
+            onChange={(mode) => setForm({ ...form, cohort_attendance_mode: mode })}
+          />
           {form.cohort_fee_mode === "included" && (
             <p className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm">
               Enrolled students pay ₦0 to book this class. Any pool cost stored below is not an
