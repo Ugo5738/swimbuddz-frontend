@@ -4,6 +4,7 @@ export type AcademyAttendanceStatus = "present" | "absent" | "late" | "excused" 
 export function academyAttendanceStatus({
   recordedStatus,
   feeMode,
+  attendanceMode,
   hasConfirmedBooking,
   eligibleEnrollment = true,
   joinedAt,
@@ -11,6 +12,7 @@ export function academyAttendanceStatus({
 }: {
   recordedStatus?: string;
   feeMode?: string | null;
+  attendanceMode?: string | null;
   hasConfirmedBooking: boolean;
   eligibleEnrollment?: boolean;
   joinedAt?: string | null;
@@ -21,5 +23,5 @@ export function academyAttendanceStatus({
     return recorded as AcademyAttendanceStatus;
   }
   const joinedBeforeClass = !joinedAt || !sessionStartsAt || new Date(joinedAt) <= new Date(sessionStartsAt);
-  return (eligibleEnrollment && joinedBeforeClass && feeMode !== "paid_extra") || hasConfirmedBooking ? "present" : "absent";
+  return hasConfirmedBooking || (eligibleEnrollment && joinedBeforeClass && feeMode !== "paid_extra" && attendanceMode !== "individual") ? "present" : "absent";
 }

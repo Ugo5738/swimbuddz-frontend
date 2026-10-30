@@ -3957,6 +3957,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/sessions/settlements/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Quote Settlement */
+        post: operations["quote_settlement_internal_sessions_settlements_quote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/settlements/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Settlement */
+        post: operations["confirm_settlement_internal_sessions_settlements_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/club-operations/pods/{pod_id}": {
         parameters: {
             query?: never;
@@ -4295,6 +4329,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/{session_id}/admin/member-admission/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Admin Member Admission
+         * @description Show an administrator the current eligibility and standard price.
+         */
+        get: operations["preview_admin_member_admission_sessions__session_id__admin_member_admission__member_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/{session_id}/admin/walk-in": {
         parameters: {
             query?: never;
@@ -4548,6 +4602,23 @@ export interface paths {
         get: operations["list_session_bookings_sessions__session_id__bookings_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_id}/admin/academy-participation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Academy Participation */
+        post: operations["record_academy_participation_sessions__session_id__admin_academy_participation_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5429,6 +5500,23 @@ export interface paths {
         get: operations["get_reporting_summary_internal_sessions_reporting_summary_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/sessions/member-prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Member Prices */
+        post: operations["member_prices_internal_sessions_member_prices_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7246,6 +7334,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/class-entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Class Entitlements */
+        get: operations["class_entitlements_academy_admin_enrollments__enrollment_id__class_entitlements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/class-entitlements/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Class Baseline
+         * @description Suggest a historical opening balance from authoritative records.
+         *
+         *     Suggestions are *not* approved balances. Programme duration is not a
+         *     purchased-class contract and missing attendance must be reviewed.
+         */
+        get: operations["preview_class_baseline_academy_admin_enrollments__enrollment_id__class_entitlements_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/class-entitlements/baseline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Configure Class Baseline
+         * @description One-time verified opening balance; never reset consumed classes.
+         */
+        post: operations["configure_class_baseline_academy_admin_enrollments__enrollment_id__class_entitlements_baseline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/class-entitlements/allocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reserve Class Allocation
+         * @description Reserve a learner-specific entitlement, idempotently.
+         *
+         *     This intentionally does not create a booking or charge a member. The
+         *     corresponding Sessions-service write is a separate step and may fail.
+         */
+        post: operations["reserve_class_allocation_academy_admin_enrollments__enrollment_id__class_entitlements_allocations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/internal/enrollments/{enrollment_id}/class-allocations/{allocation_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Class Allocation
+         * @description Sessions service confirms a durable booking was written.
+         *
+         *     The allocation is reserved until this call. A retry with the same booking
+         *     is safe; an alternate booking ID is a reconciliation conflict.
+         */
+        post: operations["apply_class_allocation_academy_internal_enrollments__enrollment_id__class_allocations__allocation_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/my-enrollments": {
         parameters: {
             query?: never;
@@ -7551,9 +7745,32 @@ export interface paths {
          * @description Allow a member to claim completion of a milestone.
          *
          *     The member must own the enrollment. Creates or updates a StudentProgress
-         *     record with ACHIEVED status and optional evidence.
+         *     record with PENDING status and optional evidence.
          */
         post: operations["claim_milestone_academy_enrollments__enrollment_id__progress__milestone_id__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/coach/enrollments/{enrollment_id}/progress/{milestone_id}/record-video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Coach Record Milestone Video
+         * @description Submit video recorded by the assigned coach, pending independent review.
+         *
+         *     No achievement is awarded here. The coach's identity is stored in the
+         *     CLAIMED audit event, making approval-time media ownership validation possible.
+         */
+        post: operations["coach_record_milestone_video_academy_coach_enrollments__enrollment_id__progress__milestone_id__record_video_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7613,7 +7830,7 @@ export interface paths {
          *       regardless of caller — it's attribution data that travels with
          *       the event, not a control flag.
          *
-         *     Returns the (possibly newly-created) ``StudentProgress`` row.
+         *     Returns the existing ``StudentProgress`` row after an auditable override.
          */
         post: operations["override_progress_academy_admin_progress_override_post"];
         delete?: never;
@@ -8164,6 +8381,126 @@ export interface paths {
         get: operations["download_certificate_academy_enrollments__enrollment_id__certificate_pdf_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/programs/{program_id}/quizzes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Templates */
+        get: operations["list_templates_academy_admin_programs__program_id__quizzes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/quizzes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Quiz */
+        post: operations["create_quiz_academy_admin_quizzes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/quizzes/{quiz_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Quiz */
+        put: operations["update_quiz_academy_admin_quizzes__quiz_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/cohorts/{cohort_id}/quizzes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Assignments */
+        get: operations["list_assignments_academy_admin_cohorts__cohort_id__quizzes_get"];
+        put?: never;
+        /** Assign Quiz */
+        post: operations["assign_quiz_academy_admin_cohorts__cohort_id__quizzes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/enrollments/{enrollment_id}/quizzes/completion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quiz Completion */
+        get: operations["quiz_completion_academy_enrollments__enrollment_id__quizzes_completion_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/enrollments/{enrollment_id}/quizzes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Learner Quizzes */
+        get: operations["learner_quizzes_academy_enrollments__enrollment_id__quizzes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/enrollments/{enrollment_id}/quizzes/{assignment_id}/attempt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Attempt */
+        post: operations["submit_attempt_academy_enrollments__enrollment_id__quizzes__assignment_id__attempt_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9513,6 +9850,23 @@ export interface paths {
          *     finance reversal so a member cannot silently lose money.
          */
         post: operations["void_unapplied_allocation_payments_admin_academy_receipts__receipt_id__allocations__allocation_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/session-settlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Session Settlement */
+        post: operations["create_session_settlement_payments_admin_session_settlements_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16072,6 +16426,149 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/directory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Directory */
+        get: operations["list_directory_pools_directory_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/directory/{pool_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pool Detail */
+        get: operations["pool_detail_pools_directory__pool_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/directory/{pool_id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reviews */
+        get: operations["reviews_pools_directory__pool_id__reviews_get"];
+        put?: never;
+        /** Submit Review */
+        post: operations["submit_review_pools_directory__pool_id__reviews_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/directory/{pool_id}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest Correction
+         * @description Reuse the existing moderation queue without creating a second pool.
+         */
+        post: operations["suggest_correction_pools_directory__pool_id__corrections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pools/directory/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest Pool
+         * @description Anyone with a free visitor login may contribute; no paid membership required.
+         */
+        post: operations["suggest_pool_pools_directory_suggestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pools/directory/{pool_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set Published */
+        patch: operations["set_published_admin_pools_directory__pool_id__publish_patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/pools/directory/reviews/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending Reviews */
+        get: operations["pending_reviews_admin_pools_directory_reviews_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/pools/directory/reviews/{review_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Moderate Review */
+        patch: operations["moderate_review_admin_pools_directory_reviews__review_id__patch"];
         trace?: never;
     };
     "/api/v1/pools": {
@@ -23911,6 +24408,8 @@ export interface components {
             email: string;
             /** Access Source */
             access_source: string;
+            /** Fee Amount Kobo */
+            fee_amount_kobo?: number | null;
         };
         /** ClubSessionRosterResponse */
         ClubSessionRosterResponse: {
@@ -27151,6 +27650,32 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /** AcademyClassAdminBooking */
+        AcademyClassAdminBooking: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Agreed Fee Kobo
+             * @default 0
+             */
+            agreed_fee_kobo: number;
+            /** Override Reason */
+            override_reason?: string | null;
+            /** Expected Standard Fee Kobo */
+            expected_standard_fee_kobo?: number | null;
+            /** Reason */
+            reason: string;
+        };
         /** AdminGuestWalkInCreate */
         AdminGuestWalkInCreate: {
             /** Full Name */
@@ -27303,6 +27828,8 @@ export interface components {
             fee_amount_kobo?: number | null;
             /** Notes */
             notes?: string | null;
+            /** Fee Override Reason */
+            fee_override_reason?: string | null;
         };
         /**
          * BookableSlotResponse
@@ -28519,6 +29046,42 @@ export interface components {
          * @enum {string}
          */
         MakeupStatus: "requested" | "held" | "confirmed" | "completed" | "forfeited" | "expired" | "cancelled";
+        /** MemberPriceCheck */
+        MemberPriceCheck: {
+            /** Context Key */
+            context_key: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+        };
+        /** MemberPriceResponse */
+        MemberPriceResponse: {
+            /** Context Key */
+            context_key: string;
+            /** Fee Amount Kobo */
+            fee_amount_kobo?: number | null;
+            /** Pricing Source */
+            pricing_source?: string | null;
+            /** Price Label */
+            price_label?: string | null;
+        };
+        /** MemberPricesRequest */
+        MemberPricesRequest: {
+            /** Checks */
+            checks: components["schemas"]["MemberPriceCheck"][];
+        };
+        /** MemberPricesResponse */
+        MemberPricesResponse: {
+            /** Items */
+            items: components["schemas"]["MemberPriceResponse"][];
+        };
         /**
          * MemberSessionAccessResponse
          * @description Authoritative access decision for one member/session pair.
@@ -28849,6 +29412,11 @@ export interface components {
              * @default included
              */
             cohort_fee_mode: string;
+            /**
+             * Cohort Attendance Mode
+             * @default automatic
+             */
+            cohort_attendance_mode: string;
             /** Guest Fee Kobo */
             guest_fee_kobo?: number | null;
             /** Community Dropin Fee Kobo */
@@ -29091,6 +29659,12 @@ export interface components {
              * @enum {string}
              */
             cohort_fee_mode: "included" | "paid_extra";
+            /**
+             * Cohort Attendance Mode
+             * @default automatic
+             * @enum {string}
+             */
+            cohort_attendance_mode: "automatic" | "individual";
             /** Guest Fee */
             guest_fee?: number | null;
             /** Community Dropin Fee */
@@ -29478,6 +30052,12 @@ export interface components {
              * @enum {string}
              */
             cohort_fee_mode: "included" | "paid_extra";
+            /**
+             * Cohort Attendance Mode
+             * @default automatic
+             * @enum {string}
+             */
+            cohort_attendance_mode: "automatic" | "individual";
             /** Guest Fee */
             guest_fee?: number | null;
             /** Community Dropin Fee */
@@ -29641,6 +30221,80 @@ export interface components {
             /** Attendance Available */
             attendance_available: boolean;
         };
+        /** SessionSettlementConfirmRequest */
+        SessionSettlementConfirmRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Booking Ids */
+            booking_ids: string[];
+            /** Guest Participant Ids */
+            guest_participant_ids?: string[];
+            /**
+             * Payment Intent Id
+             * Format: uuid
+             */
+            payment_intent_id: string;
+            /** Payment Reference */
+            payment_reference: string;
+            /**
+             * Paid At
+             * Format: date-time
+             */
+            paid_at: string;
+            /** Total Kobo */
+            total_kobo: number;
+            /** Lines */
+            lines: components["schemas"]["SessionSettlementLine"][];
+        };
+        /** SessionSettlementLine */
+        SessionSettlementLine: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "booking" | "guest_walk_in";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Session Title */
+            session_title: string;
+            /**
+             * Session Starts At
+             * Format: date-time
+             */
+            session_starts_at: string;
+            /** Name */
+            name: string;
+            /** Amount Kobo */
+            amount_kobo: number;
+        };
+        /** SessionSettlementQuoteRequest */
+        SessionSettlementQuoteRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Booking Ids */
+            booking_ids: string[];
+            /** Guest Participant Ids */
+            guest_participant_ids?: string[];
+        };
+        /** SessionSettlementQuoteResponse */
+        SessionSettlementQuoteResponse: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Session Type */
+            session_type: string;
+            /** Total Kobo */
+            total_kobo: number;
+            /** Lines */
+            lines: components["schemas"]["SessionSettlementLine"][];
+        };
         /**
          * SessionStatus
          * @enum {string}
@@ -29662,6 +30316,12 @@ export interface components {
              * @enum {string}
              */
             cohort_fee_mode: "included" | "paid_extra";
+            /**
+             * Cohort Attendance Mode
+             * @default automatic
+             * @enum {string}
+             */
+            cohort_attendance_mode: "automatic" | "individual";
             /** Club Id */
             club_id?: string | null;
             /**
@@ -29757,6 +30417,12 @@ export interface components {
              * @enum {string}
              */
             cohort_fee_mode: "included" | "paid_extra";
+            /**
+             * Cohort Attendance Mode
+             * @default automatic
+             * @enum {string}
+             */
+            cohort_attendance_mode: "automatic" | "individual";
             /** Club Id */
             club_id?: string | null;
             /**
@@ -29862,6 +30528,8 @@ export interface components {
             cohort_id?: string | null;
             /** Cohort Fee Mode */
             cohort_fee_mode?: ("included" | "paid_extra") | null;
+            /** Cohort Attendance Mode */
+            cohort_attendance_mode?: ("automatic" | "individual") | null;
             /** Club Id */
             club_id?: string | null;
             /** Club Access Mode */
@@ -29965,6 +30633,8 @@ export interface components {
             pool_fee?: number | null;
             /** Cohort Fee Mode */
             cohort_fee_mode?: ("included" | "paid_extra") | null;
+            /** Cohort Attendance Mode */
+            cohort_attendance_mode?: ("automatic" | "individual") | null;
             /** Guest Fee */
             guest_fee?: number | null;
             /** Community Dropin Fee */
@@ -30824,6 +31494,52 @@ export interface components {
             change_id: string;
             /** Message */
             message: string;
+        };
+        /** ClassAllocationApply */
+        ClassAllocationApply: {
+            /**
+             * Booking Id
+             * Format: uuid
+             */
+            booking_id: string;
+        };
+        /** ClassAllocationInput */
+        ClassAllocationInput: {
+            /** Actor Auth Id */
+            actor_auth_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Agreed Fee Kobo
+             * @default 0
+             */
+            agreed_fee_kobo: number;
+            /** Reason */
+            reason: string;
+        };
+        /** ClassBaselineInput */
+        ClassBaselineInput: {
+            /** Purchased Classes */
+            purchased_classes: number;
+            /** Previously Consumed */
+            previously_consumed: number;
+            /**
+             * Opening As Of
+             * Format: date-time
+             */
+            opening_as_of: string;
+            /** Reason */
+            reason: string;
         };
         /**
          * CoachAssignmentCreate
@@ -32340,6 +33056,52 @@ export interface components {
          * @enum {string}
          */
         InstallmentStatus: "pending" | "paid" | "missed" | "waived";
+        /** LearnerQuizResponse */
+        LearnerQuizResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Quiz Id
+             * Format: uuid
+             */
+            quiz_id: string;
+            /**
+             * Cohort Id
+             * Format: uuid
+             */
+            cohort_id: string;
+            /** Title */
+            title: string;
+            /** Week Number */
+            week_number: number;
+            /** Passing Score */
+            passing_score: number;
+            /** Max Attempts */
+            max_attempts: number | null;
+            /** Required */
+            required: boolean;
+            /** Version */
+            version: number;
+            /**
+             * Available At
+             * Format: date-time
+             */
+            available_at: string;
+            /** Is Unlocked */
+            is_unlocked: boolean;
+            /** Passed */
+            passed: boolean;
+            /** Attempts Used */
+            attempts_used: number;
+            /** Attempts Remaining */
+            attempts_remaining: number | null;
+            /** Questions */
+            questions?: components["schemas"]["QuizQuestionPublic"][] | null;
+            latest_result?: components["schemas"]["QuizAttemptResponse"] | null;
+        };
         /**
          * LocationType
          * @enum {string}
@@ -33023,6 +33785,179 @@ export interface components {
             /** Display Name */
             display_name?: string | null;
         };
+        /** QuizAssignmentCreate */
+        QuizAssignmentCreate: {
+            /**
+             * Quiz Id
+             * Format: uuid
+             */
+            quiz_id: string;
+            /** Week Number */
+            week_number: number;
+            /**
+             * Passing Score
+             * @default 80
+             */
+            passing_score: number;
+            /**
+             * Max Attempts
+             * @default 3
+             */
+            max_attempts: number | null;
+            /**
+             * Required
+             * @default true
+             */
+            required: boolean;
+        };
+        /** QuizAssignmentResponse */
+        QuizAssignmentResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Quiz Id
+             * Format: uuid
+             */
+            quiz_id: string;
+            /**
+             * Cohort Id
+             * Format: uuid
+             */
+            cohort_id: string;
+            /** Title */
+            title: string;
+            /** Week Number */
+            week_number: number;
+            /** Passing Score */
+            passing_score: number;
+            /** Max Attempts */
+            max_attempts: number | null;
+            /** Required */
+            required: boolean;
+            /** Version */
+            version: number;
+        };
+        /** QuizAttemptResponse */
+        QuizAttemptResponse: {
+            /** Attempt Number */
+            attempt_number: number;
+            /** Score Percent */
+            score_percent: number;
+            /** Passed */
+            passed: boolean;
+            /** Feedback */
+            feedback: components["schemas"]["QuizFeedback"][];
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
+        };
+        /** QuizAttemptSubmit */
+        QuizAttemptSubmit: {
+            /** Answers */
+            answers: {
+                [key: string]: string[];
+            };
+        };
+        /** QuizCompletionResponse */
+        QuizCompletionResponse: {
+            /** Required Total */
+            required_total: number;
+            /** Required Passed */
+            required_passed: number;
+            /** Knowledge Complete */
+            knowledge_complete: boolean;
+        };
+        /** QuizFeedback */
+        QuizFeedback: {
+            /** Question Id */
+            question_id: string;
+            /** Correct */
+            correct: boolean;
+            /** Correct Option Ids */
+            correct_option_ids: string[];
+            /** Explanation */
+            explanation: string;
+        };
+        /** QuizOption */
+        QuizOption: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+        };
+        /** QuizQuestion */
+        QuizQuestion: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+            /**
+             * Kind
+             * @default single
+             * @enum {string}
+             */
+            kind: "single" | "multiple" | "true_false";
+            /** Options */
+            options: components["schemas"]["QuizOption"][];
+            /** Correct Option Ids */
+            correct_option_ids: string[];
+            /** Explanation */
+            explanation: string;
+        };
+        /** QuizQuestionPublic */
+        QuizQuestionPublic: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "single" | "multiple" | "true_false";
+            /** Options */
+            options: components["schemas"]["QuizOption"][];
+        };
+        /** QuizTemplateResponse */
+        QuizTemplateResponse: {
+            /**
+             * Program Id
+             * Format: uuid
+             */
+            program_id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Questions */
+            questions: components["schemas"]["QuizQuestion"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Version */
+            version: number;
+        };
+        /** QuizUpsert */
+        QuizUpsert: {
+            /**
+             * Program Id
+             * Format: uuid
+             */
+            program_id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Questions */
+            questions: components["schemas"]["QuizQuestion"][];
+        };
         /**
          * ReadinessCheckItem
          * @description Individual readiness check result.
@@ -33365,6 +34300,45 @@ export interface components {
         AdminReviewRequest: {
             /** Note */
             note?: string | null;
+            /** Verified Bank Reference */
+            verified_bank_reference?: string | null;
+            /** Verified Received At */
+            verified_received_at?: string | null;
+        };
+        /** AdminSessionSettlementRequest */
+        AdminSessionSettlementRequest: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Booking Ids */
+            booking_ids: string[];
+            /** Guest Participant Ids */
+            guest_participant_ids?: string[];
+            /** Expected Total Kobo */
+            expected_total_kobo: number;
+            /**
+             * Idempotency Key
+             * Format: uuid
+             */
+            idempotency_key: string;
+            /** Note */
+            note: string;
+        };
+        /** AdminSessionSettlementResponse */
+        AdminSessionSettlementResponse: {
+            /** Reference */
+            reference: string;
+            /** Amount */
+            amount: number;
+            /** Currency */
+            currency: string;
+            /** Status */
+            status: string;
+            /** Authorization Url */
+            authorization_url: string | null;
+            /** Lines */
+            lines: {
+                [key: string]: unknown;
+            }[];
         };
         /** AdoptSettledAcademyReceiptRequest */
         AdoptSettledAcademyReceiptRequest: {
@@ -35029,7 +36003,7 @@ export interface components {
             /** Access Token */
             access_token: string;
             /** External Reference */
-            external_reference: string;
+            external_reference?: string | null;
             /**
              * Received Date
              * Format: date
@@ -41765,6 +42739,147 @@ export interface components {
             /** Warnings */
             warnings?: string[];
         };
+        /** DirectoryCorrection */
+        DirectoryCorrection: {
+            /** Details */
+            details: string;
+        };
+        /** DirectoryList */
+        DirectoryList: {
+            /** Items */
+            items: components["schemas"]["DirectoryPool"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** DirectoryPhoto */
+        DirectoryPhoto: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Url */
+            url: string;
+            /** Caption */
+            caption?: string | null;
+        };
+        /** DirectoryPool */
+        DirectoryPool: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Location Area */
+            location_area?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Latitude */
+            latitude?: number | null;
+            /** Longitude */
+            longitude?: number | null;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Depth Min M */
+            depth_min_m?: number | null;
+            /** Depth Max M */
+            depth_max_m?: number | null;
+            /** Indoor Outdoor */
+            indoor_outdoor?: string | null;
+            /** Has Changing Rooms */
+            has_changing_rooms?: boolean | null;
+            /** Has Showers */
+            has_showers?: boolean | null;
+            /** Has Lockers */
+            has_lockers?: boolean | null;
+            /** Has Parking */
+            has_parking?: boolean | null;
+            /** Has Lifeguard */
+            has_lifeguard?: boolean | null;
+            /** Last Verified At */
+            last_verified_at?: string | null;
+            /** Is Partner */
+            is_partner: boolean;
+            /** Bookable */
+            bookable: boolean;
+            /** Rating Average */
+            rating_average?: number | null;
+            /**
+             * Rating Count
+             * @default 0
+             */
+            rating_count: number;
+            /** Photos */
+            photos?: components["schemas"]["DirectoryPhoto"][];
+            /** Swimbuddz Assessment Rating */
+            swimbuddz_assessment_rating?: number | null;
+            /** Swimbuddz Assessment Summary */
+            swimbuddz_assessment_summary?: string | null;
+            /** Swimbuddz Assessment Updated At */
+            swimbuddz_assessment_updated_at?: string | null;
+        };
+        /** DirectoryReview */
+        DirectoryReview: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Rating */
+            rating: number;
+            /** Review */
+            review: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Attribution
+             * @default Swimmer
+             */
+            attribution: string;
+        };
+        /** DirectoryReviewCreate */
+        DirectoryReviewCreate: {
+            /** Rating */
+            rating: number;
+            /** Review */
+            review: string;
+        };
+        /** DirectoryReviews */
+        DirectoryReviews: {
+            /** Items */
+            items: components["schemas"]["DirectoryReview"][];
+            /** Total */
+            total: number;
+        };
+        /** DirectorySuggestion */
+        DirectorySuggestion: {
+            /** Pool Name */
+            pool_name: string;
+            /** Location Area */
+            location_area: string;
+            /** Address */
+            address?: string | null;
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Details */
+            details?: string | null;
+            /**
+             * Website
+             * @default
+             */
+            website: string;
+        };
         /** GuestInput */
         GuestInput: {
             /** Name */
@@ -42309,6 +43424,11 @@ export interface components {
              * @default false
              */
             is_primary: boolean;
+            /**
+             * Directory Public
+             * @default false
+             */
+            directory_public: boolean;
         };
         /** PoolAssetResponse */
         PoolAssetResponse: {
@@ -42332,6 +43452,11 @@ export interface components {
              * @default false
              */
             is_primary: boolean;
+            /**
+             * Directory Public
+             * @default false
+             */
+            directory_public: boolean;
             /**
              * Id
              * Format: uuid
@@ -42375,6 +43500,8 @@ export interface components {
             display_order?: number | null;
             /** Is Primary */
             is_primary?: boolean | null;
+            /** Directory Public */
+            directory_public?: boolean | null;
         };
         /** PoolContactCreate */
         PoolContactCreate: {
@@ -42544,6 +43671,17 @@ export interface components {
             source?: components["schemas"]["PoolSource"] | null;
             /** Last Verified At */
             last_verified_at?: string | null;
+            /** Directory Assessment Rating */
+            directory_assessment_rating?: number | null;
+            /** Directory Assessment Summary */
+            directory_assessment_summary?: string | null;
+            /** Directory Assessment Updated At */
+            directory_assessment_updated_at?: string | null;
+            /**
+             * Directory Published
+             * @default false
+             */
+            directory_published: boolean;
             /** @default prospect */
             partnership_status: components["schemas"]["PartnershipStatus"];
             pool_type?: components["schemas"]["PoolType"] | null;
@@ -42806,6 +43944,17 @@ export interface components {
             source?: components["schemas"]["PoolSource"] | null;
             /** Last Verified At */
             last_verified_at?: string | null;
+            /** Directory Assessment Rating */
+            directory_assessment_rating?: number | null;
+            /** Directory Assessment Summary */
+            directory_assessment_summary?: string | null;
+            /** Directory Assessment Updated At */
+            directory_assessment_updated_at?: string | null;
+            /**
+             * Directory Published
+             * @default false
+             */
+            directory_published: boolean;
             /** @default prospect */
             partnership_status: components["schemas"]["PartnershipStatus"];
             pool_type?: components["schemas"]["PoolType"] | null;
@@ -43094,6 +44243,12 @@ export interface components {
             source?: components["schemas"]["PoolSource"] | null;
             /** Last Verified At */
             last_verified_at?: string | null;
+            /** Directory Assessment Rating */
+            directory_assessment_rating?: number | null;
+            /** Directory Assessment Summary */
+            directory_assessment_summary?: string | null;
+            /** Directory Published */
+            directory_published?: boolean | null;
             partnership_status?: components["schemas"]["PartnershipStatus"] | null;
             pool_type?: components["schemas"]["PoolType"] | null;
             /** Notes */
@@ -43197,6 +44352,62 @@ export interface components {
          * @enum {string}
          */
         PreferredContactChannel: "whatsapp" | "phone" | "email" | "in_person";
+        /** PublicPartnerPool */
+        PublicPartnerPool: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Location Area */
+            location_area?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Operating Area Id */
+            operating_area_id?: string | null;
+            /** Latitude */
+            latitude?: number | null;
+            /** Longitude */
+            longitude?: number | null;
+            pool_type?: components["schemas"]["PoolType"] | null;
+            indoor_outdoor?: components["schemas"]["IndoorOutdoor"] | null;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Depth Min M */
+            depth_min_m?: number | null;
+            /** Depth Max M */
+            depth_max_m?: number | null;
+            /** Number Of Lanes */
+            number_of_lanes?: number | null;
+            /** Has Changing Rooms */
+            has_changing_rooms?: boolean | null;
+            /** Has Showers */
+            has_showers?: boolean | null;
+            /** Has Lockers */
+            has_lockers?: boolean | null;
+            /** Has Parking */
+            has_parking?: boolean | null;
+            /** Has Lifeguard */
+            has_lifeguard?: boolean | null;
+            partnership_status: components["schemas"]["PartnershipStatus"];
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** PublicPartnerPoolList */
+        PublicPartnerPoolList: {
+            /** Items */
+            items: components["schemas"]["PublicPartnerPool"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** ScanInput */
         ScanInput: {
             /** Ticket */
@@ -57057,6 +58268,74 @@ export interface operations {
             };
         };
     };
+    quote_settlement_internal_sessions_settlements_quote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionSettlementQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSettlementQuoteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_settlement_internal_sessions_settlements_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionSettlementConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     pod_sessions_sessions_club_operations_pods__pod_id__get: {
         parameters: {
             query?: never;
@@ -57559,6 +58838,38 @@ export interface operations {
             };
         };
     };
+    preview_admin_member_admission_sessions__session_id__admin_member_admission__member_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_walk_in_booking_sessions__session_id__admin_walk_in_post: {
         parameters: {
             query?: never;
@@ -57812,6 +59123,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionBookingResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_academy_participation_sessions__session_id__admin_academy_participation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcademyClassAdminBooking"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -59415,6 +60761,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportingSection"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_prices_internal_sessions_member_prices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberPricesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberPricesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -62502,6 +63881,178 @@ export interface operations {
             };
         };
     };
+    class_entitlements_academy_admin_enrollments__enrollment_id__class_entitlements_get: {
+        parameters: {
+            query?: {
+                session_id?: string | null;
+            };
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_class_baseline_academy_admin_enrollments__enrollment_id__class_entitlements_preview_get: {
+        parameters: {
+            query: {
+                session_id: string;
+            };
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    configure_class_baseline_academy_admin_enrollments__enrollment_id__class_entitlements_baseline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassBaselineInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reserve_class_allocation_academy_admin_enrollments__enrollment_id__class_entitlements_allocations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassAllocationInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_class_allocation_academy_internal_enrollments__enrollment_id__class_allocations__allocation_id__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+                allocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassAllocationApply"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_enrollments_academy_my_enrollments_get: {
         parameters: {
             query?: never;
@@ -62912,6 +64463,42 @@ export interface operations {
         };
     };
     claim_milestone_academy_enrollments__enrollment_id__progress__milestone_id__claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+                milestone_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberMilestoneClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentProgressResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    coach_record_milestone_video_academy_coach_enrollments__enrollment_id__progress__milestone_id__record_video_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -63876,6 +65463,269 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_templates_academy_admin_programs__program_id__quizzes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                program_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizTemplateResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_quiz_academy_admin_quizzes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuizUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_quiz_academy_admin_quizzes__quiz_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quiz_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuizUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_assignments_academy_admin_cohorts__cohort_id__quizzes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizAssignmentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_quiz_academy_admin_cohorts__cohort_id__quizzes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuizAssignmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizAssignmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    quiz_completion_academy_enrollments__enrollment_id__quizzes_completion_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizCompletionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    learner_quizzes_academy_enrollments__enrollment_id__quizzes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnerQuizResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_attempt_academy_enrollments__enrollment_id__quizzes__assignment_id__attempt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+                assignment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuizAttemptSubmit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuizAttemptResponse"];
                 };
             };
             /** @description Validation Error */
@@ -66097,6 +67947,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_session_settlement_payments_admin_session_settlements_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSessionSettlementRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSessionSettlementResponse"];
                 };
             };
             /** @description Validation Error */
@@ -77268,6 +79151,7 @@ export interface operations {
         parameters: {
             query?: {
                 location_area?: string | null;
+                pool_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -77540,6 +79424,295 @@ export interface operations {
             };
         };
     };
+    list_directory_pools_directory_get: {
+        parameters: {
+            query?: {
+                search?: string | null;
+                area?: string | null;
+                latitude?: number | null;
+                longitude?: number | null;
+                radius_km?: number | null;
+                sort?: string;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectoryList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pool_detail_pools_directory__pool_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectoryPool"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reviews_pools_directory__pool_id__reviews_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectoryReviews"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_review_pools_directory__pool_id__reviews_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectoryReviewCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suggest_correction_pools_directory__pool_id__corrections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectoryCorrection"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suggest_pool_pools_directory_suggestions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorySuggestion"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_published_admin_pools_directory__pool_id__publish_patch: {
+        parameters: {
+            query: {
+                published: boolean;
+            };
+            header?: never;
+            path: {
+                pool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pending_reviews_admin_pools_directory_reviews_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    moderate_review_admin_pools_directory_reviews__review_id__patch: {
+        parameters: {
+            query: {
+                approved: boolean;
+            };
+            header?: never;
+            path: {
+                review_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_partner_pools_pools_get: {
         parameters: {
             query?: {
@@ -77562,7 +79735,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PoolListResponse"];
+                    "application/json": components["schemas"]["PublicPartnerPoolList"];
                 };
             };
             /** @description Validation Error */
@@ -77613,7 +79786,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PoolResponse"];
+                    "application/json": components["schemas"]["PublicPartnerPool"];
                 };
             };
             /** @description Validation Error */
@@ -83460,6 +85633,7 @@ export interface operations {
         parameters: {
             query: {
                 owner_auth_id: string;
+                expected_linked_id?: string | null;
             };
             header?: never;
             path: {

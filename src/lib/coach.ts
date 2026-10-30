@@ -327,6 +327,7 @@ export type CoachSession = {
   capacity: number;
   cohort_id: string | null;
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   week_number: number | null;
   lesson_title: string | null;
   created_at: string;
