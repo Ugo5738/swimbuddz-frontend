@@ -657,7 +657,7 @@ export default function AdminAttendancePage() {
           attendance: att,
           booking,
           ride_info: att?.ride_info,
-          effectiveStatus: !att && (selectedSession?.cohort_attendance_mode === "individual" || selectedSession?.cohort_fee_mode === "paid_extra") ? "awaiting" : effective,
+          effectiveStatus: !att && !booking && (selectedSession?.cohort_attendance_mode === "individual" || selectedSession?.cohort_fee_mode === "paid_extra") ? "awaiting" : effective,
         });
       }
     }
@@ -1853,7 +1853,7 @@ function RosterTableRow({
   const memberFlagSelfExcused = isSelfExcused(row.booking?.notes);
 
   const statusLabel = (() => {
-    if (academyAllocationOnly && row.source === "cohort" && !row.attendance) return row.booking ? "Not recorded" : "Not scheduled";
+    if (academyAllocationOnly && row.source === "cohort" && !row.attendance && !row.booking) return "Not scheduled";
     if (row.effectiveStatus === "awaiting") return "Awaiting";
     return row.effectiveStatus.charAt(0).toUpperCase() + row.effectiveStatus.slice(1);
   })();

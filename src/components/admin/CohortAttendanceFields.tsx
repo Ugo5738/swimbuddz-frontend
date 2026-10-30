@@ -14,11 +14,11 @@ export function CohortAttendanceFields({ value, paidExtra, onChange }: {
       disabled={paidExtra}
       onChange={(event) => onChange(event.target.value as "automatic" | "individual")}
       hint={paidExtra || value === "individual"
-        ? "No student is marked Present automatically. Record each attendee under Academy student, choosing a purchased class or a separately paid extra."
+        ? "Only students with confirmed bookings default to Present. To add someone else, use Academy student and choose a purchased class or a separately paid extra."
         : "Enrolled students default to Present for this regular class. Admins and coaches can record Absent or Excused exceptions."}
     >
       <option value="automatic">Regular cohort class — automatic Present</option>
-      <option value="individual">Extra / individual class — record each attendee</option>
+      <option value="individual">Extra / individual class — booked students only</option>
     </Select>
   );
 }
