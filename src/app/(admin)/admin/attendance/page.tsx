@@ -47,6 +47,7 @@ type Session = ClubSessionScope & {
   week_number: number | null;
   cohort_id: string | null;
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   session_type: string | null;
   pod_id: string | null;
   // Per-session pool fee in NAIRA (the member endpoint converts kobo→naira
@@ -642,6 +643,7 @@ export default function AdminAttendancePage() {
         const effective = academyAttendanceStatus({
           recordedStatus: att?.status,
           feeMode: selectedSession?.cohort_fee_mode,
+          attendanceMode: selectedSession?.cohort_attendance_mode,
           hasConfirmedBooking: Boolean(booking),
           eligibleEnrollment: !e.access_suspended,
           joinedAt: e.created_at,
@@ -655,7 +657,7 @@ export default function AdminAttendancePage() {
           attendance: att,
           booking,
           ride_info: att?.ride_info,
-          effectiveStatus: effective,
+          effectiveStatus: !att && !booking && (selectedSession?.cohort_attendance_mode === "individual" || selectedSession?.cohort_fee_mode === "paid_extra") ? "awaiting" : effective,
         });
       }
     }
@@ -707,6 +709,7 @@ export default function AdminAttendancePage() {
     memberLookup,
     sessionStarted,
     selectedSession?.cohort_fee_mode,
+    selectedSession?.cohort_attendance_mode,
     selectedSession?.starts_at,
   ]);
 
@@ -1213,7 +1216,7 @@ export default function AdminAttendancePage() {
               value={attendanceList.length}
             />
             <ReconciliationStat
-              label={isCohortSession && selectedSession?.cohort_fee_mode === "paid_extra" ? "Booked no-shows" : sessionStarted ? "No-shows" : "Pending arrivals"}
+              label={isCohortSession && (selectedSession?.cohort_fee_mode === "paid_extra" || selectedSession?.cohort_attendance_mode === "individual") ? "Booked no-shows" : sessionStarted ? "No-shows" : "Pending arrivals"}
               value={unmatchedBookings.length}
               tone={unmatchedBookings.length === 0 ? "ok" : sessionStarted ? "warn" : "neutral"}
             />
@@ -1343,7 +1346,7 @@ export default function AdminAttendancePage() {
                 unmatchedBookingCount={unmatchedBookings.length}
                 onDraftStatus={handleDraftStatus}
                 onMarkWalkIn={handleMarkWalkIn}
-                academyAllocationOnly={isCohortSession && selectedSession?.cohort_fee_mode === "paid_extra"}
+                academyAllocationOnly={isCohortSession && (selectedSession?.cohort_fee_mode === "paid_extra" || selectedSession?.cohort_attendance_mode === "individual")}
                 onGeneratePayLink={handleGeneratePayLink}
                 onBookingCorrected={(corrected) =>
                   setBookings((existing) =>
@@ -1850,7 +1853,7 @@ function RosterTableRow({
   const memberFlagSelfExcused = isSelfExcused(row.booking?.notes);
 
   const statusLabel = (() => {
-    if (academyAllocationOnly && row.source === "cohort" && !row.booking && !row.attendance) return "Not scheduled";
+    if (academyAllocationOnly && row.source === "cohort" && !row.attendance && !row.booking) return "Not scheduled";
     if (row.effectiveStatus === "awaiting") return "Awaiting";
     return row.effectiveStatus.charAt(0).toUpperCase() + row.effectiveStatus.slice(1);
   })();

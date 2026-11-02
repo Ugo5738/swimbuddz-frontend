@@ -55,6 +55,7 @@ export function getCohortColor(cohortId: string): string {
 
 export interface Session extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   id: string;
   title: string;
   description?: string;
@@ -162,6 +163,7 @@ export interface SessionCoach {
 
 export interface SessionCreate extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   title: string;
   description?: string;
   notes?: string;
@@ -193,6 +195,7 @@ export interface SessionCreate extends GuestSessionSettings {
 
 export interface SessionUpdate extends GuestSessionSettings {
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   title?: string;
   description?: string;
   notes?: string;

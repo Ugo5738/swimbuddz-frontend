@@ -233,6 +233,7 @@ describe("SessionFormModal Club scope", () => {
         session_type: "cohort_class",
         cohort_id: "cohort-1",
         cohort_fee_mode: mode,
+        cohort_attendance_mode: "individual",
         pool_fee: 15000,
       });
     }

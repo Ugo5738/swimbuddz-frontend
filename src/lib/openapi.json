@@ -10553,6 +10553,100 @@
         }
       }
     },
+    "/api/v1/internal/sessions/settlements/quote": {
+      "post": {
+        "tags": [
+          "internal-settlements"
+        ],
+        "summary": "Quote Settlement",
+        "operationId": "quote_settlement_internal_sessions_settlements_quote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionSettlementQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSettlementQuoteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/sessions/settlements/confirm": {
+      "post": {
+        "tags": [
+          "internal-settlements"
+        ],
+        "summary": "Confirm Settlement",
+        "operationId": "confirm_settlement_internal_sessions_settlements_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionSettlementConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Confirm Settlement Internal Sessions Settlements Confirm Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/sessions/club-operations/pods/{pod_id}": {
       "get": {
         "tags": [
@@ -11338,6 +11432,63 @@
         ]
       }
     },
+    "/api/v1/sessions/{session_id}/admin/member-admission/{member_id}": {
+      "get": {
+        "tags": [
+          "bookings"
+        ],
+        "summary": "Preview Admin Member Admission",
+        "description": "Show an administrator the current eligibility and standard price.",
+        "operationId": "preview_admin_member_admission_sessions__session_id__admin_member_admission__member_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "member_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Member Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sessions/{session_id}/admin/walk-in": {
       "post": {
         "tags": [
@@ -11784,6 +11935,62 @@
                   },
                   "title": "Response List Session Bookings Sessions  Session Id  Bookings Get"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/admin/academy-participation": {
+      "post": {
+        "tags": [
+          "academy-session-participation"
+        ],
+        "summary": "Record Academy Participation",
+        "operationId": "record_academy_participation_sessions__session_id__admin_academy_participation_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcademyClassAdminBooking"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -14606,6 +14813,52 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/internal/sessions/member-prices": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Member Prices",
+        "operationId": "member_prices_internal_sessions_member_prices_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberPricesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberPricesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/internal/sessions/participants/{participant_id}/settlement-context": {
@@ -19650,6 +19903,307 @@
         }
       }
     },
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/class-entitlements": {
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Class Entitlements",
+        "operationId": "class_entitlements_academy_admin_enrollments__enrollment_id__class_entitlements_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/class-entitlements/preview": {
+      "get": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Preview Class Baseline",
+        "description": "Suggest a historical opening balance from authoritative records.\n\nSuggestions are *not* approved balances. Programme duration is not a\npurchased-class contract and missing attendance must be reviewed.",
+        "operationId": "preview_class_baseline_academy_admin_enrollments__enrollment_id__class_entitlements_preview_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/class-entitlements/baseline": {
+      "post": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Configure Class Baseline",
+        "description": "One-time verified opening balance; never reset consumed classes.",
+        "operationId": "configure_class_baseline_academy_admin_enrollments__enrollment_id__class_entitlements_baseline_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassBaselineInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/admin/enrollments/{enrollment_id}/class-entitlements/allocations": {
+      "post": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Reserve Class Allocation",
+        "description": "Reserve a learner-specific entitlement, idempotently.\n\nThis intentionally does not create a booking or charge a member. The\ncorresponding Sessions-service write is a separate step and may fail.",
+        "operationId": "reserve_class_allocation_academy_admin_enrollments__enrollment_id__class_entitlements_allocations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassAllocationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/internal/enrollments/{enrollment_id}/class-allocations/{allocation_id}/apply": {
+      "post": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Apply Class Allocation",
+        "description": "Sessions service confirms a durable booking was written.\n\nThe allocation is reserved until this call. A retry with the same booking\nis safe; an alternate booking ID is a reconciliation conflict.",
+        "operationId": "apply_class_allocation_academy_internal_enrollments__enrollment_id__class_allocations__allocation_id__apply_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          },
+          {
+            "name": "allocation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Allocation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassAllocationApply"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/academy/my-enrollments": {
       "get": {
         "tags": [
@@ -20329,8 +20883,77 @@
           "academy"
         ],
         "summary": "Claim Milestone",
-        "description": "Allow a member to claim completion of a milestone.\n\nThe member must own the enrollment. Creates or updates a StudentProgress\nrecord with ACHIEVED status and optional evidence.",
+        "description": "Allow a member to claim completion of a milestone.\n\nThe member must own the enrollment. Creates or updates a StudentProgress\nrecord with PENDING status and optional evidence.",
         "operationId": "claim_milestone_academy_enrollments__enrollment_id__progress__milestone_id__claim_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          },
+          {
+            "name": "milestone_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Milestone Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberMilestoneClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentProgressResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/coach/enrollments/{enrollment_id}/progress/{milestone_id}/record-video": {
+      "post": {
+        "tags": [
+          "academy"
+        ],
+        "summary": "Coach Record Milestone Video",
+        "description": "Submit video recorded by the assigned coach, pending independent review.\n\nNo achievement is awarded here. The coach's identity is stored in the\nCLAIMED audit event, making approval-time media ownership validation possible.",
+        "operationId": "coach_record_milestone_video_academy_coach_enrollments__enrollment_id__progress__milestone_id__record_video_post",
         "security": [
           {
             "HTTPBearer": []
@@ -20461,7 +21084,7 @@
           "academy"
         ],
         "summary": "Override Progress",
-        "description": "Admin (or AI service) override of a prior decision on a milestone claim.\n\nUnlike ``POST /progress`` (the coach path), this endpoint:\n\n* **Requires** ``override_reason`` (enforced by the schema).\n* Records a separate ``OVERRIDE`` event on\n  ``milestone_review_events`` chained to the most recent prior\n  decision via ``override_of_event_id``. Override-of-override is\n  permitted \u2014 the chain just deepens.\n* Does **not** touch ``StudentProgress.reviewed_by_coach_id`` \u2014 the\n  original coach stays attributed to the live row (see\n  ACADEMY_ADMIN_CONTROLS_DESIGN \u00a75.4).\n* Attributes the event to the synthetic AI principal when the\n  caller authenticated via ``service_role``; otherwise to the\n  admin user. ``ai_metadata`` is recorded on the event row\n  regardless of caller \u2014 it's attribution data that travels with\n  the event, not a control flag.\n\nReturns the (possibly newly-created) ``StudentProgress`` row.",
+        "description": "Admin (or AI service) override of a prior decision on a milestone claim.\n\nUnlike ``POST /progress`` (the coach path), this endpoint:\n\n* **Requires** ``override_reason`` (enforced by the schema).\n* Records a separate ``OVERRIDE`` event on\n  ``milestone_review_events`` chained to the most recent prior\n  decision via ``override_of_event_id``. Override-of-override is\n  permitted \u2014 the chain just deepens.\n* Does **not** touch ``StudentProgress.reviewed_by_coach_id`` \u2014 the\n  original coach stays attributed to the live row (see\n  ACADEMY_ADMIN_CONTROLS_DESIGN \u00a75.4).\n* Attributes the event to the synthetic AI principal when the\n  caller authenticated via ``service_role``; otherwise to the\n  admin user. ``ai_metadata`` is recorded on the event row\n  regardless of caller \u2014 it's attribution data that travels with\n  the event, not a control flag.\n\nReturns the existing ``StudentProgress`` row after an auditable override.",
         "operationId": "override_progress_academy_admin_progress_override_post",
         "requestBody": {
           "content": {
@@ -21864,6 +22487,438 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/admin/programs/{program_id}/quizzes": {
+      "get": {
+        "tags": [
+          "academy-quizzes"
+        ],
+        "summary": "List Templates",
+        "operationId": "list_templates_academy_admin_programs__program_id__quizzes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "program_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Program Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QuizTemplateResponse"
+                  },
+                  "title": "Response List Templates Academy Admin Programs  Program Id  Quizzes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/admin/quizzes": {
+      "post": {
+        "tags": [
+          "academy-quizzes"
+        ],
+        "summary": "Create Quiz",
+        "operationId": "create_quiz_academy_admin_quizzes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizUpsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizTemplateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/academy/admin/quizzes/{quiz_id}": {
+      "put": {
+        "tags": [
+          "academy-quizzes"
+        ],
+        "summary": "Update Quiz",
+        "operationId": "update_quiz_academy_admin_quizzes__quiz_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quiz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Quiz Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizUpsert"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizTemplateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/admin/cohorts/{cohort_id}/quizzes": {
+      "get": {
+        "tags": [
+          "academy-quizzes"
+        ],
+        "summary": "List Assignments",
+        "operationId": "list_assignments_academy_admin_cohorts__cohort_id__quizzes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cohort_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cohort Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QuizAssignmentResponse"
+                  },
+                  "title": "Response List Assignments Academy Admin Cohorts  Cohort Id  Quizzes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "academy-quizzes"
+        ],
+        "summary": "Assign Quiz",
+        "operationId": "assign_quiz_academy_admin_cohorts__cohort_id__quizzes_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cohort_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cohort Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizAssignmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizAssignmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/enrollments/{enrollment_id}/quizzes/completion": {
+      "get": {
+        "tags": [
+          "academy-quizzes"
+        ],
+        "summary": "Quiz Completion",
+        "operationId": "quiz_completion_academy_enrollments__enrollment_id__quizzes_completion_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizCompletionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/enrollments/{enrollment_id}/quizzes": {
+      "get": {
+        "tags": [
+          "academy-quizzes"
+        ],
+        "summary": "Learner Quizzes",
+        "operationId": "learner_quizzes_academy_enrollments__enrollment_id__quizzes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LearnerQuizResponse"
+                  },
+                  "title": "Response Learner Quizzes Academy Enrollments  Enrollment Id  Quizzes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/academy/enrollments/{enrollment_id}/quizzes/{assignment_id}/attempt": {
+      "post": {
+        "tags": [
+          "academy-quizzes"
+        ],
+        "summary": "Submit Attempt",
+        "operationId": "submit_attempt_academy_enrollments__enrollment_id__quizzes__assignment_id__attempt_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Enrollment Id"
+            }
+          },
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Assignment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizAttemptSubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizAttemptResponse"
+                }
               }
             }
           },
@@ -25394,6 +26449,52 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/payments/admin/session-settlements": {
+      "post": {
+        "tags": [
+          "session-settlements"
+        ],
+        "summary": "Create Session Settlement",
+        "operationId": "create_session_settlement_payments_admin_session_settlements_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminSessionSettlementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSessionSettlementResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/payments/charges": {
@@ -44136,6 +45237,23 @@
               ],
               "title": "Location Area"
             }
+          },
+          {
+            "name": "pool_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pool Id"
+            }
           }
         ],
         "responses": {
@@ -44519,6 +45637,537 @@
         ]
       }
     },
+    "/api/v1/pools/directory": {
+      "get": {
+        "tags": [
+          "pool-directory"
+        ],
+        "summary": "List Directory",
+        "operationId": "list_directory_pools_directory_get",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Area"
+            }
+          },
+          {
+            "name": "latitude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 90,
+                  "minimum": -90
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Latitude"
+            }
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 180,
+                  "minimum": -180
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Longitude"
+            }
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 250,
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Radius Km"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(name|nearest)$",
+              "default": "name",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pools/directory/{pool_id}": {
+      "get": {
+        "tags": [
+          "pool-directory"
+        ],
+        "summary": "Pool Detail",
+        "operationId": "pool_detail_pools_directory__pool_id__get",
+        "parameters": [
+          {
+            "name": "pool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pool Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryPool"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pools/directory/{pool_id}/reviews": {
+      "get": {
+        "tags": [
+          "pool-directory"
+        ],
+        "summary": "Reviews",
+        "operationId": "reviews_pools_directory__pool_id__reviews_get",
+        "parameters": [
+          {
+            "name": "pool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pool Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryReviews"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "pool-directory"
+        ],
+        "summary": "Submit Review",
+        "operationId": "submit_review_pools_directory__pool_id__reviews_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pool Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectoryReviewCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pools/directory/{pool_id}/corrections": {
+      "post": {
+        "tags": [
+          "pool-directory"
+        ],
+        "summary": "Suggest Correction",
+        "description": "Reuse the existing moderation queue without creating a second pool.",
+        "operationId": "suggest_correction_pools_directory__pool_id__corrections_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pool Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectoryCorrection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pools/directory/suggestions": {
+      "post": {
+        "tags": [
+          "pool-directory"
+        ],
+        "summary": "Suggest Pool",
+        "description": "Anyone with a free visitor login may contribute; no paid membership required.",
+        "operationId": "suggest_pool_pools_directory_suggestions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectorySuggestion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/pools/directory/{pool_id}/publish": {
+      "patch": {
+        "tags": [
+          "admin-pool-directory"
+        ],
+        "summary": "Set Published",
+        "operationId": "set_published_admin_pools_directory__pool_id__publish_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pool Id"
+            }
+          },
+          {
+            "name": "published",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean",
+              "title": "Published"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/pools/directory/reviews/pending": {
+      "get": {
+        "tags": [
+          "admin-pool-directory"
+        ],
+        "summary": "Pending Reviews",
+        "operationId": "pending_reviews_admin_pools_directory_reviews_pending_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/pools/directory/reviews/{review_id}": {
+      "patch": {
+        "tags": [
+          "admin-pool-directory"
+        ],
+        "summary": "Moderate Review",
+        "operationId": "moderate_review_admin_pools_directory_reviews__review_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Review Id"
+            }
+          },
+          {
+            "name": "approved",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean",
+              "title": "Approved"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/pools": {
       "get": {
         "tags": [
@@ -44623,7 +46272,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PoolListResponse"
+                  "$ref": "#/components/schemas/PublicPartnerPoolList"
                 }
               }
             }
@@ -44693,7 +46342,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PoolResponse"
+                  "$ref": "#/components/schemas/PublicPartnerPool"
                 }
               }
             }
@@ -54634,6 +56283,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Owner Auth Id"
+            }
+          },
+          {
+            "name": "expected_linked_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Linked Id"
             }
           }
         ],
@@ -69570,6 +71235,18 @@
           "access_source": {
             "type": "string",
             "title": "Access Source"
+          },
+          "fee_amount_kobo": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Amount Kobo"
           }
         },
         "type": "object",
@@ -79029,6 +80706,69 @@
         "title": "MemberMembershipResponse",
         "description": "Membership tiers, billing, and gamification."
       },
+      "AcademyClassAdminBooking": {
+        "properties": {
+          "member_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Member Id"
+          },
+          "enrollment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Enrollment Id"
+          },
+          "kind": {
+            "type": "string",
+            "pattern": "^(prepaid|paid_extra)$",
+            "title": "Kind"
+          },
+          "agreed_fee_kobo": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Agreed Fee Kobo",
+            "default": 0
+          },
+          "override_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Reason"
+          },
+          "expected_standard_fee_kobo": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Standard Fee Kobo"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 10,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "member_id",
+          "enrollment_id",
+          "kind",
+          "reason"
+        ],
+        "title": "AcademyClassAdminBooking"
+      },
       "AdminGuestWalkInCreate": {
         "properties": {
           "full_name": {
@@ -79487,6 +81227,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "fee_override_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Override Reason"
           }
         },
         "type": "object",
@@ -82525,6 +84277,113 @@
         "title": "MakeupStatus",
         "description": "Lifecycle of a MakeupBooking (individual-learner make-up / reschedule)."
       },
+      "MemberPriceCheck": {
+        "properties": {
+          "context_key": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Context Key"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Member Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "context_key",
+          "session_id",
+          "member_id"
+        ],
+        "title": "MemberPriceCheck"
+      },
+      "MemberPriceResponse": {
+        "properties": {
+          "context_key": {
+            "type": "string",
+            "title": "Context Key"
+          },
+          "fee_amount_kobo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fee Amount Kobo"
+          },
+          "pricing_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Source"
+          },
+          "price_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "context_key"
+        ],
+        "title": "MemberPriceResponse"
+      },
+      "MemberPricesRequest": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/MemberPriceCheck"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "checks"
+        ],
+        "title": "MemberPricesRequest"
+      },
+      "MemberPricesResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MemberPriceResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "MemberPricesResponse"
+      },
       "MemberSessionAccessResponse": {
         "properties": {
           "required_tier": {
@@ -83456,6 +85315,11 @@
             "title": "Cohort Fee Mode",
             "default": "included"
           },
+          "cohort_attendance_mode": {
+            "type": "string",
+            "title": "Cohort Attendance Mode",
+            "default": "automatic"
+          },
           "guest_fee_kobo": {
             "anyOf": [
               {
@@ -84076,6 +85940,15 @@
             ],
             "title": "Cohort Fee Mode",
             "default": "included"
+          },
+          "cohort_attendance_mode": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "individual"
+            ],
+            "title": "Cohort Attendance Mode",
+            "default": "automatic"
           },
           "guest_fee": {
             "anyOf": [
@@ -85070,6 +86943,15 @@
             "title": "Cohort Fee Mode",
             "default": "included"
           },
+          "cohort_attendance_mode": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "individual"
+            ],
+            "title": "Cohort Attendance Mode",
+            "default": "automatic"
+          },
           "guest_fee": {
             "anyOf": [
               {
@@ -85507,6 +87389,193 @@
         ],
         "title": "SessionRosterResponse"
       },
+      "SessionSettlementConfirmRequest": {
+        "properties": {
+          "member_auth_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Member Auth Id"
+          },
+          "booking_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Booking Ids"
+          },
+          "guest_participant_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Guest Participant Ids"
+          },
+          "payment_intent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Payment Intent Id"
+          },
+          "payment_reference": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Payment Reference"
+          },
+          "paid_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Paid At"
+          },
+          "total_kobo": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Total Kobo"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SessionSettlementLine"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Lines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "member_auth_id",
+          "booking_ids",
+          "payment_intent_id",
+          "payment_reference",
+          "paid_at",
+          "total_kobo",
+          "lines"
+        ],
+        "title": "SessionSettlementConfirmRequest"
+      },
+      "SessionSettlementLine": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "booking",
+              "guest_walk_in"
+            ],
+            "title": "Kind"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "session_title": {
+            "type": "string",
+            "title": "Session Title"
+          },
+          "session_starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Session Starts At"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "amount_kobo": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Amount Kobo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "id",
+          "session_id",
+          "session_title",
+          "session_starts_at",
+          "name",
+          "amount_kobo"
+        ],
+        "title": "SessionSettlementLine"
+      },
+      "SessionSettlementQuoteRequest": {
+        "properties": {
+          "member_auth_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Member Auth Id"
+          },
+          "booking_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Booking Ids"
+          },
+          "guest_participant_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Guest Participant Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "member_auth_id",
+          "booking_ids"
+        ],
+        "title": "SessionSettlementQuoteRequest"
+      },
+      "SessionSettlementQuoteResponse": {
+        "properties": {
+          "member_auth_id": {
+            "type": "string",
+            "title": "Member Auth Id"
+          },
+          "session_type": {
+            "type": "string",
+            "title": "Session Type"
+          },
+          "total_kobo": {
+            "type": "integer",
+            "title": "Total Kobo"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SessionSettlementLine"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "member_auth_id",
+          "session_type",
+          "total_kobo",
+          "lines"
+        ],
+        "title": "SessionSettlementQuoteResponse"
+      },
       "SessionStatus": {
         "type": "string",
         "enum": [
@@ -85558,6 +87627,15 @@
             ],
             "title": "Cohort Fee Mode",
             "default": "included"
+          },
+          "cohort_attendance_mode": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "individual"
+            ],
+            "title": "Cohort Attendance Mode",
+            "default": "automatic"
           },
           "club_id": {
             "anyOf": [
@@ -85820,6 +87898,15 @@
             ],
             "title": "Cohort Fee Mode",
             "default": "included"
+          },
+          "cohort_attendance_mode": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "individual"
+            ],
+            "title": "Cohort Attendance Mode",
+            "default": "automatic"
           },
           "club_id": {
             "anyOf": [
@@ -86125,6 +88212,21 @@
               }
             ],
             "title": "Cohort Fee Mode"
+          },
+          "cohort_attendance_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "automatic",
+                  "individual"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cohort Attendance Mode"
           },
           "club_id": {
             "anyOf": [
@@ -86734,6 +88836,21 @@
               }
             ],
             "title": "Cohort Fee Mode"
+          },
+          "cohort_attendance_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "automatic",
+                  "individual"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cohort Attendance Mode"
           },
           "guest_fee": {
             "anyOf": [
@@ -88694,6 +90811,101 @@
           "message"
         ],
         "title": "ChangeCohortResult"
+      },
+      "ClassAllocationApply": {
+        "properties": {
+          "booking_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Booking Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "booking_id"
+        ],
+        "title": "ClassAllocationApply"
+      },
+      "ClassAllocationInput": {
+        "properties": {
+          "actor_auth_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Actor Auth Id"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Member Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "kind": {
+            "type": "string",
+            "pattern": "^(prepaid|paid_extra|makeup|support)$",
+            "title": "Kind"
+          },
+          "agreed_fee_kobo": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Agreed Fee Kobo",
+            "default": 0
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 10,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "actor_auth_id",
+          "member_id",
+          "session_id",
+          "kind",
+          "reason"
+        ],
+        "title": "ClassAllocationInput"
+      },
+      "ClassBaselineInput": {
+        "properties": {
+          "purchased_classes": {
+            "type": "integer",
+            "maximum": 500.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Purchased Classes"
+          },
+          "previously_consumed": {
+            "type": "integer",
+            "maximum": 500.0,
+            "minimum": 0.0,
+            "title": "Previously Consumed"
+          },
+          "opening_as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Opening As Of"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 15,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "purchased_classes",
+          "previously_consumed",
+          "opening_as_of",
+          "reason"
+        ],
+        "title": "ClassBaselineInput"
       },
       "CoachAssignmentCreate": {
         "properties": {
@@ -92491,6 +94703,126 @@
         ],
         "title": "InstallmentStatus"
       },
+      "LearnerQuizResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "quiz_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Quiz Id"
+          },
+          "cohort_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cohort Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "week_number": {
+            "type": "integer",
+            "title": "Week Number"
+          },
+          "passing_score": {
+            "type": "integer",
+            "title": "Passing Score"
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "available_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Available At"
+          },
+          "is_unlocked": {
+            "type": "boolean",
+            "title": "Is Unlocked"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "attempts_used": {
+            "type": "integer",
+            "title": "Attempts Used"
+          },
+          "attempts_remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempts Remaining"
+          },
+          "questions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/QuizQuestionPublic"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questions"
+          },
+          "latest_result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizAttemptResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "quiz_id",
+          "cohort_id",
+          "title",
+          "week_number",
+          "passing_score",
+          "max_attempts",
+          "required",
+          "version",
+          "available_at",
+          "is_unlocked",
+          "passed",
+          "attempts_used",
+          "attempts_remaining"
+        ],
+        "title": "LearnerQuizResponse"
+      },
       "LocationType": {
         "type": "string",
         "enum": [
@@ -94145,6 +96477,437 @@
         ],
         "title": "PublicationConsentRequest"
       },
+      "QuizAssignmentCreate": {
+        "properties": {
+          "quiz_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Quiz Id"
+          },
+          "week_number": {
+            "type": "integer",
+            "maximum": 52.0,
+            "minimum": 1.0,
+            "title": "Week Number"
+          },
+          "passing_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Passing Score",
+            "default": 80
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts",
+            "default": 3
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "quiz_id",
+          "week_number"
+        ],
+        "title": "QuizAssignmentCreate"
+      },
+      "QuizAssignmentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "quiz_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Quiz Id"
+          },
+          "cohort_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cohort Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "week_number": {
+            "type": "integer",
+            "title": "Week Number"
+          },
+          "passing_score": {
+            "type": "integer",
+            "title": "Passing Score"
+          },
+          "max_attempts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Attempts"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "quiz_id",
+          "cohort_id",
+          "title",
+          "week_number",
+          "passing_score",
+          "max_attempts",
+          "required",
+          "version"
+        ],
+        "title": "QuizAssignmentResponse"
+      },
+      "QuizAttemptResponse": {
+        "properties": {
+          "attempt_number": {
+            "type": "integer",
+            "title": "Attempt Number"
+          },
+          "score_percent": {
+            "type": "integer",
+            "title": "Score Percent"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "feedback": {
+            "items": {
+              "$ref": "#/components/schemas/QuizFeedback"
+            },
+            "type": "array",
+            "title": "Feedback"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Submitted At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "attempt_number",
+          "score_percent",
+          "passed",
+          "feedback",
+          "submitted_at"
+        ],
+        "title": "QuizAttemptResponse"
+      },
+      "QuizAttemptSubmit": {
+        "properties": {
+          "answers": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Answers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answers"
+        ],
+        "title": "QuizAttemptSubmit"
+      },
+      "QuizCompletionResponse": {
+        "properties": {
+          "required_total": {
+            "type": "integer",
+            "title": "Required Total"
+          },
+          "required_passed": {
+            "type": "integer",
+            "title": "Required Passed"
+          },
+          "knowledge_complete": {
+            "type": "boolean",
+            "title": "Knowledge Complete"
+          }
+        },
+        "type": "object",
+        "required": [
+          "required_total",
+          "required_passed",
+          "knowledge_complete"
+        ],
+        "title": "QuizCompletionResponse"
+      },
+      "QuizFeedback": {
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "title": "Question Id"
+          },
+          "correct": {
+            "type": "boolean",
+            "title": "Correct"
+          },
+          "correct_option_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Correct Option Ids"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question_id",
+          "correct",
+          "correct_option_ids",
+          "explanation"
+        ],
+        "title": "QuizFeedback"
+      },
+      "QuizOption": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "QuizOption"
+      },
+      "QuizQuestion": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "single",
+              "multiple",
+              "true_false"
+            ],
+            "title": "Kind",
+            "default": "single"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/QuizOption"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "minItems": 2,
+            "title": "Options"
+          },
+          "correct_option_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Correct Option Ids"
+          },
+          "explanation": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Explanation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "options",
+          "correct_option_ids",
+          "explanation"
+        ],
+        "title": "QuizQuestion"
+      },
+      "QuizQuestionPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "single",
+              "multiple",
+              "true_false"
+            ],
+            "title": "Kind"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/QuizOption"
+            },
+            "type": "array",
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "kind",
+          "options"
+        ],
+        "title": "QuizQuestionPublic"
+      },
+      "QuizTemplateResponse": {
+        "properties": {
+          "program_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Program Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuizQuestion"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Questions"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "program_id",
+          "title",
+          "questions",
+          "id",
+          "version"
+        ],
+        "title": "QuizTemplateResponse"
+      },
+      "QuizUpsert": {
+        "properties": {
+          "program_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Program Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuizQuestion"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Questions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "program_id",
+          "title",
+          "questions"
+        ],
+        "title": "QuizUpsert"
+      },
       "ReadinessCheckItem": {
         "properties": {
           "name": {
@@ -95000,11 +97763,139 @@
               }
             ],
             "title": "Note"
+          },
+          "verified_bank_reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verified Bank Reference"
+          },
+          "verified_received_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verified Received At"
           }
         },
         "type": "object",
         "title": "AdminReviewRequest",
         "description": "Admin review action for a manual payment."
+      },
+      "AdminSessionSettlementRequest": {
+        "properties": {
+          "member_auth_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Member Auth Id"
+          },
+          "booking_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Booking Ids"
+          },
+          "guest_participant_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Guest Participant Ids"
+          },
+          "expected_total_kobo": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Expected Total Kobo"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Idempotency Key"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "member_auth_id",
+          "booking_ids",
+          "expected_total_kobo",
+          "idempotency_key",
+          "note"
+        ],
+        "title": "AdminSessionSettlementRequest"
+      },
+      "AdminSessionSettlementResponse": {
+        "properties": {
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "authorization_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorization Url"
+          },
+          "lines": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reference",
+          "amount",
+          "currency",
+          "status",
+          "authorization_url",
+          "lines"
+        ],
+        "title": "AdminSessionSettlementResponse"
       },
       "AdoptSettledAcademyReceiptRequest": {
         "properties": {
@@ -99243,9 +102134,16 @@
             "title": "Access Token"
           },
           "external_reference": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 3,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "External Reference"
           },
           "received_date": {
@@ -99270,7 +102168,6 @@
         "type": "object",
         "required": [
           "access_token",
-          "external_reference",
           "received_date"
         ],
         "title": "TransferReceipt"
@@ -115772,6 +118669,472 @@
         ],
         "title": "CostQuoteResponse"
       },
+      "DirectoryCorrection": {
+        "properties": {
+          "details": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 20,
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "details"
+        ],
+        "title": "DirectoryCorrection"
+      },
+      "DirectoryList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryPool"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "DirectoryList"
+      },
+      "DirectoryPhoto": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "url"
+        ],
+        "title": "DirectoryPhoto"
+      },
+      "DirectoryPool": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "location_area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Area"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "pool_length_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pool Length M"
+          },
+          "depth_min_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth Min M"
+          },
+          "depth_max_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth Max M"
+          },
+          "indoor_outdoor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Indoor Outdoor"
+          },
+          "has_changing_rooms": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Changing Rooms"
+          },
+          "has_showers": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Showers"
+          },
+          "has_lockers": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Lockers"
+          },
+          "has_parking": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Parking"
+          },
+          "has_lifeguard": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Lifeguard"
+          },
+          "last_verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Verified At"
+          },
+          "is_partner": {
+            "type": "boolean",
+            "title": "Is Partner"
+          },
+          "bookable": {
+            "type": "boolean",
+            "title": "Bookable"
+          },
+          "rating_average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating Average"
+          },
+          "rating_count": {
+            "type": "integer",
+            "title": "Rating Count",
+            "default": 0
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryPhoto"
+            },
+            "type": "array",
+            "title": "Photos"
+          },
+          "swimbuddz_assessment_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swimbuddz Assessment Rating"
+          },
+          "swimbuddz_assessment_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swimbuddz Assessment Summary"
+          },
+          "swimbuddz_assessment_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swimbuddz Assessment Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "is_partner",
+          "bookable"
+        ],
+        "title": "DirectoryPool"
+      },
+      "DirectoryReview": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "rating": {
+            "type": "integer",
+            "title": "Rating"
+          },
+          "review": {
+            "type": "string",
+            "title": "Review"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "attribution": {
+            "type": "string",
+            "title": "Attribution",
+            "default": "Swimmer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rating",
+          "review",
+          "created_at"
+        ],
+        "title": "DirectoryReview"
+      },
+      "DirectoryReviewCreate": {
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating"
+          },
+          "review": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 15,
+            "title": "Review"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rating",
+          "review"
+        ],
+        "title": "DirectoryReviewCreate"
+      },
+      "DirectoryReviews": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryReview"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "DirectoryReviews"
+      },
+      "DirectorySuggestion": {
+        "properties": {
+          "pool_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Pool Name"
+          },
+          "location_area": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Location Area"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "website": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Website",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "pool_name",
+          "location_area"
+        ],
+        "title": "DirectorySuggestion"
+      },
       "GuestInput": {
         "properties": {
           "name": {
@@ -117441,6 +120804,11 @@
             "type": "boolean",
             "title": "Is Primary",
             "default": false
+          },
+          "directory_public": {
+            "type": "boolean",
+            "title": "Directory Public",
+            "default": false
           }
         },
         "type": "object",
@@ -117508,6 +120876,11 @@
           "is_primary": {
             "type": "boolean",
             "title": "Is Primary",
+            "default": false
+          },
+          "directory_public": {
+            "type": "boolean",
+            "title": "Directory Public",
             "default": false
           },
           "id": {
@@ -117644,6 +121017,17 @@
               }
             ],
             "title": "Is Primary"
+          },
+          "directory_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Public"
           }
         },
         "type": "object",
@@ -118416,6 +121800,48 @@
               }
             ],
             "title": "Last Verified At"
+          },
+          "directory_assessment_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Assessment Rating"
+          },
+          "directory_assessment_summary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 800
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Assessment Summary"
+          },
+          "directory_assessment_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Assessment Updated At"
+          },
+          "directory_published": {
+            "type": "boolean",
+            "title": "Directory Published",
+            "default": false
           },
           "partnership_status": {
             "$ref": "#/components/schemas/PartnershipStatus",
@@ -119446,6 +122872,48 @@
               }
             ],
             "title": "Last Verified At"
+          },
+          "directory_assessment_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Assessment Rating"
+          },
+          "directory_assessment_summary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 800
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Assessment Summary"
+          },
+          "directory_assessment_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Assessment Updated At"
+          },
+          "directory_published": {
+            "type": "boolean",
+            "title": "Directory Published",
+            "default": false
           },
           "partnership_status": {
             "$ref": "#/components/schemas/PartnershipStatus",
@@ -120675,6 +124143,42 @@
             ],
             "title": "Last Verified At"
           },
+          "directory_assessment_rating": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Assessment Rating"
+          },
+          "directory_assessment_summary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 800
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Assessment Summary"
+          },
+          "directory_published": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory Published"
+          },
           "partnership_status": {
             "anyOf": [
               {
@@ -121010,6 +124514,245 @@
           "in_person"
         ],
         "title": "PreferredContactChannel"
+      },
+      "PublicPartnerPool": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "location_area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Area"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "operating_area_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operating Area Id"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "pool_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PoolType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "indoor_outdoor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndoorOutdoor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pool_length_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pool Length M"
+          },
+          "depth_min_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth Min M"
+          },
+          "depth_max_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth Max M"
+          },
+          "number_of_lanes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number Of Lanes"
+          },
+          "has_changing_rooms": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Changing Rooms"
+          },
+          "has_showers": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Showers"
+          },
+          "has_lockers": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Lockers"
+          },
+          "has_parking": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Parking"
+          },
+          "has_lifeguard": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Lifeguard"
+          },
+          "partnership_status": {
+            "$ref": "#/components/schemas/PartnershipStatus"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "partnership_status",
+          "is_active"
+        ],
+        "title": "PublicPartnerPool"
+      },
+      "PublicPartnerPoolList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicPartnerPool"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PublicPartnerPoolList"
       },
       "ScanInput": {
         "properties": {
@@ -133694,6 +137437,17 @@
             ],
             "title": "Size Bytes"
           },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
           "captured_at": {
             "anyOf": [
               {
@@ -133845,17 +137599,6 @@
             "type": "string",
             "title": "Preview Status",
             "default": "pending"
-          },
-          "duration_seconds": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Seconds"
           }
         },
         "type": "object",

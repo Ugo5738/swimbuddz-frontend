@@ -41,11 +41,12 @@ type StudentRowState = {
   member_id: string;
   member_name: string;
   member_email: string;
+  canMark: boolean;
   // What the coach is editing right now
-  status: AttendanceStatus;
+  status: AttendanceStatus | "";
   notes: string;
   // What's currently saved on the server (used to decide what to send)
-  serverStatus: AttendanceStatus; // "present" if no row exists
+  serverStatus: AttendanceStatus | ""; // "present" if no row exists
   serverNotes: string;
 };
 
@@ -126,9 +127,11 @@ export default function CoachCohortAttendancePage() {
         const newRows: StudentRowState[] = students.map((s) => {
           const rec = recordByMember.get(s.member_id);
           const selected = sessions.find((session) => session.id === selectedSessionId);
-          const status = academyAttendanceStatus({
+          const individual = selected?.cohort_attendance_mode === "individual" || selected?.cohort_fee_mode === "paid_extra";
+          const status = !rec && individual && !bookedSet.has(s.member_id) ? "" : academyAttendanceStatus({
             recordedStatus: rec?.status,
             feeMode: selected?.cohort_fee_mode,
+            attendanceMode: selected?.cohort_attendance_mode,
             hasConfirmedBooking: bookedSet.has(s.member_id),
             eligibleEnrollment: s.status === "enrolled" && !s.access_suspended,
             joinedAt: s.enrolled_at || s.created_at,
@@ -136,6 +139,7 @@ export default function CoachCohortAttendancePage() {
           });
           const notes = rec?.notes ?? "";
           return {
+            canMark: !individual || bookedSet.has(s.member_id),
             member_id: s.member_id,
             member_name: s.member_name ?? s.member_email ?? "(unnamed)",
             member_email: s.member_email ?? "",
@@ -177,9 +181,9 @@ export default function CoachCohortAttendancePage() {
     // each — coach pay accrues only from explicit Present/Late rows, so we must
     // materialise them (the old "send only changes" left present students with
     // no row, hence unpaid).
-    const entries: CoachAttendanceMarkEntry[] = rows.map((r) => ({
+    const entries: CoachAttendanceMarkEntry[] = rows.filter((r) => r.canMark && r.status !== "").map((r) => ({
       member_id: r.member_id,
-      status: r.status,
+      status: r.status as AttendanceStatus,
       notes: r.notes || null,
     }));
 
@@ -233,13 +237,9 @@ export default function CoachCohortAttendancePage() {
 
       {/* Help card explaining default-present */}
       <Alert variant="info">
-        <strong>Mark who attended, then Save.</strong> Each student is pre-set
-        to <em>Present</em> if they booked this session, <em>Absent</em> if not
-        — adjust as needed (booked but didn't show → Absent/Excused; walked in →
-        Present) and <strong>Save</strong>. You're paid only for students marked{" "}
-        <em>Present</em>/<em>Late</em>, so saving records every student's status.
-        Use <em>Excused</em> for absences with notice — these create a make-up
-        obligation to reschedule. Paused students aren't shown.
+        Regular cohort classes default to <em>Present</em>; record exceptions as needed.
+        Extra classes default to Present only for confirmed bookings. Unassigned students
+        stay unrecorded. Record Absent or Excused if a booked student misses class.
       </Alert>
 
       {/* Session picker */}
@@ -323,12 +323,14 @@ export default function CoachCohortAttendancePage() {
                   <div className="md:col-span-3">
                     <Select
                       value={row.status}
+                      disabled={!row.canMark}
                       onChange={(e) =>
                         updateRow(row.member_id, {
                           status: e.target.value as AttendanceStatus,
                         })
                       }
                     >
+                      <option value="" disabled>Not recorded — select attendance</option>
                       {STATUS_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
                           {opt.label}
@@ -336,6 +338,7 @@ export default function CoachCohortAttendancePage() {
                       ))}
                     </Select>
                   </div>
+                  {!row.canMark && <p className="md:col-span-5 text-sm text-slate-600">Admin must assign this student a purchased class or paid extra before recording participation.</p>}
                   <div className="md:col-span-5">
                     <Input
                       placeholder={
