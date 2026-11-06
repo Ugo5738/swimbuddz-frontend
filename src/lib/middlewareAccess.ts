@@ -239,6 +239,8 @@ export function evaluateMemberAccess(input: AccessInput): AccessDecision {
   const paywallAllowedPrefixes = [
     "/account/profile",
     "/account/billing",
+    // Store customers can track their orders without swimming membership.
+    "/account/orders",
     "/account/onboarding",
     "/account/access",
     "/account/academy",
