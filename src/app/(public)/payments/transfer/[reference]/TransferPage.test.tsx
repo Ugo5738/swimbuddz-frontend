@@ -26,9 +26,9 @@ describe("private bank transfer receipt", () => {
   });
   it("shows the company account and submits existing transfer without claiming payment succeeded", async () => {
     render(<TransferPage />);
-    expect(await screen.findByText("6567710856")).toBeInTheDocument();
-    expect(screen.getByText("Swimbuddz Limited")).toBeInTheDocument();
-    expect(screen.getByText("Moniepoint MFB")).toBeInTheDocument();
+    expect(await screen.findByText("0079760600")).toBeInTheDocument();
+    expect(screen.getByText("SWIMBUDDZ LIMITED")).toBeInTheDocument();
+    expect(screen.getByText("Stanbic IBTC")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Bank transaction reference/), {
       target: { value: "BANK-ONE" },
     });
@@ -49,7 +49,7 @@ describe("private bank transfer receipt", () => {
   });
   it("submits receipt-only proof without forcing a bank transaction ID", async () => {
     render(<TransferPage />);
-    await screen.findByText("6567710856");
+    await screen.findByText("0079760600");
     fireEvent.change(screen.getByLabelText(/Transfer date/), {
       target: { value: "2026-09-13" },
     });
@@ -67,7 +67,7 @@ describe("private bank transfer receipt", () => {
   });
   it("rejects submission without a receipt or transaction reference", async () => {
     render(<TransferPage />);
-    await screen.findByText("6567710856");
+    await screen.findByText("0079760600");
     fireEvent.change(screen.getByLabelText(/Transfer date/), {
       target: { value: "2026-09-13" },
     });
@@ -81,7 +81,7 @@ describe("private bank transfer receipt", () => {
       return pending;
     });
     render(<TransferPage />);
-    await screen.findByText("6567710856");
+    await screen.findByText("0079760600");
     fireEvent.change(screen.getByLabelText(/Bank transaction reference/), {
       target: { value: "BANK-ONE" },
     });
@@ -108,7 +108,7 @@ describe("private bank transfer receipt", () => {
         })
     );
     render(<TransferPage />);
-    await screen.findByText("6567710856");
+    await screen.findByText("0079760600");
     fireEvent.change(screen.getByLabelText(/Bank transaction reference/), {
       target: { value: "BANK-ONE" },
     });
@@ -149,7 +149,7 @@ describe("private bank transfer receipt", () => {
     mocks.post.mockResolvedValue({ ...pending, status: "paid", fulfilled: true });
     render(<TransferPage />);
     await screen.findByText(/Your access has been confirmed/);
-    expect(screen.queryByText("6567710856")).not.toBeInTheDocument();
+    expect(screen.queryByText("0079760600")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Submit transfer for review" })
     ).not.toBeInTheDocument();
