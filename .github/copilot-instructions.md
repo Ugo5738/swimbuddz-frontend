@@ -1,0 +1,5 @@
+# GitHub Copilot Instructions (`swimbuddz-frontend`)
+
+1. Read `AGENTS.md`, `docs/DECISIONS.md`, `AGENT_INSTRUCTIONS.md`, `CONVENTIONS.md`, and `UI_FLOWS.md` before making changes.
+2. Never silently override a settled decision in `docs/DECISIONS.md` (`ADR-001` through `ADR-006`).
+3. Whenever you and the user deliberate on or implement a product/UX/architectural decision, update `docs/DECISIONS.md` (and `../docs/DECISIONS.md` if accessible) and `UI_FLOWS.md` / `ROUTES_AND_PAGES.md` in the same session.
