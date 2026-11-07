@@ -21,7 +21,7 @@ import {
   type SavedUpload,
   type UploadScope,
 } from "@/lib/media-vault-upload";
-import { BookOpen, WifiOff } from "lucide-react";
+import { BookOpen, CheckCircle2, Loader2, Maximize2, WifiOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -57,6 +57,7 @@ export function VaultUploader({ vault, scope, associatedSessionId, onUploadingCh
   const [choosingFiles, setChoosingFiles] = useState(false);
   const [selectionHelp, setSelectionHelp] = useState(false);
   const [isIPhone, setIsIPhone] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const maxFileBytes = vault.max_file_bytes;
   const remainingBytes = isGuestVault(vault)
     ? vault.remaining_bytes
@@ -65,6 +66,36 @@ export function VaultUploader({ vault, scope, associatedSessionId, onUploadingCh
   const totalBytes = useMemo(() => files.reduce((sum, entry) => sum + entry.file.size, 0), [files]);
   const completed = files.filter((entry) => entry.status === "done").length;
   const checklistItems = vault.shot_checklist;
+
+  const bytesUploadedTotal = useMemo(() => {
+    return files.reduce((sum, entry) => {
+      if (entry.status === "done") return sum + entry.file.size;
+      return sum + (entry.bytesUploaded ?? Math.round((entry.progress / 100) * entry.file.size));
+    }, 0);
+  }, [files]);
+
+  const overallPercent = useMemo(() => {
+    if (!totalBytes) return 0;
+    return Math.min(100, Math.round((bytesUploadedTotal / totalBytes) * 100));
+  }, [bytesUploadedTotal, totalBytes]);
+
+  useEffect(() => {
+    if (!uploading) return;
+    const onVisibilityChange = async () => {
+      if (document.visibilityState === "visible") {
+        try {
+          const navWithWakeLock = navigator as any;
+          if (navWithWakeLock.wakeLock) {
+            await navWithWakeLock.wakeLock.request("screen");
+          }
+        } catch {
+          // ignore wake lock failure
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [uploading]);
 
   useEffect(() => {
     const onlineHandler = () => setOnline(true);
@@ -474,7 +505,32 @@ export function VaultUploader({ vault, scope, associatedSessionId, onUploadingCh
         }}
       />
 
-      {files.length > 0 && (
+      {files.length > 0 && isMinimized && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-900">
+              Upload queue minimized ({completed}/{files.length} done · {overallPercent}%)
+            </p>
+            <p className="truncate text-xs text-slate-500">
+              {uploading
+                ? "Uploading in background. Keep this browser tab open."
+                : completed === files.length
+                ? "All files uploaded successfully."
+                : "Queue is ready to start."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsMinimized(false)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+            <span>Expand queue</span>
+          </button>
+        </div>
+      )}
+
+      {files.length > 0 && !isMinimized && (
         <div ref={nextStepRef} className="scroll-mt-4 space-y-4">
           <VaultUploadQueue
             files={files}
@@ -483,6 +539,7 @@ export function VaultUploader({ vault, scope, associatedSessionId, onUploadingCh
             uploading={uploading}
             onClear={() => setFiles([])}
             onRemove={removeFile}
+            onToggleMinimize={() => setIsMinimized(true)}
           />
           <fieldset className="rounded-xl border border-slate-200 bg-white p-4" disabled={uploading}>
             <legend className="px-1 text-sm font-semibold text-slate-900">Quick tags for this upload</legend>
@@ -538,6 +595,58 @@ export function VaultUploader({ vault, scope, associatedSessionId, onUploadingCh
             ))}
           </div>
         </fieldset>
+      )}
+
+      {files.length > 0 && isMinimized && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-4 left-4 right-4 z-40 rounded-2xl border border-slate-800 bg-slate-950/95 p-4 text-white shadow-2xl backdrop-blur sm:left-auto sm:right-6 sm:w-96"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-cyan-400" />
+                ) : completed === files.length ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                ) : (
+                  <div className="h-2 w-2 shrink-0 rounded-full bg-amber-400" />
+                )}
+                <p className="truncate text-sm font-semibold">
+                  {uploading
+                    ? `Uploading (${completed}/${files.length} done · ${overallPercent}%)`
+                    : completed === files.length
+                    ? "Upload complete"
+                    : `${files.length} file${files.length === 1 ? "" : "s"} ready`}
+                </p>
+              </div>
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300"
+                  style={{ width: `${overallPercent}%` }}
+                />
+              </div>
+              <div className="mt-1 flex justify-between text-[11px] text-slate-400">
+                <span>
+                  {formatBytes(bytesUploadedTotal)} of {formatBytes(totalBytes)}
+                </span>
+                <span>{overallPercent}%</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsMinimized(false);
+                nextStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-700"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              <span>Expand</span>
+            </button>
+          </div>
+        </div>
       )}
 
     </div>

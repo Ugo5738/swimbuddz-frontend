@@ -1,8 +1,9 @@
 "use client";
 
 import type { VaultMedia } from "@/lib/media-vault";
-import { FileVideo, Loader2, Play, X } from "lucide-react";
-import { useEffect } from "react";
+import { FileVideo, Loader2, Play, Scissors, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MemberClipTool } from "./MemberClipTool";
 
 export function VaultVideoThumbnail({ item, onWatch }: { item: VaultMedia; onWatch: () => void }) {
   return (
@@ -47,6 +48,9 @@ export function VaultVideoDialog({
   onClose: () => void;
   canRequest?: boolean;
 }) {
+  const [duration, setDuration] = useState(item.duration_seconds ?? 0);
+  const [showClipTool, setShowClipTool] = useState(false);
+
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -85,20 +89,36 @@ export function VaultVideoDialog({
               preload="metadata"
               poster={item.thumbnail_url ?? undefined}
               onError={onError}
+              onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
               className="max-h-[70dvh] w-full bg-black object-contain"
               aria-label={item.original_filename ?? "Video preview"}
             >
               <source src={item.preview_url} type="video/mp4" />
             </video>
-            {canRequest && (
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-3">
               <button
                 type="button"
-                onClick={() => onRequest(true)}
-                disabled={working}
-                className="mx-4 mt-3 text-xs font-semibold text-cyan-300 underline underline-offset-4 disabled:opacity-50"
+                onClick={() => setShowClipTool((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-cyan-600"
               >
-                Playback slow? Rebuild a lighter mobile preview
+                <Scissors className="h-3.5 w-3.5" />
+                {showClipTool ? "Hide clip cutter" : "Cut video / Save clip"}
               </button>
+              {canRequest && (
+                <button
+                  type="button"
+                  onClick={() => onRequest(true)}
+                  disabled={working}
+                  className="text-xs font-semibold text-cyan-300 underline underline-offset-4 disabled:opacity-50"
+                >
+                  Playback slow? Rebuild a lighter mobile preview
+                </button>
+              )}
+            </div>
+            {showClipTool && (
+              <div className="mx-4 mt-3 max-h-[45vh] overflow-y-auto rounded-xl">
+                <MemberClipTool videoId={item.id} duration={duration} />
+              </div>
             )}
           </>
         ) : (

@@ -1,5 +1,5 @@
 import { formatBytes } from "@/lib/media-vault";
-import { CheckCircle2, FileVideo, Image as ImageIcon, Loader2, X } from "lucide-react";
+import { CheckCircle2, FileVideo, Image as ImageIcon, Loader2, Minimize2, X } from "lucide-react";
 
 export type UploadFile = {
   key: string;
@@ -19,6 +19,7 @@ type Props = {
   uploading: boolean;
   onClear: () => void;
   onRemove: (entry: UploadFile) => void;
+  onToggleMinimize?: () => void;
 };
 
 export function VaultUploadQueue({
@@ -28,6 +29,7 @@ export function VaultUploadQueue({
   uploading,
   onClear,
   onRemove,
+  onToggleMinimize,
 }: Props) {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
@@ -40,15 +42,28 @@ export function VaultUploadQueue({
             {formatBytes(totalBytes)} · {completed} complete
           </p>
         </div>
-        {!uploading && (
-          <button
-            type="button"
-            onClick={onClear}
-            className="text-sm font-medium text-slate-500 hover:text-red-600"
-          >
-            Clear
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onToggleMinimize && (
+            <button
+              type="button"
+              onClick={onToggleMinimize}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              aria-label="Minimize upload view"
+            >
+              <Minimize2 className="h-3.5 w-3.5" />
+              <span>Minimize</span>
+            </button>
+          )}
+          {!uploading && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="text-sm font-medium text-slate-500 hover:text-red-600"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
       <div className="max-h-[430px] divide-y divide-slate-100 overflow-y-auto">
         {files.map((entry) => (
