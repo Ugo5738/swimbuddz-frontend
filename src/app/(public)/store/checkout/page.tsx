@@ -86,6 +86,12 @@ export default function StoreCheckoutPage() {
   const [customerNotes, setCustomerNotes] = useState("");
   const [useStoreCredit, setUseStoreCredit] = useState(false);
   const [bubblesToApply, setBubblesToApply] = useState<number>(0);
+  const [sizeChartAcked, setSizeChartAcked] = useState(false);
+
+  const requiresSizeChartAck = Boolean(
+    cart?.requires_size_chart_ack ||
+      cart?.items?.some((item) => item.requires_size_chart_ack)
+  );
 
   useEffect(() => {
     if (locations.data?.length)
@@ -117,6 +123,11 @@ export default function StoreCheckoutPage() {
       }
     }
 
+    if (requiresSizeChartAck && !sizeChartAcked) {
+      toast.error("Please review and acknowledge the swimwear size chart before placing your order");
+      return;
+    }
+
     setProcessing(true);
     try {
       // Step 1: Create the order
@@ -127,6 +138,7 @@ export default function StoreCheckoutPage() {
         customer_notes: customerNotes || undefined,
         apply_store_credit: useStoreCredit,
         bubbles_to_apply: effectiveBubbles > 0 ? effectiveBubbles : undefined,
+        size_chart_acknowledged: requiresSizeChartAck ? sizeChartAcked : true,
       };
 
       const orderResult = await apiPost<CheckoutResponse>(
@@ -535,11 +547,29 @@ export default function StoreCheckoutPage() {
               onChange={setPaymentMethod}
               disabled={processing}
             />
+
+            {/* Size Chart Acknowledgment */}
+            {requiresSizeChartAck && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl my-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sizeChartAcked}
+                    onChange={(e) => setSizeChartAcked(e.target.checked)}
+                    className="mt-0.5 w-5 h-5 rounded border-amber-300 text-cyan-600 focus:ring-cyan-500"
+                  />
+                  <span className="text-xs sm:text-sm text-amber-900 leading-relaxed font-medium">
+                    I have reviewed the size chart and understand that swimwear sizing may vary. All swimwear sales are final.
+                  </span>
+                </label>
+              </div>
+            )}
+
             <Button
               onClick={handleCheckout}
-              disabled={processing}
+              disabled={processing || (requiresSizeChartAck && !sizeChartAcked)}
               size="lg"
-              className="w-full mt-6"
+              className="w-full mt-2"
             >
               {processing ? (
                 "Processing..."

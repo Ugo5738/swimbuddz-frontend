@@ -44620,6 +44620,13 @@ export interface components {
             sku?: string | null;
             /** Image Url */
             image_url?: string | null;
+            /**
+             * Requires Size Chart Ack
+             * @default false
+             */
+            requires_size_chart_ack: boolean;
+            /** Size Chart Url */
+            size_chart_url?: string | null;
         };
         /** CartItemUpdate */
         CartItemUpdate: {
@@ -44655,6 +44662,11 @@ export interface components {
              * @default []
              */
             items: components["schemas"]["CartItemResponse"][];
+            /**
+             * Requires Size Chart Ack
+             * @default false
+             */
+            requires_size_chart_ack: boolean;
             /**
              * Subtotal Ngn
              * @default 0
