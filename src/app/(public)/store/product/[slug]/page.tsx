@@ -6,6 +6,7 @@ import { apiGet } from "@/lib/api";
 import { productOptionChoices, selectedProductVariant } from "@/lib/storeVariants";
 import { useStoreCart } from "@/lib/storeCart";
 import {
+  ArrowLeft,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -342,26 +343,35 @@ export default function ProductDetailPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
       {/* ============================================================ */}
-      {/* BREADCRUMBS                                                  */}
+      {/* NAVIGATION / BREADCRUMBS                                     */}
       {/* ============================================================ */}
-      <nav className="flex items-center gap-1.5 py-4 text-sm text-slate-500 overflow-x-auto">
-        <Link href="/store" className="hover:text-cyan-600 whitespace-nowrap">
-          Store
+      <div className="flex items-center justify-between py-3.5 border-b border-slate-100 sm:border-0 sm:py-4">
+        <Link
+          href="/store"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-600 hover:text-cyan-700 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 text-cyan-600" />
+          Back to Store
         </Link>
-        <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
-        {product.category && (
-          <>
-            <Link
-              href={`/store?category=${product.category.slug}`}
-              className="hover:text-cyan-600 whitespace-nowrap"
-            >
-              {product.category.name}
-            </Link>
-            <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
-          </>
-        )}
-        <span className="text-slate-800 font-medium truncate">{product.name}</span>
-      </nav>
+        <nav className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 overflow-x-auto">
+          <Link href="/store" className="hover:text-cyan-600 whitespace-nowrap">
+            Store
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
+          {product.category && (
+            <>
+              <Link
+                href={`/store?category=${product.category.slug}`}
+                className="hover:text-cyan-600 whitespace-nowrap"
+              >
+                {product.category.name}
+              </Link>
+              <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
+            </>
+          )}
+          <span className="text-slate-800 font-medium truncate">{product.name}</span>
+        </nav>
+      </div>
 
       {/* ============================================================ */}
       {/* PRODUCT MAIN SECTION                                         */}
@@ -887,16 +897,24 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Cart feedback & quick-checkout bar */}
+            {/* Cart feedback & quick-action bar */}
             {(justAdded || itemCount > 0) && (
-              <div className="flex items-center justify-between p-3.5 bg-cyan-50/80 border border-cyan-200/80 rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 bg-cyan-50/80 border border-cyan-200/80 rounded-xl">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse" />
-                  <span className="text-xs sm:text-sm font-medium text-cyan-900">
-                    {itemCount} {itemCount === 1 ? "item" : "items"} in cart
+                  <span className="text-xs sm:text-sm font-semibold text-cyan-900">
+                    {itemCount} {itemCount === 1 ? "item" : "items"} in your cart
                   </span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap self-end sm:self-auto">
+                  <Link
+                    href="/store"
+                    className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-cyan-800 hover:text-cyan-900 transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Keep Shopping
+                  </Link>
+                  <span className="text-slate-300">|</span>
                   <Link
                     href="/store/cart"
                     className="text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 underline"
