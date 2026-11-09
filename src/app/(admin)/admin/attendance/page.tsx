@@ -1792,6 +1792,8 @@ function RosterTableRow({
   //   - no booking, cohort / Club source → red "Not booked"
   //   - walk-in row (legacy attendance without booking) → violet
   //     "Walk-in (unpaid)"
+  const isCohortStudent = row.source === "cohort";
+
   const bookingCell = (() => {
     if (row.booking) {
       const amountNaira = row.booking.fee_amount_kobo / 100;
@@ -1809,6 +1811,13 @@ function RosterTableRow({
         secondary: channel,
       };
     }
+    if (isCohortStudent) {
+      return {
+        cls: "bg-purple-50 text-purple-700 border border-purple-200",
+        primary: "Included in tuition",
+        secondary: null,
+      };
+    }
     if (row.source === "walkin") {
       return {
         cls: "bg-violet-100 text-violet-800",
@@ -1823,16 +1832,20 @@ function RosterTableRow({
     };
   })();
 
-  // Add a booking for an unbooked cohort / Club attendee or a legacy walk-in whose
+  // Add a booking for an unbooked Club attendee or a legacy walk-in whose
   // attendance predates the booking/payment workflow. Once the booking exists,
   // its fee can be settled online or recorded as paid off-platform.
+  // Enrolled cohort students already have attendance included in tuition.
   const canCreateWalkInBooking =
-    !academyAllocationOnly && !row.booking && (row.source === "cohort" || row.source === "club" || row.source === "walkin");
+    !academyAllocationOnly && !row.booking && (row.source === "club" || row.source === "walkin");
 
   // Disable the Set dropdown when there's no booking AND no attendance —
   // the workflow is "use Mark walk-in to bring them onto the roster
-  // properly". Walk-in rows (have attendance) stay editable.
-  const setDisabled = disabled || (academyAllocationOnly && !row.booking) || (!row.booking && !row.attendance);
+  // properly". Enrolled cohort students and walk-in rows stay editable.
+  const setDisabled =
+    disabled ||
+    (academyAllocationOnly && !row.booking) ||
+    (!isCohortStudent && !row.booking && !row.attendance);
 
   const groupBadge =
     row.source === "cohort" ? (
