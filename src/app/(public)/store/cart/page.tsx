@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { useStoreCart } from "@/lib/storeCart";
-import { ArrowLeft, Minus, Plus, ShoppingBag, Tag, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, Minus, Plus, ShoppingBag, Tag, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -71,6 +71,20 @@ export default function CartPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
+            {Boolean(
+              cart?.requires_size_chart_ack ||
+                items.some((i) => i.requires_size_chart_ack)
+            ) && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-xs sm:text-sm text-amber-900">
+                  <p className="font-semibold">Swimwear Sizing & Final Sale Notice</p>
+                  <p className="text-amber-800 mt-0.5">
+                    Your cart contains swimwear items. Please ensure you have reviewed the size charts before checkout. All swimwear sales are final.
+                  </p>
+                </div>
+              </div>
+            )}
             {items.map((item) => (
               <Card key={item.id} className="p-5">
                 <div className="flex gap-5">

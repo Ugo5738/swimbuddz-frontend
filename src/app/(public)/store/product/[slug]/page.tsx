@@ -127,6 +127,8 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
   const [sizeChartAcked, setSizeChartAcked] = useState(false);
   const [memberDiscount, setMemberDiscount] = useState(0);
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
@@ -273,11 +275,48 @@ export default function ProductDetailPage() {
     setAdding(true);
     try {
       await addItem(selectedVariant.id, quantity);
-      toast.success(`${product?.name} added to cart`);
+      setJustAdded(true);
+      toast.success(`${product?.name} added to cart`, {
+        action: {
+          label: "View Cart",
+          onClick: () => router.push("/store/cart"),
+        },
+      });
     } catch {
       toast.error("Failed to add to cart");
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!selectedVariant || !allOptionsSelected) {
+      toast.error(
+        missingOptions.length
+          ? `Please select ${missingOptions.join(" and ")}`
+          : activeVariants.length
+            ? "Choose an available product option"
+            : "This item is temporarily unavailable for ordering"
+      );
+      return;
+    }
+    if (product?.requires_size_chart_ack && !sizeChartAcked) {
+      toast.error("Please acknowledge the size chart before proceeding");
+      return;
+    }
+    const stock = selectedVariant.quantity_available ?? 0;
+    if (stock <= 0 && product?.sourcing_type !== "preorder") {
+      toast.error("Out of stock");
+      return;
+    }
+
+    setBuyingNow(true);
+    try {
+      await addItem(selectedVariant.id, quantity);
+      router.push("/store/checkout");
+    } catch {
+      toast.error("Failed to proceed to checkout");
+      setBuyingNow(false);
     }
   };
 
@@ -731,75 +770,149 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Quantity + Add to Cart */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center border-2 border-slate-200 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="p-3 hover:bg-slate-50 transition-colors active:bg-slate-100"
-                aria-label="Decrease quantity"
-              >
-                <Minus className="w-4 h-4 text-slate-600" />
-              </button>
-              <span className="w-12 text-center font-semibold text-slate-900 tabular-nums">
-                {quantity}
-              </span>
-              <button
-                onClick={() => setQuantity((q) => isPreorder ? q + 1 : Math.max(1, Math.min(stock, q + 1)))}
-                className="p-3 hover:bg-slate-50 transition-colors active:bg-slate-100"
-                aria-label="Increase quantity"
-              >
-                <Plus className="w-4 h-4 text-slate-600" />
-              </button>
+          {/* Quantity + Add to Cart / Buy Now */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex items-center justify-between sm:justify-start border-2 border-slate-200 rounded-xl overflow-hidden self-start">
+                <button
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  className="p-3 hover:bg-slate-50 transition-colors active:bg-slate-100"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus className="w-4 h-4 text-slate-600" />
+                </button>
+                <span className="w-12 text-center font-semibold text-slate-900 tabular-nums">
+                  {quantity}
+                </span>
+                <button
+                  onClick={() =>
+                    setQuantity((q) =>
+                      isPreorder ? q + 1 : Math.max(1, Math.min(stock, q + 1))
+                    )
+                  }
+                  className="p-3 hover:bg-slate-50 transition-colors active:bg-slate-100"
+                  aria-label="Increase quantity"
+                >
+                  <Plus className="w-4 h-4 text-slate-600" />
+                </button>
+              </div>
+
+              <div className="flex flex-1 items-center gap-2">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={
+                    adding ||
+                    buyingNow ||
+                    !inStock ||
+                    !allOptionsSelected ||
+                    !selectedVariant
+                  }
+                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-900 text-white rounded-xl font-semibold text-sm hover:bg-slate-800 active:bg-slate-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {adding ? (
+                    <span className="flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Adding...
+                    </span>
+                  ) : !activeVariants.length ? (
+                    <>Temporarily unavailable</>
+                  ) : !allOptionsSelected ? (
+                    <>Select {missingOptions.join(" & ")}</>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-4 h-4" />
+                      Add to Cart
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleBuyNow}
+                  disabled={
+                    adding ||
+                    buyingNow ||
+                    !inStock ||
+                    !allOptionsSelected ||
+                    !selectedVariant
+                  }
+                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-cyan-600 text-white rounded-xl font-semibold text-sm hover:bg-cyan-700 active:bg-cyan-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {buyingNow ? (
+                    <span className="flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Redirecting...
+                    </span>
+                  ) : isPreorder ? (
+                    "Pre-order Now"
+                  ) : (
+                    "Buy Now"
+                  )}
+                </button>
+              </div>
             </div>
 
-            <button
-              onClick={handleAddToCart}
-              disabled={adding || !inStock || !allOptionsSelected || !selectedVariant}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-600 text-white rounded-xl font-semibold text-sm hover:bg-cyan-700 active:bg-cyan-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-            >
-              {adding ? (
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                  Adding...
-                </span>
-              ) : !activeVariants.length ? (
-                <>Temporarily unavailable</>
-              ) : !allOptionsSelected ? (
-                <>Select {missingOptions.join(" & ")}</>
-              ) : (
-                <>
-                  <ShoppingCart className="w-5 h-5" />
-                  {isPreorder ? "Pre-order Now" : "Add to Cart"}
-                </>
-              )}
-            </button>
+            {/* Cart feedback & quick-checkout bar */}
+            {(justAdded || itemCount > 0) && (
+              <div className="flex items-center justify-between p-3.5 bg-cyan-50/80 border border-cyan-200/80 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse" />
+                  <span className="text-xs sm:text-sm font-medium text-cyan-900">
+                    {itemCount} {itemCount === 1 ? "item" : "items"} in cart
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/store/cart"
+                    className="text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 underline"
+                  >
+                    View Cart
+                  </Link>
+                  <Link
+                    href="/store/checkout"
+                    className="text-xs sm:text-sm font-semibold text-cyan-800 hover:text-cyan-900 bg-white px-3 py-1.5 rounded-lg border border-cyan-300 shadow-2xs hover:bg-cyan-50 transition-colors"
+                  >
+                    Checkout →
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Cart link */}
-          {itemCount > 0 && (
-            <Link
-              href="/store/cart"
-              className="mt-3 flex items-center justify-center gap-2 text-sm text-cyan-600 hover:text-cyan-700 font-medium transition-colors"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              View Cart ({itemCount} {itemCount === 1 ? "item" : "items"})
-            </Link>
-          )}
 
           {/* Trust indicators */}
           <div className="mt-6 grid grid-cols-2 gap-3">
@@ -949,18 +1062,25 @@ export default function ProductDetailPage() {
       {/* ============================================================ */}
       {/* MOBILE STICKY ADD TO CART BAR                                */}
       {/* ============================================================ */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 flex items-center gap-3 lg:hidden z-50">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-900 truncate">{product.name}</p>
-          <p className="text-sm font-bold text-cyan-700">₦{finalPrice.toLocaleString()}</p>
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 flex items-center gap-2 lg:hidden z-50">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-slate-900 truncate">{product.name}</p>
+          <p className="text-xs font-bold text-cyan-700">₦{finalPrice.toLocaleString()}</p>
         </div>
         <button
           onClick={handleAddToCart}
-          disabled={adding || !inStock || !allOptionsSelected || !selectedVariant}
-          className="ml-auto flex items-center gap-2 px-5 py-2.5 bg-cyan-600 text-white rounded-xl font-semibold text-sm hover:bg-cyan-700 transition-colors disabled:opacity-50 whitespace-nowrap shadow-sm"
+          disabled={adding || buyingNow || !inStock || !allOptionsSelected || !selectedVariant}
+          className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-900 rounded-lg font-medium text-xs hover:bg-slate-200 transition-colors disabled:opacity-50 whitespace-nowrap"
         >
-          <ShoppingCart className="w-4 h-4" />
-          {adding ? "Adding..." : !activeVariants.length ? "Unavailable" : !allOptionsSelected ? `Select ${missingOptions.join(" & ")}` : !selectedVariant ? "Choose an option" : isPreorder ? "Pre-order" : "Add to Cart"}
+          <ShoppingCart className="w-3.5 h-3.5" />
+          {adding ? "..." : "Add"}
+        </button>
+        <button
+          onClick={handleBuyNow}
+          disabled={adding || buyingNow || !inStock || !allOptionsSelected || !selectedVariant}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-600 text-white rounded-lg font-semibold text-xs hover:bg-cyan-700 transition-colors disabled:opacity-50 whitespace-nowrap shadow-sm"
+        >
+          {buyingNow ? "..." : isPreorder ? "Pre-order" : "Buy Now"}
         </button>
       </div>
 
