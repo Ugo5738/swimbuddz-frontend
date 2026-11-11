@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeReturnPath, isAcademyDestination } from "../returnPath";
+import { safeReturnPath, isAcademyDestination, isStandaloneReturnPath } from "../returnPath";
 import { canPayAcademyEnrollment } from "../academy/paymentEligibility";
 import { podDisplayName } from "../pods";
 import { isPastOpportunity } from "../volunteers";
@@ -20,6 +20,18 @@ describe("safe cohort destinations", () => {
     expect(isAcademyDestination(path)).toBe(true);
     expect(isAcademyDestination("/checkout?purpose=community")).toBe(false);
     expect(isAcademyDestination("/account/academy-other")).toBe(false);
+  });
+  it("recognizes standalone storefront and public deep links", () => {
+    expect(isStandaloneReturnPath("/store")).toBe(true);
+    expect(isStandaloneReturnPath("/store/checkout")).toBe(true);
+    expect(isStandaloneReturnPath("/store/cart")).toBe(true);
+    expect(isStandaloneReturnPath("/pool-access/my-bookings")).toBe(true);
+    expect(isStandaloneReturnPath("/experiences/exp-1")).toBe(true);
+    expect(isStandaloneReturnPath("/guest-pass/gp-1")).toBe(true);
+    expect(isStandaloneReturnPath("/tips/post-1")).toBe(true);
+    expect(isStandaloneReturnPath("/store-other")).toBe(false);
+    expect(isStandaloneReturnPath("/account/billing")).toBe(false);
+    expect(isStandaloneReturnPath("//evil.example/store/checkout")).toBe(false);
   });
 });
 
