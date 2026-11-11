@@ -15,9 +15,9 @@ const mocks = vi.hoisted(() => ({
     discount_code: null,
     member_discount_percent: 5,
     requires_size_chart_ack: false,
-    subtotal_ngn: 15000,
-    discount_amount_ngn: 750,
-    total_ngn: 14250,
+    subtotal_ngn: 25000,
+    discount_amount_ngn: 1250,
+    total_ngn: 23750,
     items: [
       {
         id: "cart-item-1",
@@ -25,6 +25,14 @@ const mocks = vi.hoisted(() => ({
         quantity: 1,
         unit_price_ngn: 15000,
         product_name: "Existing swim cap",
+        requires_size_chart_ack: false,
+      },
+      {
+        id: "cart-item-2",
+        variant_id: "cart-variant-2",
+        quantity: 1,
+        unit_price_ngn: 10000,
+        product_name: "Existing kickboard",
         requires_size_chart_ack: false,
       },
     ],
@@ -89,6 +97,7 @@ describe("Store Buy Now and Cart checkout separation", () => {
     render(<StoreCheckoutPage />);
     expect(await screen.findByText("Swimming goggles × 2")).toBeInTheDocument();
     expect(screen.queryByText(/Existing swim cap/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Existing kickboard/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Pay ₦28,500/ }));
     await waitFor(() =>
       expect(mocks.post).toHaveBeenCalledWith(
@@ -104,7 +113,8 @@ describe("Store Buy Now and Cart checkout separation", () => {
     window.history.replaceState({}, "", "/store/checkout");
     render(<StoreCheckoutPage />);
     expect(await screen.findByText("Existing swim cap × 1")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Pay ₦14,250/ }));
+    expect(screen.getByText("Existing kickboard × 1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Pay ₦23,750/ }));
     await waitFor(() =>
       expect(mocks.post).toHaveBeenCalledWith(
         "/api/v1/store/checkout/start",
