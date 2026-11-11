@@ -891,10 +891,13 @@ export default function ProductDetailPage() {
                   ) : isPreorder ? (
                     "Pre-order Now"
                   ) : (
-                    "Buy Now"
+                    "Add & Checkout"
                   )}
                 </button>
               </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Checkout includes this item and anything already in your cart. Review your order before paying.
+              </p>
             </div>
 
             {/* Cart feedback & quick-action bar */}
@@ -1098,7 +1101,7 @@ export default function ProductDetailPage() {
           disabled={adding || buyingNow || !inStock || !allOptionsSelected || !selectedVariant}
           className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-600 text-white rounded-lg font-semibold text-xs hover:bg-cyan-700 transition-colors disabled:opacity-50 whitespace-nowrap shadow-sm"
         >
-          {buyingNow ? "..." : isPreorder ? "Pre-order" : "Buy Now"}
+          {buyingNow ? "..." : isPreorder ? "Pre-order" : "Add & Checkout"}
         </button>
       </div>
 
