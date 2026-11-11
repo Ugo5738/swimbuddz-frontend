@@ -114,13 +114,13 @@ export default function AttendanceHistoryPage() {
     loadAttendance();
   }, []);
 
-  const attendedCount = attendance.filter(
-    (a) =>
-      a.status === "confirmed" ||
-      a.status === "checked_in" ||
-      a.status === "registered" ||
-      a.status === "present"
-  ).length;
+  const attendedCount = attendance.filter((record) => {
+    const start = record.session?.start_time;
+    if (!start || new Date(start).getTime() > Date.now()) return false;
+    return ["confirmed", "checked_in", "registered", "present", "late"].includes(
+      record.status
+    );
+  }).length;
 
   const handleExportPdf = async () => {
     if (attendance.length === 0) return;
