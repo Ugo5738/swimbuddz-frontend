@@ -329,7 +329,7 @@ export default function BillingPage() {
       <details className="rounded-xl border border-slate-200 p-4">
         <summary className="cursor-pointer font-semibold text-slate-900">Session fees and existing payment options</summary>
         <div className="mt-4 space-y-4">
-          <OutstandingSessionFeesCard />
+          <OutstandingSessionFeesCard payments={payments} />
         </div>
       </details>
 
