@@ -117,7 +117,7 @@ interface RelatedProduct {
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { addItem, itemCount, isAuthenticated } = useStoreCart();
+  const { addItem, itemCount, cart } = useStoreCart();
   const slug = params.slug as string;
 
   /* ---- state ---- */
@@ -131,7 +131,8 @@ export default function ProductDetailPage() {
   const [buyingNow, setBuyingNow] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [sizeChartAcked, setSizeChartAcked] = useState(false);
-  const [memberDiscount, setMemberDiscount] = useState(0);
+  // Use the actual server-owned Store discount, not unrelated programme rates.
+  const memberDiscount = Number(cart?.member_discount_percent ?? 0);
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
   const [activeTab, setActiveTab] = useState<"description" | "details">("description");
   const thumbStripRef = useRef<HTMLDivElement>(null);
@@ -162,20 +163,6 @@ export default function ProductDetailPage() {
         }
       }
 
-      // Get member discount
-      if (isAuthenticated) {
-        try {
-          const member = await apiGet<{ membership?: { tier?: string } }>("/api/v1/members/me", {
-            auth: true,
-          });
-          const tier = member?.membership?.tier;
-          if (tier === "academy") setMemberDiscount(15);
-          else if (tier === "club") setMemberDiscount(10);
-          else if (tier === "community") setMemberDiscount(5);
-        } catch {
-          // Ignore
-        }
-      }
     } catch (e) {
       console.error("Failed to load product:", e);
       toast.error("Product not found");
@@ -183,7 +170,7 @@ export default function ProductDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [slug, isAuthenticated, router]);
+  }, [slug, router]);
 
   useEffect(() => {
     loadProduct();
@@ -311,14 +298,14 @@ export default function ProductDetailPage() {
       return;
     }
 
+    // Amazon-style one-item purchase: do not modify the saved multi-item cart.
     setBuyingNow(true);
-    try {
-      await addItem(selectedVariant.id, quantity);
-      router.push("/store/checkout");
-    } catch {
-      toast.error("Failed to proceed to checkout");
-      setBuyingNow(false);
-    }
+    const query = new URLSearchParams({
+      buyNowVariant: selectedVariant.id,
+      quantity: String(quantity),
+      product: slug,
+    });
+    router.push(`/store/checkout?${query.toString()}`);
   };
 
   /* ---- loading / not found ---- */
@@ -891,12 +878,12 @@ export default function ProductDetailPage() {
                   ) : isPreorder ? (
                     "Pre-order Now"
                   ) : (
-                    "Add & Checkout"
+                    "Buy Now"
                   )}
                 </button>
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                Checkout includes this item and anything already in your cart. Review your order before paying.
+                Buy Now purchases only this item. To buy several products together, use Add to Cart and checkout your cart.
               </p>
             </div>
 
@@ -1101,7 +1088,7 @@ export default function ProductDetailPage() {
           disabled={adding || buyingNow || !inStock || !allOptionsSelected || !selectedVariant}
           className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-600 text-white rounded-lg font-semibold text-xs hover:bg-cyan-700 transition-colors disabled:opacity-50 whitespace-nowrap shadow-sm"
         >
-          {buyingNow ? "..." : isPreorder ? "Pre-order" : "Add & Checkout"}
+          {buyingNow ? "..." : isPreorder ? "Pre-order" : "Buy Now"}
         </button>
       </div>
 
