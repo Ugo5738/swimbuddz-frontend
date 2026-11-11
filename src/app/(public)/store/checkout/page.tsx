@@ -241,16 +241,16 @@ export default function StoreCheckoutPage() {
         apply_store_credit: useStoreCredit,
         bubbles_to_apply: effectiveBubbles > 0 ? effectiveBubbles : undefined,
         size_chart_acknowledged: requiresSizeChartAck ? sizeChartAcked : true,
-        ...(buyNowSelection
-          ? {
-              buy_now_variant_id: buyNowSelection.variantId,
-              buy_now_quantity: buyNowSelection.quantity,
-            }
-          : {}),
+
       };
 
+      const checkoutPath = buyNowSelection
+        ? `/api/v1/store/checkout/start?buy_now_variant_id=${encodeURIComponent(
+            buyNowSelection.variantId
+          )}&buy_now_quantity=${buyNowSelection.quantity}`
+        : "/api/v1/store/checkout/start";
       const orderResult = await apiPost<CheckoutResponse>(
-        "/api/v1/store/checkout/start",
+        checkoutPath,
         checkoutPayload,
         { auth: true }
       );
