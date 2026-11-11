@@ -302,7 +302,7 @@ export default function StoreCheckoutPage() {
   if (buyNowError) {
     return (
       <div className="max-w-lg mx-auto py-12 space-y-4">
-        <Alert variant="warning" title="Buy Now unavailable">{buyNowError}</Alert>
+        <Alert variant="error" title="Buy Now unavailable">{buyNowError}</Alert>
         <Link href="/store"><Button>Browse Store</Button></Link>
       </div>
     );
