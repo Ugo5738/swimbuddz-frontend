@@ -598,6 +598,7 @@ export function VaultReviewGrid({ vaultId, admin = false }: Props) {
       )}
       {viewingVideo && (
         <VaultVideoDialog
+          canEditClip={admin}
           item={viewingVideo}
           working={playerWorking}
           error={playerError}

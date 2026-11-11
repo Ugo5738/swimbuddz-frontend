@@ -39,6 +39,7 @@ export function VaultVideoDialog({
   onRequest,
   onClose,
   canRequest = true,
+  canEditClip = false,
 }: {
   item: VaultMedia;
   working: boolean;
@@ -47,6 +48,7 @@ export function VaultVideoDialog({
   onRequest: (force: boolean) => void;
   onClose: () => void;
   canRequest?: boolean;
+  canEditClip?: boolean;
 }) {
   const [duration, setDuration] = useState(item.duration_seconds ?? 0);
   const [showClipTool, setShowClipTool] = useState(false);
@@ -96,14 +98,14 @@ export function VaultVideoDialog({
               <source src={item.preview_url} type="video/mp4" />
             </video>
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-3">
-              <button
+              {(canEditClip || item.allow_member_clips) && <button
                 type="button"
                 onClick={() => setShowClipTool((prev) => !prev)}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-cyan-600"
               >
                 <Scissors className="h-3.5 w-3.5" />
                 {showClipTool ? "Hide clip cutter" : "Cut video / Save clip"}
-              </button>
+              </button>}
               {canRequest && (
                 <button
                   type="button"
@@ -115,7 +117,7 @@ export function VaultVideoDialog({
                 </button>
               )}
             </div>
-            {showClipTool && (
+            {showClipTool && (canEditClip || item.allow_member_clips) && (
               <div className="mx-4 mt-3 max-h-[45vh] overflow-y-auto rounded-xl">
                 <MemberClipTool videoId={item.id} duration={duration} />
               </div>

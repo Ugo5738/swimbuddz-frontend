@@ -3,7 +3,7 @@
 import { useMediaUrl } from "@/hooks/useMediaUrl";
 import { Milestone, ProgressStatus, StudentProgress } from "@/lib/academy";
 import { reviewMilestone } from "@/lib/coach";
-import { buildMediaPlaybackUrl, isLikelyVideoUrl } from "@/lib/media";
+import { isLikelyVideoUrl } from "@/lib/media";
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -162,9 +162,7 @@ export function MilestoneProgressModal({
                       controls
                       preload="metadata"
                       className="w-full max-h-48 rounded border border-amber-200"
-                      src={buildMediaPlaybackUrl(
-                        currentProgress.evidence_media_id!,
-                      )}
+                      src={evidenceUrl}
                     />
                   ) : (
                     <a

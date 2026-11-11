@@ -1,6 +1,6 @@
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { apiGet, apiPost } from "./api";
-import { isAcademyDestination, safeReturnPath } from "./returnPath";
+import { isAcademyDestination, isStandaloneReturnPath, safeReturnPath } from "./returnPath";
 import { getCurrentAccessToken, supabase } from "./auth";
 import {
   getRequestedTiers,
@@ -144,8 +144,10 @@ export async function completePendingRegistrationOnBackend(): Promise<PendingCom
 
 export async function getPostAuthRedirectPath(destination?: string | null): Promise<string> {
   const returnTo = safeReturnPath(destination);
-  // Pool Access visitors are not required to join a membership programme.
-  if (returnTo && /^\/pool-access(?:\/|$|\?)/.test(returnTo)) return returnTo;
+  // Standalone storefront/visitor routes (Store checkout, Pool Access,
+  // Experiences, Guest Pass, Tips) never require swim-programme onboarding or
+  // pending tier upgrades before landing back at the requested page.
+  if (returnTo && isStandaloneReturnPath(returnTo)) return returnTo;
   try {
     const member = await apiGet<MemberForRedirect>("/api/v1/members/me", {
       auth: true,
@@ -180,7 +182,7 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
       }
 
       if (coachStatus === "active") {
-        return "/coach/dashboard";
+        return returnTo || "/coach/dashboard";
       }
     }
 
@@ -235,10 +237,11 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
 
     // Academy signup: payment follows cohort selection. Full logistics,
     // emergency contacts and learning goals are collected after checkout,
-    // before the student's first supervised swim.
+    // before the student's first supervised swim. Only fall back to cohort
+    // selection when there is no explicit non-Academy destination.
     if (wantsAcademy && !academyActive) {
       if (returnTo && isAcademyDestination(returnTo)) return returnTo;
-      return "/upgrade/academy/cohort";
+      if (!returnTo) return "/upgrade/academy/cohort";
     }
 
     const onboardingComplete =

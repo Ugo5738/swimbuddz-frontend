@@ -1812,11 +1812,17 @@ function RosterTableRow({
       };
     }
     if (isCohortStudent) {
-      return {
-        cls: "bg-purple-50 text-purple-700 border border-purple-200",
-        primary: "Included in tuition",
-        secondary: null,
-      };
+      return academyAllocationOnly
+        ? {
+            cls: "bg-slate-100 text-slate-700 border border-slate-200",
+            primary: "No class allocation",
+            secondary: "Allocate a class before recording attendance",
+          }
+        : {
+            cls: "bg-purple-50 text-purple-700 border border-purple-200",
+            primary: "Included in tuition",
+            secondary: null,
+          };
     }
     if (row.source === "walkin") {
       return {
