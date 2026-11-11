@@ -9463,6 +9463,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments/bookings/{booking_id}/open-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Booking Open Payment
+         * @description Return any active open payment attempt locking a session booking.
+         */
+        get: operations["get_booking_open_payment_payments_bookings__booking_id__open_payment_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/bookings/{booking_id}/open-payment/switch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Switch Booking Open Payment Method
+         * @description Verify and close an unpaid open Paystack booking checkout so the member can switch payment method or Bubbles immediately.
+         */
+        post: operations["switch_booking_open_payment_method_payments_bookings__booking_id__open_payment_switch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/me/obligations": {
         parameters: {
             query?: never;
@@ -34420,6 +34460,63 @@ export interface components {
              * Format: binary
              */
             file: string;
+        };
+        /** BookingOpenPaymentResponse */
+        BookingOpenPaymentResponse: {
+            open_payment?: components["schemas"]["BookingOpenPaymentSummary"] | null;
+            /**
+             * Already Settled
+             * @default false
+             */
+            already_settled: boolean;
+        };
+        /**
+         * BookingOpenPaymentSummary
+         * @description Safe member-facing summary of an open payment attempt on a booking.
+         *
+         *     Follows the same privacy boundaries as `MemberPaymentResponse` (no raw
+         *     provider payloads, Paystack access_code, or admin notes).
+         */
+        BookingOpenPaymentSummary: {
+            /** Reference */
+            reference: string;
+            purpose: components["schemas"]["PaymentPurpose"];
+            status: components["schemas"]["PaymentStatus"];
+            /** Payment Method */
+            payment_method: string;
+            /** Amount */
+            amount: number;
+            /** Currency */
+            currency: string;
+            /**
+             * Bubbles To Apply
+             * @default 0
+             */
+            bubbles_to_apply: number;
+            /**
+             * Bubbles Value Ngn
+             * @default 0
+             */
+            bubbles_value_ngn: number;
+            /** Checkout Url */
+            checkout_url?: string | null;
+            /**
+             * Can Cancel And Switch
+             * @default false
+             */
+            can_cancel_and_switch: boolean;
+        };
+        /** BookingSwitchMethodResponse */
+        BookingSwitchMethodResponse: {
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "closed_unpaid" | "already_paid" | "ready";
+            /** Reference */
+            reference?: string | null;
+            /** Message */
+            message: string;
         };
         /** ChargePolicyCreate */
         ChargePolicyCreate: {
@@ -67343,6 +67440,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberPaymentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_booking_open_payment_payments_bookings__booking_id__open_payment_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOpenPaymentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    switch_booking_open_payment_method_payments_bookings__booking_id__open_payment_switch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingSwitchMethodResponse"];
                 };
             };
             /** @description Validation Error */
