@@ -26,3 +26,15 @@ export function isAcademyDestination(value: string | null | undefined): boolean 
     (url.pathname === "/checkout" && url.searchParams.get("purpose") === "academy_cohort")
   );
 }
+
+/**
+ * Standalone public/storefront routes that require authentication where
+ * gated, but must never be detoured into membership onboarding or upgrade
+ * funnels (e.g. Store checkout, Pool Access bookings, Experiences, Tips).
+ */
+export function isStandaloneReturnPath(value: string | null | undefined): boolean {
+  const safe = safeReturnPath(value);
+  if (!safe) return false;
+  const url = new URL(safe, "https://swimbuddz.invalid");
+  return /^\/(pool-access|store|experiences|guest-pass|tips)(?:\/|$)/.test(url.pathname);
+}

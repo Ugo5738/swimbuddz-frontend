@@ -268,7 +268,7 @@ The implementation of pages should follow these flows closely.
    - Navigates to `/store/cart`.
    - Reviews items, quantities, subtotal.
    - Can update quantities or remove items.
-   - Clicks "Proceed to Checkout".
+   - Clicks "Proceed to Checkout" (or **"Login to Checkout"** if browsing as a guest, which redirects via `/login?redirect=/store/checkout` and returns straight to `/store/checkout` after login regardless of pending programme requests or onboarding status).
 
 4. On `/store/checkout`:
 
