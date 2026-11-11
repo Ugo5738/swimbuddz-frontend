@@ -214,7 +214,7 @@ function RegistrationSuccessContent() {
           <CheckCircle className="h-12 w-12 text-emerald-600" />
         </div>
         <h1 className="mt-6 text-3xl font-bold text-slate-900">Registration Successful!</h1>
-        <p className="mt-3 text-lg text-slate-600">Welcome to the SwimBuddz community!</p>
+        <p className="mt-3 text-lg text-slate-600">Your SwimBuddz account is ready for email verification.</p>
       </div>
 
       {/* What's Next */}
@@ -235,7 +235,7 @@ function RegistrationSuccessContent() {
               <h3 className="font-medium text-slate-900">Check your email</h3>
               <p className="mt-1 text-sm text-slate-600">
                 We've sent a confirmation email to verify your account. Please click the link to
-                activate your membership.
+                verify your account.
               </p>
 
               {/* Resend Email Section */}

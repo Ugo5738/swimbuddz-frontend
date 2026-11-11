@@ -27,7 +27,7 @@ export function RegistrationConfirmStep({
           <div className="grid grid-cols-3 gap-2">
             <dt className="text-slate-600">Starting path:</dt>
             <dd className="col-span-2 font-medium text-slate-900">
-              {memberStartPathLabel(selectedTier as MemberStartPath | null)}
+              {selectedTier ? memberStartPathLabel(selectedTier as MemberStartPath) : "Explore SwimBuddz (no paid membership required)"}
             </dd>
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -88,9 +88,9 @@ export function RegistrationConfirmStep({
         <ul className="mt-2 space-y-1">
           <li>1) Confirm your email</li>
           <li>2) Log in (we’ll take you to your next step)</li>
-          <li>3) Complete your shared profile and the steps for your selected path</li>
+          <li>3) Continue to your selected destination, or explore what SwimBuddz offers</li>
           <li>
-            4) Review the server quote before paying. Annual SwimBuddz membership is itemised when
+            4) If you choose a paid swimming programme, review its quote before paying. Annual membership is itemised when
             due, or handled according to the Academy programme policy.
           </li>
         </ul>
