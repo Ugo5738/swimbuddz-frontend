@@ -283,6 +283,12 @@ The implementation of pages should follow these flows closely.
    - Shows order confirmation with order number.
    - Member can track order status.
 
+For the reviewed Esther preorder correction, the order shows the replacement
+goggles at ₦15,000 and the revised ₦42,000 total. The original ₦37,000 receipt and
+₦5,000 top-up are reviewed separately in Admin Payments. Neither partial payment
+alone fulfills the order. This is a scoped operator correction, with no new
+exchange control in the UI; do not ask the member to pay the full total again.
+
 ---
 
 ## 8. Member → Enroll in Academy Program
