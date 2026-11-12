@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { useMediaUrl } from "@/hooks/useMediaUrl";
-import { buildMediaPlaybackUrl, isLikelyVideoUrl } from "@/lib/media";
+import { isLikelyVideoUrl } from "@/lib/media";
 
 /**
  * In-app viewer for milestone evidence (image or video).
@@ -54,10 +54,9 @@ export function EvidenceMedia({
   }
 
   const isVideo = isLikelyVideoUrl(url);
-  // Videos go through the playback redirect endpoint so the <video>
-  // element gets a fresh, cacheable presigned URL on every Range request
-  // — direct presigned URLs expire and cause mid-playback failures.
-  const playbackUrl = isVideo ? buildMediaPlaybackUrl(mediaId) : url;
+  // The authenticated media lookup returns a short-lived, signed playback
+  // link. Never construct an anonymous /play URL for private evidence.
+  const playbackUrl = url;
 
   return (
     <>
