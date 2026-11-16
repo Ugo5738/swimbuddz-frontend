@@ -4,6 +4,7 @@ import { useApi } from "@/hooks/useApi";
 import {
   formatBytes,
   mediaVaultApi,
+  unattributedPreviewBytes,
   type BandwidthSummary,
   type ExportJob,
 } from "@/lib/media-vault";
@@ -40,10 +41,10 @@ export function VaultOperationsPanel({ vaultId }: { vaultId: string }) {
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="flex items-center gap-2 font-bold text-slate-950">
           <Gauge className="h-5 w-5 text-cyan-600" />
-          Download bandwidth
+          S3 vault download bandwidth
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Account-wide vault ledger reconciled against bytes delivered by S3.
+          Original downloads and S3 preview traffic, including unattributed derivative requests. This is not Supabase egress.
         </p>
         {bandwidth.loading ? (
           <Loader2 className="mt-8 h-6 w-6 animate-spin text-cyan-600" />
@@ -59,7 +60,7 @@ export function VaultOperationsPanel({ vaultId }: { vaultId: string }) {
                 <p className="text-sm text-slate-500">effective download usage this month</p>
               </div>
               <p className="text-sm font-semibold text-emerald-700">
-                {formatBytes(summary.allowance_remaining_bytes)} vault-ledger headroom
+                {formatBytes(summary.allowance_remaining_bytes)} vault-only allowance comparison
               </p>
             </div>
             <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
@@ -89,14 +90,17 @@ export function VaultOperationsPanel({ vaultId }: { vaultId: string }) {
               {summary.months.slice(-6).map((month) => (
                 <div
                   key={month.month}
-                  className="grid grid-cols-4 gap-2 border-b border-slate-100 px-3 py-2 text-xs last:border-0"
+                  className="grid grid-cols-2 gap-2 border-b border-slate-100 px-3 py-2 text-xs last:border-0 sm:grid-cols-5"
                 >
-                  <span className="font-medium text-slate-700">{month.month}</span>
+                  <span className="col-span-2 font-medium text-slate-700 sm:col-span-1">{month.month}</span>
                   <span className="text-right text-slate-500">
                     {formatBytes(month.upload_bytes)} up
                   </span>
                   <span className="text-right text-slate-500">
-                    {formatBytes(month.download_reconciled_bytes)} actual
+                    {formatBytes(month.download_reconciled_bytes)} matched
+                  </span>
+                  <span className="text-right text-slate-500">
+                    {formatBytes(unattributedPreviewBytes(month))} previews
                   </span>
                   <span className="text-right text-slate-500">
                     {formatBytes(month.download_pending_estimate_bytes)} pending
