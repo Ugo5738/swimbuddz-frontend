@@ -4,6 +4,7 @@ import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useApi } from "@/hooks/useApi";
 import { MemberProfileContext, type MemberInfo } from "@/lib/member-profile-context";
+import { shouldRefreshMemberProfileOnNavigation } from "@/lib/member-profile-refresh";
 import { supabase } from "@/lib/auth";
 import { listPodsILead } from "@/lib/pods";
 import {
@@ -224,16 +225,26 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     ]);
   }, []);
 
-  // Keep sidebar membership/status in sync after in-app navigation
-  // (e.g., checkout -> billing without a Paystack reference query param).
-  // useApi fetches the profile on mount. Re-fetch only when navigating to a
-  // different path; otherwise mounting the layout immediately duplicates /me.
+  // The shell already fetches /members/me on mount. Refreshing on every
+  // client-side navigation creates unnecessary full-profile database queries.
+  // Keep display data fresh on occasional navigation, never on every click.
+  // Payment callbacks and explicit mutation refreshes remain immediate.
   const previousPathname = useRef(pathname);
+  const lastSidebarProfileRequestAt = useRef(Date.now());
   useEffect(() => {
     if (previousPathname.current === pathname) return;
     previousPathname.current = pathname;
+    const now = Date.now();
+    const needsRecovery = Boolean(profile.error) && !profile.loading;
+    if (
+      !needsRecovery &&
+      !shouldRefreshMemberProfileOnNavigation(lastSidebarProfileRequestAt.current, now)
+    ) {
+      return;
+    }
+    lastSidebarProfileRequestAt.current = now;
     refreshMember();
-  }, [pathname, refreshMember]);
+  }, [pathname, refreshMember, profile.error, profile.loading]);
 
   useEffect(() => {
     const reference = searchParams.get("reference") || searchParams.get("trxref");
