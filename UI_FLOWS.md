@@ -745,3 +745,17 @@ this flow.
 - Reopening an outstanding session settlement resumes its existing payable attempt, even with another browser retry key. Incompatible choices and multiple historical links require Admin reconciliation. Paid receipts awaiting fulfillment never ask for another payment.
 - Academy caches both billing modes with zero-Bubbles fallbacks. Switching to an installment that cannot cover the selected Bubbles resets the applied amount to zero, explains the reset, and immediately shows the correct due. A valid amount stays selected across switches; toggling alone does not request another quote.
 - Admin settlement-link generation works without a member email. Email sharing is offered only when an address exists; the recipient signs in to the booking owner's account. The nullable reference is not displayed as a provider transaction.
+
+
+### Reviewed historical session and Bubble settlement correction (16 Nov 2026)
+
+Past attendance uses completed Sessions and Admin member/guest walk-ins. Verify the
+member admission quote; a configured visitor price does not imply every legacy
+Club member resolves as a visitor. Record an explicit agreed-price reason when
+needed. Combined settlement links cover the exact recorded member and guest debt.
+Missing guest consent stays pending. A reviewed zero-cash, fully reversed Bubble
+payment retains its original receipt but no longer blocks a new payment for the
+reopened booking. Private Admin proof is required; member metadata is insufficient.
+Billing shows the reopened fee and the correct swim as settled. No new public API
+or frontend control is introduced by the scoped operator repair. See backend
+`docs/SESSION_WALLET_REALLOCATION_RUNBOOK.md` for checks and accounting replay.
