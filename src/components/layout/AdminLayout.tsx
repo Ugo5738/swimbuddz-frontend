@@ -2,6 +2,7 @@
 
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { apiGet } from "@/lib/api";
+import { shouldPollAdminQueues } from "@/lib/adminQueuePolling";
 import { supabase } from "@/lib/auth";
 import {
   Activity,
@@ -248,18 +249,35 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, []);
 
-  // Poll small operational queues so the sidebar surfaces work that needs attention.
+  // Poll operational queues only while an admin is actively viewing the tab.
+  // A hidden browser tab should not trigger two backend reads every 30 seconds.
+  // Never overlap requests when the server is slow; refresh once on return.
   useEffect(() => {
-    // -1 means "initial load" — fetchNewOrderCount skips sound when prevCountRef < 0
+    // -1 means "initial load" — skip the first order notification sound.
     prevCountRef.current = -1;
-    const refreshCounts = () => {
-      void fetchNewOrderCount();
-      void fetchPaymentReviewCount();
+    let active = true;
+    let inFlight = false;
+    const refreshCounts = async () => {
+      if (!active || !shouldPollAdminQueues(document.visibilityState, inFlight)) return;
+      inFlight = true;
+      try {
+        await Promise.all([fetchNewOrderCount(), fetchPaymentReviewCount()]);
+      } finally {
+        inFlight = false;
+      }
     };
-    refreshCounts();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void refreshCounts();
+    };
 
-    const interval = setInterval(refreshCounts, 30_000);
-    return () => clearInterval(interval);
+    void refreshCounts();
+    const interval = setInterval(() => void refreshCounts(), 30_000);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      active = false;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [fetchNewOrderCount, fetchPaymentReviewCount]);
 
   // Restore the admin's sidebar preferences on this device.
