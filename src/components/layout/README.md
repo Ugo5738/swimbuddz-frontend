@@ -22,3 +22,13 @@ shell and supplies it through `MemberProfileContext`.
 Measure `/members/me` request volume and latency before/after deployment.
 PostgreSQL query counters are cumulative and may include unrelated callers,
 so they must not be presented as proof of an exact reduction without path logs.
+
+## Admin operational-queue polling
+
+AdminLayout polls pending payment reviews and new store orders every 30 seconds
+**only when the browser tab is visible**. A background tab does not need to
+keep loading those queues indefinitely. Returning to the tab immediately
+refreshes both counts, while an in-flight refresh is allowed to finish before
+another begins. Active-tab refresh cadence, order notifications and payment
+review semantics are unchanged. `src/lib/adminQueuePolling.test.ts` covers
+visibility and concurrency gating.
