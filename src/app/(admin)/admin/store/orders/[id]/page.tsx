@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPatch } from "@/lib/api";
+import {
+  allowedStoreOrderStatuses,
+  storeOrderStatusLabel,
+} from "@/lib/storeOrderStatuses";
 import { ArrowLeft, MapPin, Package, Truck, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -67,18 +71,6 @@ interface OrderDetail {
   tracking_url?: string;
 }
 
-const STATUSES = [
-  "pending_payment",
-  "paid",
-  "processing",
-  "ready_for_pickup",
-  "picked_up",
-  "shipped",
-  "delivered",
-  "cancelled",
-  "refunded",
-];
-
 export default function AdminOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -121,7 +113,7 @@ export default function AdminOrderDetailPage() {
       toast.success("Order updated");
       loadOrder();
     } catch (e) {
-      toast.error("Failed to update order");
+      toast.error("Order update rejected. Check payment verification and allowed status changes.");
     } finally {
       setSaving(false);
     }
@@ -167,9 +159,9 @@ export default function AdminOrderDetailPage() {
           onChange={(e) => updateOrder({ status: e.target.value })}
           className="px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-400"
         >
-          {STATUSES.map((s) => (
+          {allowedStoreOrderStatuses(order.status).map((s) => (
             <option key={s} value={s}>
-              {s.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+              {storeOrderStatusLabel(s)}
             </option>
           ))}
         </select>
