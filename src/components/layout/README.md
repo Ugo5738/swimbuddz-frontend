@@ -32,3 +32,5 @@ refreshes both counts, while an in-flight refresh is allowed to finish before
 another begins. Active-tab refresh cadence, order notifications and payment
 review semantics are unchanged. `src/lib/adminQueuePolling.test.ts` covers
 visibility and concurrency gating.
+`__tests__/AdminLayout.test.tsx` also mounts the actual layout to verify hidden
+initial loads, visible return, slow-request overlap and unmount cleanup.
