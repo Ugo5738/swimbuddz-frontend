@@ -8,6 +8,24 @@ The implementation of pages should follow these flows closely.
 
 ---
 
+## November 16, 2026 — request budgets and Media Vault bandwidth
+
+- The member shell reuses its loaded profile during rapid navigation, with
+  display revalidation at most once per 60 seconds. Explicit profile edits and
+  payment-return refreshes remain immediate; server access/settlement checks
+  remain authoritative.
+- The admin sidebar refreshes payment-review/store-order counts every 30 seconds
+  while visible, pauses in hidden tabs, avoids overlapping requests and refreshes
+  on return. Unmount removes its timer and visibility listener.
+- Media Vault bandwidth shows measured preview/derivative delivery separately
+  from matched originals and pending original estimates. This is S3 usage, not
+  Supabase egress or an authoritative AWS free-allowance balance.
+- Release the backend and retry migration first, verify its workflows, then
+  promote this frontend. The deployment recovery gate and staged connection-pool
+  pilot are documented in the backend operations runbooks.
+
+---
+
 ## 1. New Visitor → Registered Member
 
 ### Flow: Home → Register → Profile
