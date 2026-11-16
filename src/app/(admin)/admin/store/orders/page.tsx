@@ -4,6 +4,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPatch } from "@/lib/api";
+import {
+  STORE_ORDER_STATUSES,
+  allowedStoreOrderStatuses,
+  storeOrderStatusLabel,
+} from "@/lib/storeOrderStatuses";
 import { ArrowLeft, Eye, Package, Search } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -29,18 +34,6 @@ interface OrdersResponse {
   page_size: number;
 }
 
-const STATUSES = [
-  "pending_payment",
-  "paid",
-  "processing",
-  "ready_for_pickup",
-  "picked_up",
-  "shipped",
-  "delivered",
-  "cancelled",
-  "refunded",
-];
-
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [total, setTotal] = useState(0);
@@ -56,7 +49,7 @@ export default function AdminOrdersPage() {
       params.set("page", String(page));
       params.set("page_size", "20");
       if (search) params.set("search", search);
-      if (statusFilter) params.set("status", statusFilter);
+      if (statusFilter) params.set("status_filter", statusFilter);
 
       const data = await apiGet<OrdersResponse>(`/api/v1/admin/store/orders?${params.toString()}`, {
         auth: true,
@@ -84,7 +77,7 @@ export default function AdminOrdersPage() {
       toast.success("Order status updated");
       loadOrders();
     } catch (e) {
-      toast.error("Failed to update status");
+      toast.error("Status change rejected. Verify payment in Finance before fulfillment.");
     }
   };
 
@@ -133,9 +126,9 @@ export default function AdminOrdersPage() {
             className="px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
           >
             <option value="">All Statuses</option>
-            {STATUSES.map((s) => (
+            {STORE_ORDER_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                {storeOrderStatusLabel(s)}
               </option>
             ))}
           </select>
@@ -193,9 +186,9 @@ export default function AdminOrdersPage() {
                       onChange={(e) => updateStatus(order.id, e.target.value)}
                       className="text-sm px-2 py-1 border border-slate-200 rounded focus:ring-2 focus:ring-cyan-400"
                     >
-                      {STATUSES.map((s) => (
+                      {allowedStoreOrderStatuses(order.status).map((s) => (
                         <option key={s} value={s}>
-                          {s.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                          {storeOrderStatusLabel(s)}
                         </option>
                       ))}
                     </select>
