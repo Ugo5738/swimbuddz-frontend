@@ -6,7 +6,7 @@ import { apiGet, apiPost } from "@/lib/api";
 import { formatNaira } from "@/lib/format";
 
 type LedgerOption = { id: string; code: string; name: string };
-type Role = "viewer" | "accountant" | "admin" | "owner";
+type Role = "viewer" | "operations" | "accountant" | "admin" | "owner";
 type Bank = { id: string; code: string; bank_name: string; purpose: string; last_four: string | null; ledger_account_id: string | null; statement_balance_minor: number | null; statement_as_of: string | null };
 type Budget = { id: string; name: string; category: string; amount_minor: number; starts_on: string; ends_on: string };
 type RequestItem = {
@@ -128,7 +128,7 @@ export default function TreasuryPage() {
   const banks = summary?.banks ?? [];
   const treasury = banks.find((b) => b.purpose === "treasury");
   const operations = banks.find((b) => b.purpose === "operations");
-  const canPrepare = member?.role === "accountant" || member?.role === "admin" || member?.role === "owner";
+  const canPrepare = member?.role === "operations" || member?.role === "accountant" || member?.role === "admin" || member?.role === "owner";
   const owner = member?.role === "owner";
   const availableBudgets = budgets.filter((b) => b.category === category);
   const unmatched = useMemo(() => lines.filter((l) => l.match_status === "unmatched"), [lines]);
