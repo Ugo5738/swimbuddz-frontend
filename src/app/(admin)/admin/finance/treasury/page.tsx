@@ -40,6 +40,15 @@ function toMinor(naira: string): number {
   if (!Number.isSafeInteger(value) || value <= 0) throw new Error("Amount is invalid.");
   return value;
 }
+function bankBalanceMinor(input: string): number {
+  const normalized = input.trim().replace(/,/g, "");
+  if (!/^-?\d+(\.\d{1,2})?$/.test(normalized)) throw new Error("Bank balance must be entered in Naira with at most two decimal places.");
+  const negative = normalized.startsWith("-");
+  const [major, fraction = ""] = (negative ? normalized.slice(1) : normalized).split(".");
+  const minor = Number(major) * 100 + Number(fraction.padEnd(2, "0"));
+  if (!Number.isSafeInteger(minor)) throw new Error("Bank balance exceeds safe precision.");
+  return negative ? -minor : minor;
+}
 function parseSignedMinor(naira: string): number {
   const cleaned = naira.trim().replace(/,/g, "");
   const negative = cleaned.startsWith("-");
@@ -100,6 +109,8 @@ export default function TreasuryPage() {
   const [recon, setRecon] = useState<Recon[]>([]);
   const [forecasts, setForecasts] = useState<Forecast[]>([]);
   const [projection, setProjection] = useState<Projection | null>(null);
+  const [projectionDays, setProjectionDays] = useState<7 | 30 | 90>(30);
+  const [projectionScenario, setProjectionScenario] = useState("base");
   const [forecastScenario, setForecastScenario] = useState("base");
   const [forecastDirection, setForecastDirection] = useState<"inflow" | "outflow">("outflow");
   const [forecastDate, setForecastDate] = useState("");
@@ -153,13 +164,13 @@ export default function TreasuryPage() {
         apiGet<LedgerOption[]>(ROOT + "/ledger-options", { auth: true }),
         apiGet<Recon[]>(ROOT + "/reconciliation/banks", { auth: true }),
         apiGet<Forecast[]>(ROOT + "/forecasts", { auth: true }),
-        apiGet<Projection>(ROOT + "/cash-projection", { auth: true }),
+        apiGet<Projection>(ROOT + "/cash-projection?days=" + projectionDays + "&scenario=" + projectionScenario, { auth: true }),
         apiGet<ExpenseOption[]>(ROOT + "/expense-ledger-options", { auth: true }),
         apiGet<BudgetUtilization[]>(ROOT + "/budgets/utilization", { auth: true }),
       ]);
       setMember(me); setSummary(s); setRequests(r); setBudgets(b); setLines(l); setLedgerOptions(lo); setRecon(rc); setForecasts(fc); setProjection(cp); setExpenseOptions(eo); setUtilization(bu);
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to load treasury."); }
-  }, []);
+  }, [projectionDays, projectionScenario]);
   useEffect(() => { void load(); }, [load]);
 
   const banks = summary?.banks ?? [];
@@ -356,11 +367,12 @@ export default function TreasuryPage() {
           <label className="text-sm">Original statement evidence ID<input className={control} value={snapshotEvidence} onChange={(e) => setSnapshotEvidence(e.target.value)} /></label>
           <button className={primary} disabled={busy || !snapshotBank || !snapshotDate || !snapshotAmount || snapshotEvidence.trim().length < 5}
             onClick={() => {
-              const n = Number(snapshotAmount.replaceAll(",", ""));
-              if (!Number.isFinite(n) || !Number.isSafeInteger(Math.round(n * 100))) { setError("Invalid bank closing balance."); return; }
+              let verifiedMinor: number;
+              try { verifiedMinor = bankBalanceMinor(snapshotAmount); }
+              catch (error) { setError(error instanceof Error ? error.message : "Invalid balance"); return; }
               if (!window.confirm("Have you personally verified the bank statement closing balance in the official bank portal? The attested snapshot will be kept in the audit history.")) return;
               void run(() => apiPost(ROOT + "/banks/" + snapshotBank + "/snapshot",
-                { as_of: snapshotDate, balance_minor: Math.round(n * 100), evidence_reference: snapshotEvidence.trim() },
+                { as_of: snapshotDate, balance_minor: verifiedMinor, evidence_reference: snapshotEvidence.trim() },
                 { auth: true }), "Dated statement balance attested.");
             }}>Attest bank statement balance</button>
         </div>}
@@ -368,11 +380,15 @@ export default function TreasuryPage() {
 
       <section id="forecasts" className={tile}>
         <h2 className="text-lg font-semibold">Cash flow forecast</h2>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <label className="text-sm">Forecast scenario<select className={control} value={projectionScenario} onChange={(e) => setProjectionScenario(e.target.value)}><option value="base">Base</option><option value="optimistic">Optimistic</option><option value="conservative">Conservative</option></select></label>
+          <label className="text-sm">Forecast horizon<select className={control} value={projectionDays} onChange={(e) => setProjectionDays(Number(e.target.value) as 7 | 30 | 90)}><option value={7}>7 days</option><option value={30}>30 days</option><option value={90}>90 days</option></select></label>
+        </div>
         <p className="text-sm text-slate-600">Plan upcoming collections and spending. Forecast assumptions are separate from actual payments and from expense ceilings.</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-slate-500">Planning opening cash</p><p className="mt-2 font-semibold">{projection?.latest_bank_snapshot_date ? "Verified " + projection.latest_bank_snapshot_date : "Needs matching bank snapshots"}</p></div>
           <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-slate-500">Approved expenses pending</p><p className="mt-2 font-semibold">{money(projection?.pending_approved_expenses_minor ?? 0)}</p></div>
-          <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-slate-500">30-day projected ending cash</p><p className="mt-2 font-semibold">{projection?.projected_ending_minor == null ? "Not available" : money(projection.projected_ending_minor)}</p></div>
+          <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-slate-500">{projectionDays}-day projected ending cash</p><p className="mt-2 font-semibold">{projection?.projected_ending_minor == null ? "Not available" : money(projection.projected_ending_minor)}</p></div>
         </div>
         <p className="mt-2 text-xs text-amber-800">{projection?.caveat || "Forecast is not a live bank balance."}</p>
         <h3 className="mt-4 font-semibold">Planned inflows and outflows</h3>
