@@ -9,6 +9,7 @@ type LedgerOption = { id: string; code: string; name: string };
 type ExpenseOption = { code: string; name: string };
 type Role = "viewer" | "operations" | "accountant" | "admin" | "owner";
 type Bank = { id: string; code: string; bank_name: string; purpose: string; last_four: string | null; ledger_account_id: string | null; statement_balance_minor: number | null; statement_as_of: string | null; statement_verified_at: string | null };
+type BudgetUtilization = { id: string; kind: string; name: string; category: string; limit_minor: number; committed_minor: number; confirmed_minor: number; remaining_minor: number; starts_on: string; ends_on: string };
 type Budget = { id: string; kind: "expense" | "funding"; name: string; category: string; amount_minor: number; starts_on: string; ends_on: string };
 type RequestItem = {
   id: string; kind: "expense" | "funding"; status: string; amount_minor: number;
@@ -94,6 +95,7 @@ export default function TreasuryPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [utilization, setUtilization] = useState<BudgetUtilization[]>([]);
   const [lines, setLines] = useState<Statement[]>([]);
   const [recon, setRecon] = useState<Recon[]>([]);
   const [forecasts, setForecasts] = useState<Forecast[]>([]);
@@ -141,7 +143,7 @@ export default function TreasuryPage() {
 
   const load = useCallback(async () => {
     try {
-      const [me, s, r, b, l, lo, rc, fc, cp, eo] = await Promise.all([
+      const [me, s, r, b, l, lo, rc, fc, cp, eo, bu] = await Promise.all([
         apiGet<FinanceMember>("/api/v1/admin/finance/users/me", { auth: true }),
         apiGet<Summary>(ROOT + "/summary", { auth: true }),
         apiGet<RequestItem[]>(ROOT + "/requests", { auth: true }),
@@ -152,8 +154,9 @@ export default function TreasuryPage() {
         apiGet<Forecast[]>(ROOT + "/forecasts", { auth: true }),
         apiGet<Projection>(ROOT + "/cash-projection", { auth: true }),
         apiGet<ExpenseOption[]>(ROOT + "/expense-ledger-options", { auth: true }),
+        apiGet<BudgetUtilization[]>(ROOT + "/budgets/utilization", { auth: true }),
       ]);
-      setMember(me); setSummary(s); setRequests(r); setBudgets(b); setLines(l); setLedgerOptions(lo); setRecon(rc); setForecasts(fc); setProjection(cp); setExpenseOptions(eo);
+      setMember(me); setSummary(s); setRequests(r); setBudgets(b); setLines(l); setLedgerOptions(lo); setRecon(rc); setForecasts(fc); setProjection(cp); setExpenseOptions(eo); setUtilization(bu);
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to load treasury."); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -308,7 +311,10 @@ export default function TreasuryPage() {
 
       <section id="budgets" className={tile}>
         <h2 className="text-lg font-semibold">Approved operating budgets</h2>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">{budgets.map((b) => <div key={b.id} className="rounded-lg bg-slate-50 p-3"><p className="font-medium">{b.name}</p><p className="text-sm">{money(b.amount_minor)} · {b.kind} · {b.category}</p><p className="text-xs text-slate-500">{b.starts_on} – {b.ends_on}</p></div>)}</div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">{budgets.map((b) => <div key={b.id} className="rounded-lg bg-slate-50 p-3"><p className="font-medium">{b.name}</p><p className="text-sm">{money(b.amount_minor)} · {b.kind} · {b.category}</p>
+                <p className="text-xs text-slate-600">Committed: {money(utilization.find((u) => u.id === b.id)?.committed_minor ?? 0)} · Confirmed: {money(utilization.find((u) => u.id === b.id)?.confirmed_minor ?? 0)}</p>
+                <p className="text-xs font-medium">Remaining ceiling: {money(utilization.find((u) => u.id === b.id)?.remaining_minor ?? b.amount_minor)}</p>
+                <p className="text-xs text-slate-500">{b.starts_on} – {b.ends_on}</p></div>)}</div>
         {owner && <form className="mt-4 grid gap-3 md:grid-cols-3" onSubmit={(e) => { e.preventDefault(); void run(() => apiPost(ROOT + "/budgets", {
           name: newBudgetName, category: newBudgetCategory, kind: newBudgetKind, amount_minor: toMinor(newBudgetAmount),
           starts_on: newBudgetStart, ends_on: newBudgetEnd,
