@@ -12,7 +12,7 @@ type Bank = { id: string; code: string; bank_name: string; purpose: string; last
 type BudgetUtilization = { id: string; kind: string; name: string; category: string; limit_minor: number; committed_minor: number; confirmed_minor: number; remaining_minor: number; starts_on: string; ends_on: string };
 type Budget = { id: string; kind: "expense" | "funding"; name: string; category: string; amount_minor: number; starts_on: string; ends_on: string };
 type RequestItem = {
-  id: string; kind: "expense" | "funding"; status: string; amount_minor: number;
+  id: string; kind: "expense" | "funding"; status: string; amount_minor: number; budget_id: string | null; approval_note: string | null;
   purpose: string; category: string; source_bank_id: string; destination_bank_id: string | null;
   requested_by: string; created_at: string; approved_at: string | null;
   vendor_name: string | null; invoice_reference: string | null; evidence_reference: string | null;
@@ -273,7 +273,15 @@ export default function TreasuryPage() {
             const selected = confirmation[r.id] ?? { source: "", destination: "" };
             return <article className="rounded-lg border border-slate-200 p-3" key={r.id}>
               <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold">{money(r.amount_minor)} · {r.kind === "funding" ? "Operations allocation" : "Expense"}</p><p className="text-sm text-slate-600">{r.purpose}</p><p className="text-xs text-slate-500">{bankName(r.source_bank_id)}{r.destination_bank_id ? " → " + bankName(r.destination_bank_id) : ""} · {r.category}</p></div><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{r.status}{r.journal_entry_id ? " · ledger posted" : ""}</span></div>
-              {owner && r.status === "requested" && member?.id !== r.requested_by && <div className="mt-3 flex gap-2"><button disabled={busy} className={primary} onClick={() => void run(() => apiPost(ROOT + "/requests/" + r.id + "/decision", { action: "approve" }, { auth: true }), "Request approved internally. No bank payment has been sent.")}>Approve internally</button><button disabled={busy} className={secondary} onClick={() => { const reason = window.prompt("Reason for rejection"); if (reason?.trim()) void run(() => apiPost(ROOT + "/requests/" + r.id + "/decision", { action: "reject", reason }, { auth: true }), "Request rejected."); }}>Reject</button></div>}
+              {owner && r.status === "requested" && member?.id !== r.requested_by && <div className="mt-3 flex gap-2"><button disabled={busy} className={primary} onClick={() => {
+                  let reason: string | null = null;
+                  if (!r.budget_id) {
+                    reason = window.prompt("Unbudgeted request — explain why this exception should be approved:");
+                    if (!reason?.trim()) { setError("Unbudgeted approval requires a written justification."); return; }
+                  }
+                  void run(() => apiPost(ROOT + "/requests/" + r.id + "/decision", { action: "approve", reason }, { auth: true }), "Request approved internally. No bank payment has been sent.");
+                }}>Approve internally</button><button disabled={busy} className={secondary} onClick={() => { const reason = window.prompt("Reason for rejection"); if (reason?.trim()) void run(() => apiPost(ROOT + "/requests/" + r.id + "/decision", { action: "reject", reason }, { auth: true }), "Request rejected."); }}>Reject</button></div>}
+              {r.approval_note && <p className="mt-1 text-xs text-slate-600">Approval exception: {r.approval_note}</p>}
               {r.kind === "expense" && (r.vendor_name || r.invoice_reference || r.evidence_reference || r.programme) &&
                 <p className="mt-1 text-xs text-slate-500">{[r.vendor_name, r.invoice_reference, r.evidence_reference, r.programme].filter(Boolean).join(" · ")}</p>}
               {owner && r.status === "confirmed" && !r.journal_entry_id &&
