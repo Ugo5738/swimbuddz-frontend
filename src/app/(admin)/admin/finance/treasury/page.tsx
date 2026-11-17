@@ -264,7 +264,7 @@ export default function TreasuryPage() {
               {owner && r.status === "confirmed" && !r.journal_entry_id &&
                 <div className="mt-3 flex flex-wrap items-end gap-2">
                   {r.kind === "expense" && <label className="text-xs">Expense ledger account<select className={control} value={postingExpenseCode[r.id] || ""} onChange={(e) => setPostingExpenseCode((old) => ({ ...old, [r.id]: e.target.value }))}>
-                    <option value="">Choose expense account</option>{expenseOptions.map((a) => <option key={a.id} value={a.code}>{a.code} — {a.name}</option>)}
+                    <option value="">Choose expense account</option>{expenseOptions.map((a) => <option key={a.code} value={a.code}>{a.code} — {a.name}</option>)}
                   </select></label>}
                   <button className={secondary} disabled={busy || (r.kind === "expense" && !postingExpenseCode[r.id])}
                     onClick={() => {
