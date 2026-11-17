@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import { formatNaira } from "@/lib/format";
 
 type LedgerOption = { id: string; code: string; name: string };
@@ -400,7 +400,12 @@ export default function TreasuryPage() {
         </div>
         <p className="mt-2 text-xs text-amber-800">{projection?.caveat || "Forecast is not a live bank balance."}</p>
         <h3 className="mt-4 font-semibold">Planned inflows and outflows</h3>
-        <div className="mt-2 space-y-1">{forecasts.map((f) => <p key={f.id} className="text-sm">{f.effective_on} · {f.scenario} · {f.direction === "outflow" ? "−" : "+"}{money(f.amount_minor)} · {f.purpose}{f.programme ? " · " + f.programme : ""}</p>)}</div>
+        <div className="mt-2 space-y-2">{forecasts.map((f) => <div key={f.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2">
+          <p className="text-sm">{f.effective_on} · {f.scenario} · {f.direction === "outflow" ? "−" : "+"}{money(f.amount_minor)} · {f.purpose}{f.programme ? " · " + f.programme : ""}</p>
+          {owner && <button className="text-xs text-red-700 hover:underline" disabled={busy} onClick={() => {
+            if (window.confirm("Cancel this planning assumption? It remains in the audit log.")) void run(() => apiDelete(ROOT + "/forecasts/" + f.id, { auth: true }), "Forecast assumption cancelled.");
+          }}>Cancel</button>}
+        </div>)}</div>
         {canPrepare && <form className="mt-4 grid gap-3 md:grid-cols-3" onSubmit={(e) => {
           e.preventDefault(); void run(() => apiPost(ROOT + "/forecasts",
             { direction: forecastDirection, scenario: forecastScenario, effective_on: forecastDate, amount_minor: toMinor(forecastAmount), purpose: forecastPurpose, programme: forecastProgramme || null },
