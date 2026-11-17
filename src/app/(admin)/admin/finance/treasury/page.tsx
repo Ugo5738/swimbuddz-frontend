@@ -5,6 +5,7 @@ import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
 import { formatNaira } from "@/lib/format";
 
+type LedgerOption = { id: string; code: string; name: string };
 type Role = "viewer" | "accountant" | "admin" | "owner";
 type Bank = { id: string; code: string; bank_name: string; purpose: string; last_four: string | null; statement_balance_minor: number | null; statement_as_of: string | null };
 type Budget = { id: string; name: string; category: string; amount_minor: number; starts_on: string; ends_on: string };
@@ -17,7 +18,7 @@ type RequestItem = {
 type Statement = {
   id: string; bank_account_id: string; statement_id: string; row_number: number;
   occurred_on: string; amount_minor: number; description: string;
-  reference: string | null; match_status: string; request_id: string | null;
+  reference: string | null; match_status: string; request_id: string | null; journal_entry_id: string | null;
 };
 type Summary = { banks: Bank[]; pending_requests: number; approved_awaiting_bank_evidence: number; unmatched_statement_lines: number; confirmed_expenses_minor: number };
 type FinanceMember = { id: string; role: Role };
@@ -87,6 +88,8 @@ export default function TreasuryPage() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [lines, setLines] = useState<Statement[]>([]);
+  const [ledgerOptions, setLedgerOptions] = useState<LedgerOption[]>([]);
+  const [matchEntries, setMatchEntries] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -109,14 +112,15 @@ export default function TreasuryPage() {
 
   const load = useCallback(async () => {
     try {
-      const [me, s, r, b, l] = await Promise.all([
+      const [me, s, r, b, l, lo] = await Promise.all([
         apiGet<FinanceMember>("/api/v1/admin/finance/users/me", { auth: true }),
         apiGet<Summary>(ROOT + "/summary", { auth: true }),
         apiGet<RequestItem[]>(ROOT + "/requests", { auth: true }),
         apiGet<Budget[]>(ROOT + "/budgets", { auth: true }),
         apiGet<Statement[]>(ROOT + "/statements", { auth: true }),
+        apiGet<LedgerOption[]>(ROOT + "/ledger-options", { auth: true }),
       ]);
-      setMember(me); setSummary(s); setRequests(r); setBudgets(b); setLines(l);
+      setMember(me); setSummary(s); setRequests(r); setBudgets(b); setLines(l); setLedgerOptions(lo);
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to load treasury."); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -164,6 +168,10 @@ export default function TreasuryPage() {
             {bank ? <>
               <p className="mt-2 text-xs text-slate-500">Account ending {bank.last_four || "not specified"}</p>
               <p className="mt-2 text-sm text-slate-600">Bank balance: Not connected — reconcile statement evidence before relying on a cash figure.</p>
+              <p className="mt-1 text-xs text-slate-500">{bank.ledger_account_id ? "Linked to accounting ledger" : "Accounting ledger not yet linked"}</p>
+              {owner && !bank.ledger_account_id && (code === "moniepoint" ?
+                <button className={secondary} disabled={busy} onClick={() => void run(() => apiPost(ROOT + "/banks/" + bank.id + "/create-operations-ledger", {}, { auth: true }), "Moniepoint ledger account created and linked.")}>Create dedicated Moniepoint ledger account</button> :
+                <button className={secondary} disabled={busy || !ledgerOptions.some((o) => o.code === "1110")} onClick={() => { const account = ledgerOptions.find((o) => o.code === "1110"); if (account && window.confirm("Confirm Stanbic is the bank represented by the existing NGN operating ledger account, including its historical postings.")) void run(() => apiPost(ROOT + "/banks/" + bank.id + "/link-ledger", { account_id: account.id }, { auth: true }), "Stanbic linked to the existing settlement ledger."); }}>Link existing Stanbic NGN ledger</button>)}
             </> : <div className="mt-3 space-y-2"><p className="text-sm text-amber-700">Not registered in the finance ledger.</p>
               {owner && <button className={secondary} disabled={busy} onClick={() => void run(() => apiPost(ROOT + "/banks", { code }, { auth: true }), "Bank account created. Opening balance must be independently verified.")}>Register {code === "stanbic" ? "Stanbic" : "Moniepoint"}</button>}
             </div>}
@@ -232,7 +240,7 @@ export default function TreasuryPage() {
           <div className="md:col-span-3 flex items-center gap-3"><span className="text-sm text-slate-500">{statementRows.length} rows ready</span><button disabled={busy || !statementBank || !statementId.trim() || !statementRows.length} className={primary} onClick={() => void run(() => apiPost(ROOT + "/banks/" + statementBank + "/statements", { statement_id: statementId.trim(), rows: statementRows }, { auth: true }), "Statement evidence imported. Review unmatched entries.")}>Import statement</button></div>
         </div>}
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-sm"><thead><tr className="border-b text-slate-500"><th className="py-2">Date</th><th>Bank</th><th>Reference</th><th>Amount</th><th>Review state</th></tr></thead><tbody>{lines.slice(0, 40).map((l) => <tr className="border-b border-slate-100" key={l.id}><td className="py-2">{l.occurred_on}</td><td>{bankName(l.bank_account_id)}</td><td className="max-w-48 truncate" title={l.description}>{l.reference || l.description}</td><td className={l.amount_minor < 0 ? "text-red-700" : "text-emerald-700"}>{money(l.amount_minor)}</td><td>{l.match_status}</td></tr>)}</tbody></table>
+          <table className="w-full text-left text-sm"><thead><tr className="border-b text-slate-500"><th className="py-2">Date</th><th>Bank</th><th>Reference</th><th>Amount</th><th>Review state</th><th>Ledger evidence</th></tr></thead><tbody>{lines.slice(0, 40).map((l) => <tr className="border-b border-slate-100" key={l.id}><td className="py-2">{l.occurred_on}</td><td>{bankName(l.bank_account_id)}</td><td className="max-w-48 truncate" title={l.description}>{l.reference || l.description}</td><td className={l.amount_minor < 0 ? "text-red-700" : "text-emerald-700"}>{money(l.amount_minor)}</td><td>{l.match_status}</td><td>{canPrepare && !l.journal_entry_id ? <div className="flex min-w-48 gap-1"><input className={control} aria-label="Posted journal entry UUID" placeholder="Posted journal UUID" value={matchEntries[l.id] ?? ""} onChange={(e) => setMatchEntries((old) => ({ ...old, [l.id]: e.target.value }))} /><button disabled={busy || !matchEntries[l.id]} className={secondary} onClick={() => void run(() => apiPost(ROOT + "/statements/" + l.id + "/match-journal", { journal_entry_id: matchEntries[l.id] }, { auth: true }), "Bank movement matched to posted ledger entry.")}>Match</button></div> : (l.journal_entry_id ? "Linked" : "—")}</td></tr>)}</tbody></table>
           {!lines.length && <p className="py-3 text-sm text-slate-500">No bank evidence has been imported yet.</p>}
         </div>
       </section>

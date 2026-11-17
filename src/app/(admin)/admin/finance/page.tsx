@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {AlertCircle, BookOpenCheck, CreditCard, FileText, Wallet, Landmark} from "lucide-react";
 const actions=[
+ {href:"/admin/finance/treasury",label:"Treasury & operations",description:"Stanbic and Moniepoint, budgets, requests and bank statement evidence.",icon:Landmark},
  {href:"/admin/payments",label:"Review payments",description:"Verify pending transfers, payment proofs and settlement exceptions.",icon:CreditCard},
  {href:"/admin/finance/reconciliation",label:"Reconcile transactions",description:"Compare verified payments, allocations and ledger records.",icon:BookOpenCheck},
  {href:"/admin/finance/invoices",label:"Invoices",description:"Review receivables and invoice records.",icon:FileText},
