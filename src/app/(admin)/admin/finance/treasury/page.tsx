@@ -7,7 +7,7 @@ import { formatNaira } from "@/lib/format";
 
 type LedgerOption = { id: string; code: string; name: string };
 type Role = "viewer" | "accountant" | "admin" | "owner";
-type Bank = { id: string; code: string; bank_name: string; purpose: string; last_four: string | null; statement_balance_minor: number | null; statement_as_of: string | null };
+type Bank = { id: string; code: string; bank_name: string; purpose: string; last_four: string | null; ledger_account_id: string | null; statement_balance_minor: number | null; statement_as_of: string | null };
 type Budget = { id: string; name: string; category: string; amount_minor: number; starts_on: string; ends_on: string };
 type RequestItem = {
   id: string; kind: "expense" | "funding"; status: string; amount_minor: number;
