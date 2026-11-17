@@ -121,6 +121,7 @@ export default function TreasuryPage() {
   const [ledgerOptions, setLedgerOptions] = useState<LedgerOption[]>([]);
   const [expenseOptions, setExpenseOptions] = useState<ExpenseOption[]>([]);
   const [matchEntries, setMatchEntries] = useState<Record<string, string>>({});
+  const [existingEntry, setExistingEntry] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -277,6 +278,13 @@ export default function TreasuryPage() {
                         { auth: true }), "Balanced journal posted through existing ledger.");
                     }}>Post verified transaction to ledger</button>
                 </div>}
+              {owner && r.status === "confirmed" && !r.journal_entry_id && <div className="mt-2 flex flex-wrap items-end gap-2">
+                <label className="text-xs">Existing posted journal UUID
+                  <input className={control} placeholder="Only if an existing payout/payment already posted it" value={existingEntry[r.id] || ""} onChange={(e) => setExistingEntry((old) => ({ ...old, [r.id]: e.target.value }))} />
+                </label>
+                <button className={secondary} disabled={busy || !existingEntry[r.id]}
+                  onClick={() => void run(() => apiPost(ROOT + "/requests/" + r.id + "/link-existing-ledger", { journal_entry_id: existingEntry[r.id] }, { auth: true }), "Existing journal linked without posting again.")}>Link existing journal</button>
+              </div>}
               {owner && r.status === "approved" && <div className="mt-3 grid gap-2 md:grid-cols-3">
                 <label className="text-xs">Bank debit evidence<select className={control} value={selected.source} onChange={(e) => setConfirmation((old) => ({ ...old, [r.id]: { ...selected, source: e.target.value } }))}><option value="">Choose matching debit</option>{candidateDebits.map((l) => <option key={l.id} value={l.id}>{l.occurred_on}: {l.description.slice(0, 60)}</option>)}</select></label>
                 {r.kind === "funding" && <label className="text-xs">Bank credit evidence<select className={control} value={selected.destination} onChange={(e) => setConfirmation((old) => ({ ...old, [r.id]: { ...selected, destination: e.target.value } }))}><option value="">Choose matching credit</option>{candidateCredits.map((l) => <option key={l.id} value={l.id}>{l.occurred_on}: {l.description.slice(0, 60)}</option>)}</select></label>}
