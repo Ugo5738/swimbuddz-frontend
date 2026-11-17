@@ -6,6 +6,14 @@ The implementation of pages should follow these flows closely.
 **Last Updated:** September 2026
 **Total Routes:** 103 pages across Community, Club, Academy, Store, Events, and Admin domains
 
+**17 November resource follow-up:** backend announcement filters ignore the
+non-audience membership label `prospect`, so unread-count/list/detail/statistics
+requests keep their existing visibility without enum errors. Membership mutation
+responses remain complete while their database loading is narrowed. Independent
+Members/Chat API connection canaries are prepared default-off; they change no
+frontend flow, entitlement or payment rule. Roll out and measure them one at a
+time under the backend connection-canary runbook.
+
 ---
 
 ## November 16, 2026 — request budgets and Media Vault bandwidth
