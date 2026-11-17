@@ -6,6 +6,7 @@ import { apiGet, apiPost } from "@/lib/api";
 import { formatNaira } from "@/lib/format";
 
 type LedgerOption = { id: string; code: string; name: string };
+type ExpenseOption = { code: string; name: string };
 type Role = "viewer" | "operations" | "accountant" | "admin" | "owner";
 type Bank = { id: string; code: string; bank_name: string; purpose: string; last_four: string | null; ledger_account_id: string | null; statement_balance_minor: number | null; statement_as_of: string | null; statement_verified_at: string | null };
 type Budget = { id: string; kind: "expense" | "funding"; name: string; category: string; amount_minor: number; starts_on: string; ends_on: string };
@@ -116,6 +117,7 @@ export default function TreasuryPage() {
   const [postingExpenseCode, setPostingExpenseCode] = useState<Record<string, string>>({});
   const [newBudgetKind, setNewBudgetKind] = useState<"expense" | "funding">("expense");
   const [ledgerOptions, setLedgerOptions] = useState<LedgerOption[]>([]);
+  const [expenseOptions, setExpenseOptions] = useState<ExpenseOption[]>([]);
   const [matchEntries, setMatchEntries] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -139,7 +141,7 @@ export default function TreasuryPage() {
 
   const load = useCallback(async () => {
     try {
-      const [me, s, r, b, l, lo, rc, fc, cp] = await Promise.all([
+      const [me, s, r, b, l, lo, rc, fc, cp, eo] = await Promise.all([
         apiGet<FinanceMember>("/api/v1/admin/finance/users/me", { auth: true }),
         apiGet<Summary>(ROOT + "/summary", { auth: true }),
         apiGet<RequestItem[]>(ROOT + "/requests", { auth: true }),
@@ -149,8 +151,9 @@ export default function TreasuryPage() {
         apiGet<Recon[]>(ROOT + "/reconciliation/banks", { auth: true }),
         apiGet<Forecast[]>(ROOT + "/forecasts", { auth: true }),
         apiGet<Projection>(ROOT + "/cash-projection", { auth: true }),
+        apiGet<ExpenseOption[]>(ROOT + "/expense-ledger-options", { auth: true }),
       ]);
-      setMember(me); setSummary(s); setRequests(r); setBudgets(b); setLines(l); setLedgerOptions(lo); setRecon(rc); setForecasts(fc); setProjection(cp);
+      setMember(me); setSummary(s); setRequests(r); setBudgets(b); setLines(l); setLedgerOptions(lo); setRecon(rc); setForecasts(fc); setProjection(cp); setExpenseOptions(eo);
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to load treasury."); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -261,7 +264,7 @@ export default function TreasuryPage() {
               {owner && r.status === "confirmed" && !r.journal_entry_id &&
                 <div className="mt-3 flex flex-wrap items-end gap-2">
                   {r.kind === "expense" && <label className="text-xs">Expense ledger account<select className={control} value={postingExpenseCode[r.id] || ""} onChange={(e) => setPostingExpenseCode((old) => ({ ...old, [r.id]: e.target.value }))}>
-                    <option value="">Choose expense account</option>{ledgerOptions.filter((a) => /^[56]/.test(a.code)).map((a) => <option key={a.id} value={a.code}>{a.code} — {a.name}</option>)}
+                    <option value="">Choose expense account</option>{expenseOptions.map((a) => <option key={a.id} value={a.code}>{a.code} — {a.name}</option>)}
                   </select></label>}
                   <button className={secondary} disabled={busy || (r.kind === "expense" && !postingExpenseCode[r.id])}
                     onClick={() => {
@@ -319,6 +322,62 @@ export default function TreasuryPage() {
           <div className="self-end"><button disabled={busy} className={primary}>Create budget</button></div>
         </form>}
       </section>
+
+      <section className={tile} id="reconciliation-status">
+        <h2 className="text-lg font-semibold">Bank reconciliation status</h2>
+        <p className="mt-1 text-sm text-slate-600">Each comparison is made at the date of a separately attested bank statement. An uploaded statement row does not, by itself, verify a bank balance.</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          {recon.map((bank) => <div key={bank.bank_id} className="rounded-lg border border-slate-200 p-3">
+            <p className="font-semibold">{bank.code === "stanbic" ? "Stanbic IBTC" : "Moniepoint"}</p>
+            <p className="mt-1 text-sm">Attested balance: {bank.latest_statement_balance_minor == null ? "Not verified" : money(bank.latest_statement_balance_minor)}</p>
+            <p className="text-xs text-slate-500">As of {bank.latest_statement_date || "—"} · Ledger at same date: {bank.ledger_balance_minor == null ? "Not linked" : money(bank.ledger_balance_minor)}</p>
+            <p className="mt-2 text-sm">Difference: {bank.difference_minor == null ? "Not comparable" : money(bank.difference_minor)} · {bank.unmatched_rows} unmatched rows</p>
+            <p className="text-xs font-medium text-slate-600">{bank.status.replaceAll("_", " ")}</p>
+          </div>)}
+        </div>
+        {owner && <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <label className="text-sm">Bank<select className={control} value={snapshotBank} onChange={(e) => setSnapshotBank(e.target.value)}><option value="">Choose bank</option>{banks.map((b) => <option key={b.id} value={b.id}>{b.bank_name}</option>)}</select></label>
+          <label className="text-sm">Statement closing date<input type="date" className={control} value={snapshotDate} onChange={(e) => setSnapshotDate(e.target.value)} /></label>
+          <label className="text-sm">Closing balance (₦, signed)<input className={control} value={snapshotAmount} onChange={(e) => setSnapshotAmount(e.target.value)} /></label>
+          <label className="text-sm">Original statement evidence ID<input className={control} value={snapshotEvidence} onChange={(e) => setSnapshotEvidence(e.target.value)} /></label>
+          <button className={primary} disabled={busy || !snapshotBank || !snapshotDate || !snapshotAmount || snapshotEvidence.trim().length < 5}
+            onClick={() => {
+              const n = Number(snapshotAmount.replaceAll(",", ""));
+              if (!Number.isFinite(n) || !Number.isSafeInteger(Math.round(n * 100))) { setError("Invalid bank closing balance."); return; }
+              if (!window.confirm("Have you personally verified the bank statement closing balance in the official bank portal? The attested snapshot will be kept in the audit history.")) return;
+              void run(() => apiPost(ROOT + "/banks/" + snapshotBank + "/snapshot",
+                { as_of: snapshotDate, balance_minor: Math.round(n * 100), evidence_reference: snapshotEvidence.trim() },
+                { auth: true }), "Dated statement balance attested.");
+            }}>Attest bank statement balance</button>
+        </div>}
+      </section>
+
+      <section id="forecasts" className={tile}>
+        <h2 className="text-lg font-semibold">Cash flow forecast</h2>
+        <p className="text-sm text-slate-600">Plan upcoming collections and spending. Forecast assumptions are separate from actual payments and from expense ceilings.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-slate-500">Planning opening cash</p><p className="mt-2 font-semibold">{projection?.latest_bank_snapshot_date ? "Verified " + projection.latest_bank_snapshot_date : "Needs matching bank snapshots"}</p></div>
+          <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-slate-500">Approved expenses pending</p><p className="mt-2 font-semibold">{money(projection?.pending_approved_expenses_minor ?? 0)}</p></div>
+          <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-slate-500">30-day projected ending cash</p><p className="mt-2 font-semibold">{projection?.projected_ending_minor == null ? "Not available" : money(projection.projected_ending_minor)}</p></div>
+        </div>
+        <p className="mt-2 text-xs text-amber-800">{projection?.caveat || "Forecast is not a live bank balance."}</p>
+        <h3 className="mt-4 font-semibold">Planned inflows and outflows</h3>
+        <div className="mt-2 space-y-1">{forecasts.map((f) => <p key={f.id} className="text-sm">{f.effective_on} · {f.scenario} · {f.direction === "outflow" ? "−" : "+"}{money(f.amount_minor)} · {f.purpose}{f.programme ? " · " + f.programme : ""}</p>)}</div>
+        {canPrepare && <form className="mt-4 grid gap-3 md:grid-cols-3" onSubmit={(e) => {
+          e.preventDefault(); void run(() => apiPost(ROOT + "/forecasts",
+            { direction: forecastDirection, scenario: forecastScenario, effective_on: forecastDate, amount_minor: toMinor(forecastAmount), purpose: forecastPurpose, programme: forecastProgramme || null },
+            { auth: true }), "Planning assumption recorded.");
+        }}>
+          <label className="text-sm">Direction<select className={control} value={forecastDirection} onChange={(e) => setForecastDirection(e.target.value as "inflow" | "outflow")}><option value="outflow">Planned payment</option><option value="inflow">Expected collection</option></select></label>
+          <label className="text-sm">Scenario<select className={control} value={forecastScenario} onChange={(e) => setForecastScenario(e.target.value)}><option value="base">Base</option><option value="optimistic">Optimistic</option><option value="conservative">Conservative</option></select></label>
+          <label className="text-sm">Expected date<input type="date" required className={control} value={forecastDate} onChange={(e) => setForecastDate(e.target.value)} /></label>
+          <label className="text-sm">Amount (₦)<input className={control} required value={forecastAmount} onChange={(e) => setForecastAmount(e.target.value)} /></label>
+          <label className="text-sm">Description<input className={control} minLength={5} required value={forecastPurpose} onChange={(e) => setForecastPurpose(e.target.value)} /></label>
+          <label className="text-sm">Programme<input className={control} value={forecastProgramme} onChange={(e) => setForecastProgramme(e.target.value)} /></label>
+          <button className={primary} disabled={busy}>Add forecast assumption</button>
+        </form>}
+      </section>
+
       <p className="text-xs text-slate-500">No bank API integration is configured. Accounts shown here represent your internal financial controls; always verify movements against Stanbic and Moniepoint.</p>
     </main>
   );
