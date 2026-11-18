@@ -131,6 +131,7 @@ const navSections: NavSection[] = [
     title: "Finance",
     items: [
       { href: "/admin/finance", label: "Finance Overview", icon: LayoutDashboard },
+      { href: "/admin/finance/treasury", label: "Treasury & Operations", icon: Banknote },
       { href: "/admin/finance/reports", label: "Reports", icon: Banknote },
       { href: "/admin/finance/deferred-revenue", label: "Deferred Revenue", icon: Hourglass },
       { href: "/admin/finance/journal-entries", label: "Journal Entries", icon: FileText },
@@ -253,6 +254,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   // A hidden browser tab should not trigger two backend reads every 30 seconds.
   // Never overlap requests when the server is slow; refresh once on return.
   useEffect(() => {
+    // Finance-only users must not poll unrelated admin queues or spend backend quota.
+    if (!isGlobalAdmin) return;
     // -1 means "initial load" — skip the first order notification sound.
     prevCountRef.current = -1;
     let active = true;
@@ -278,7 +281,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [fetchNewOrderCount, fetchPaymentReviewCount]);
+  }, [fetchNewOrderCount, fetchPaymentReviewCount, isGlobalAdmin]);
 
   // Restore the admin's sidebar preferences on this device.
   useEffect(() => {
@@ -391,7 +394,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-700 p-4 lg:p-6">
-            <Link href="/admin/dashboard" className="flex items-center gap-2 lg:gap-3">
+            <Link href={isGlobalAdmin ? "/admin/dashboard" : "/admin/finance"} className="flex items-center gap-2 lg:gap-3">
               <NextImage
                 src="/logo.png"
                 alt="SwimBuddz Logo"
