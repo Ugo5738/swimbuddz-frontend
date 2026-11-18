@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPost, apiPut } from "@/lib/api";
 
 const ROOT = "/api/v1/admin/store/procurement";
 type Catalogue = { suppliers: { id: string; name: string }[]; variants: { id: string; sku: string; product_id: string }[] };
@@ -205,7 +205,7 @@ export default function ProcurementPage() {
       <h2 className="font-semibold">Store procurement staff access</h2>
       <p className="text-xs text-slate-600">This creates a narrowly scoped platform role; it does not grant Finance Accountant, global admin, or bank-payment rights.</p>
       <form className="flex flex-wrap items-end gap-3" onSubmit={e => { e.preventDefault();
-        void perform(() => apiPost(ROOT + "/grants", { auth_id: grantAuthId, role: grantRole, active: true }, { auth: true }), "Staff procurement permission granted.");
+        void perform(() => apiPut(ROOT + "/grants", { auth_id: grantAuthId, role: grantRole, active: true }, { auth: true }), "Staff procurement permission granted.");
       }}>
         <label className="text-sm">Authenticated staff user ID<input className={control} required minLength={3} value={grantAuthId} onChange={e => setGrantAuthId(e.target.value)} /></label>
         <label className="text-sm">Role<select className={control} value={grantRole} onChange={e => setGrantRole(e.target.value)}>
