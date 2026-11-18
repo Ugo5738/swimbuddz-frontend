@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format";
 import { UserPlus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-type LedgerRole = "viewer" | "accountant" | "admin" | "owner";
+type LedgerRole = "viewer" | "operations" | "accountant" | "admin" | "owner";
 
 type LedgerUserOut = {
   id: string;
@@ -21,7 +21,7 @@ type LedgerUserOut = {
   invite_status?: string | null;
 };
 
-const ROLES: LedgerRole[] = ["viewer", "accountant", "admin", "owner"];
+const ROLES: LedgerRole[] = ["viewer", "operations", "accountant", "admin", "owner"];
 
 /** Human-readable result of provisioning a finance member's login. */
 function inviteMessage(status: string | null | undefined, email: string): string {
@@ -135,7 +135,7 @@ export default function FinanceTeamPage() {
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Finance — Team</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Who can see and act on the books. owner ⊇ admin ⊇ accountant ⊇ viewer.
+          Finance permissions: owner ⊇ admin ⊇ accountant ⊇ operations ⊇ viewer. Use operations for payment preparation without journal adjustment rights.
           Adding someone emails them an invite to set a password — no Supabase
           step needed. They sign in and open /admin/finance; they see nothing
           else in admin.
