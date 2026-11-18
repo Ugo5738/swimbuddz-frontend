@@ -55,6 +55,18 @@ export default function AdminLayoutWrapper({
           }
         }
 
+        // Staff procurement lane: capability comes from the Store database,
+        // not a client-set role, and only grants /admin/store/procurement.
+        if (pathname?.startsWith("/admin/store/procurement")) {
+          try {
+            await apiGet("/api/v1/admin/store/procurement/me", { auth: true });
+            setIsAuthorized(true);
+            return;
+          } catch {
+            // Not granted procurement access.
+          }
+        }
+
         console.warn("Unauthorized admin access attempt", user.email);
         router.push("/login");
       } catch (error) {

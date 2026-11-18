@@ -131,6 +131,7 @@ const navSections: NavSection[] = [
     title: "Finance",
     items: [
       { href: "/admin/finance", label: "Finance Overview", icon: LayoutDashboard },
+      { href: "/admin/finance/intelligence", label: "Finance Intelligence", icon: BarChart3 },
       { href: "/admin/finance/treasury", label: "Treasury & Operations", icon: Banknote },
       { href: "/admin/finance/reports", label: "Reports", icon: Banknote },
       { href: "/admin/finance/deferred-revenue", label: "Deferred Revenue", icon: Hourglass },
@@ -149,6 +150,7 @@ const navSections: NavSection[] = [
       { href: "/admin/pools/access/bookings", label: "Pool Access Settlements", icon: Receipt },
       { href: "/admin/pools/access/cancellations", label: "Pool Access Refund Reviews", icon: Receipt },
       { href: "/admin/store", label: "Store", icon: ShoppingBag },
+      { href: "/admin/store/procurement", label: "Procurement", icon: ShoppingBag },
       { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
       { href: "/admin/flywheel", label: "Flywheel", icon: TrendingUp },
       { href: "/admin/reports/seasonality", label: "Seasonality", icon: CalendarDays },
@@ -173,6 +175,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
+  const [isFinanceMember, setIsFinanceMember] = useState(false);
+  const [isProcurementMember, setIsProcurementMember] = useState(false);
   const [adminMemberId, setAdminMemberId] = useState<string | undefined>();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [newOrderCount, setNewOrderCount] = useState(0);
@@ -234,6 +238,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       // Global admin (full nav) vs finance-only staff (Finance section only).
       const roles = (user?.app_metadata?.roles as string[] | undefined) ?? [];
       setIsGlobalAdmin(Array.isArray(roles) && roles.includes("admin"));
+      if (!roles.includes("admin")) {
+        // A failed optional capability probe grants nothing; APIs recheck
+        // permissions for every request.
+        const [finance, procurement] = await Promise.all([
+          apiGet<{ role: string }>("/api/v1/admin/finance/users/me", { auth: true }).catch(() => null),
+          apiGet<{ role: string }>("/api/v1/admin/store/procurement/me", { auth: true }).catch(() => null),
+        ]);
+        setIsFinanceMember(Boolean(finance));
+        setIsProcurementMember(Boolean(procurement));
+      }
+
       // Fetch member ID for announcement notifications
       try {
         const member = await apiGet<{ id: string }>("/api/v1/members/me", { auth: true });
@@ -331,7 +346,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   // the Finance section; global admins see the full nav.
   const visibleSections = isGlobalAdmin
     ? navSections
-    : navSections.filter((section) => section.title === "Finance");
+    : [
+        ...(isFinanceMember ? navSections.filter((section) => section.title === "Finance") : []),
+        ...(isProcurementMember ? [{
+          title: "Store",
+          items: [{ href: "/admin/store/procurement", label: "Procurement", icon: ShoppingBag }],
+        }] : []),
+      ];
 
   const isActive = (href: string) => {
     if (!pathname) return false;
