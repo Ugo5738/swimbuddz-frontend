@@ -767,3 +767,13 @@ reopened booking. Private Admin proof is required; member metadata is insufficie
 Billing shows the reopened fee and the correct swim as settled. No new public API
 or frontend control is introduced by the scoped operator repair. See backend
 `docs/SESSION_WALLET_REALLOCATION_RUNBOOK.md` for checks and accounting replay.
+
+
+### Store availability and procurement authorization (19 Nov 2026)
+
+The public Store catalogue starts independently of Finance. Owner-only Store
+procurement actions check the signed-in caller's current Finance membership over
+HTTP; an application admin or procurement grant does not imply Finance Owner
+access. Finance denial/unavailability fails the protected action, preserving
+independent approval, without preventing products from loading. This corrects a
+Store startup import failure and introduces no checkout or price changes.
