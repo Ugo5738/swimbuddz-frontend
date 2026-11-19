@@ -207,7 +207,7 @@ export default function StrokeLabResultPage() {
                 measured stroke rate or a substitute for your coach.
               </p>
               {result.coach_result.gate_tier === "borderline" ? (
-                <Alert variant="warning" className="mb-4">
+                <Alert variant="info" className="mb-4">
                   The camera angle limits what Stroke Lab can verify.
                   For more reliable feedback, record from the side.
                 </Alert>
