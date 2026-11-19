@@ -85,7 +85,18 @@ export function SessionDetailContent({ sessionId }: { sessionId: string }) {
         {details.endsAt && <p className="flex items-center gap-2"><Clock3 className="h-4 w-4" aria-hidden="true"/>Ends {formatDate(details.endsAt)}</p>}
         {details.locationName && <p className="flex items-center gap-2"><MapPin className="h-4 w-4" aria-hidden="true"/>{details.locationName}</p>}
         {details.locationAddress && <p className="text-sm text-slate-600">{details.locationAddress}</p>}
-        {details.description && <p className="border-t border-slate-200 pt-4">{details.description}</p>}
+        {(details.lessonTitle || details.description || details.instructions) && <div className="space-y-2 border-t border-slate-200 pt-4">
+          {details.lessonTitle && <p className="font-semibold text-slate-900">{details.lessonTitle}</p>}
+          {details.description && <p>{details.description}</p>}
+          {details.instructions && <p className="whitespace-pre-wrap text-sm text-slate-700"><strong>Instructions:</strong> {details.instructions}</p>}
+        </div>}
+        {details.allowsGuests !== null && <p className="text-sm text-slate-600">
+          {details.allowsGuests ? `Guests allowed${details.maxGuests ? ` · up to ${details.maxGuests} per booking` : ""}` : "Guest booking is not offered for this session"}
+        </p>}
+        {details.memberFeeKobo !== null && details.canBook && <p className="font-semibold text-slate-900">
+          {details.priceLabel || "Your current session price"}: ₦{(details.memberFeeKobo / 100).toLocaleString("en-NG")}
+          <span className="ml-2 text-xs font-normal text-slate-600">Final total and terms are confirmed at checkout</span>
+        </p>}
         {details.historicalSnapshot && <p className="border-t border-slate-200 pt-4 text-sm text-slate-600">Historical details from your attendance record. Some original session information may no longer be available.</p>}
       </section>
       <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
