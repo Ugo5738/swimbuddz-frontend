@@ -3,6 +3,9 @@
 import type { SessionWithRides } from "@/components/sessions/SessionCard";
 import { isAssignedAcademyClass } from "@/lib/next-swim-recommendations";
 import { getSessionPriceDisplay } from "@/lib/sessionAccess";
+import { apiGet } from "@/lib/api";
+import { SESSION_TYPES_QUERY } from "@/app/(member)/sessions/constants";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CalendarPlus, MapPin, Plus, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -13,7 +16,8 @@ type Props = {
   enrolledCohortIds: ReadonlySet<string>;
   selectMode: boolean;
   selectedIds: ReadonlySet<string>;
-  onToggleSelect: (sessionId: string) => void;
+  onToggleSelect: (session: SessionWithRides) => void;
+  mode: "upcoming" | "booked" | "all";
   onStartSelecting: () => void;
 };
 
@@ -37,7 +41,7 @@ const keyFor = (year: number, month: number, day: number) =>
 
 export function MySwimsCalendar({
   sessions, bookedSessionIds, enrolledCohortIds, selectMode, selectedIds,
-  onToggleSelect, onStartSelecting,
+  onToggleSelect, onStartSelecting, mode,
 }: Props) {
   const [month, setMonth] = useState(() => {
     const now = new Date();
@@ -48,9 +52,36 @@ export function MySwimsCalendar({
     return keyFor(now.getFullYear(), now.getMonth(), now.getDate());
   });
 
+  const monthWindow = useMemo(() => ({
+    from: new Date(Date.UTC(month.year, month.month, 1) - 60 * 60 * 1000).toISOString(),
+    to: new Date(Date.UTC(month.year, month.month + 1, 1) - 60 * 60 * 1000).toISOString(),
+  }), [month.year, month.month]);
+  const monthQuery = useQuery({
+    queryKey: ["my-swims-calendar", monthWindow.from, monthWindow.to],
+    queryFn: () => {
+      const query = new URLSearchParams({
+        types: SESSION_TYPES_QUERY, from: monthWindow.from, to: monthWindow.to, limit: "100",
+      });
+      return apiGet<SessionWithRides[]>(`/api/v1/sessions?${query.toString()}`, { auth: true });
+    },
+  });
+  const shownSessions = useMemo(() => {
+    const available = monthQuery.data ?? sessions;
+    if (mode === "booked") {
+      return available.filter((session) =>
+        bookedSessionIds.has(session.id) || isAssignedAcademyClass(session, enrolledCohortIds));
+    }
+    if (mode === "upcoming") {
+      return available.filter((session) =>
+        new Date(session.starts_at).getTime() > Date.now()
+        && !["cancelled", "draft"].includes(String(session.status).toLowerCase()));
+    }
+    return available;
+  }, [monthQuery.data, sessions, mode, bookedSessionIds, enrolledCohortIds]);
+
   const byDay = useMemo(() => {
     const grouped = new Map<string, SessionWithRides[]>();
-    for (const session of sessions) {
+    for (const session of shownSessions) {
       const key = sessionDayKey(session);
       if (!key) continue;
       const list = grouped.get(key) ?? [];
@@ -58,7 +89,7 @@ export function MySwimsCalendar({
       grouped.set(key, list);
     }
     return grouped;
-  }, [sessions]);
+  }, [shownSessions]);
 
   const firstWeekday = new Date(Date.UTC(month.year, month.month, 1)).getUTCDay();
   const daysInMonth = new Date(Date.UTC(month.year, month.month + 1, 0)).getUTCDate();
@@ -92,6 +123,11 @@ export function MySwimsCalendar({
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
+        {monthQuery.isLoading && <p role="status" className="mb-3 text-xs text-slate-600">Loading sessions for this month…</p>}
+        {monthQuery.isError && <p role="alert" className="mb-3 text-xs text-amber-800">This month's sessions could not be loaded. Displaying the currently cached schedule only.</p>}
+        {monthQuery.data && monthQuery.data.length === 100 && (
+          <p className="mb-3 text-xs text-amber-800">This month has at least 100 sessions. Select a day and use Find a Swim to check the full schedule.</p>
+        )}
         <div className="grid grid-cols-7 gap-1" role="group" aria-label="Select a day to plan a swim">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((name) => (
             <div key={name} className="py-2 text-center text-xs font-semibold text-slate-500">{name}</div>
@@ -159,7 +195,7 @@ export function MySwimsCalendar({
               {selectMode && canBook ? (
                 <label className="flex cursor-pointer items-center gap-2 text-sm">
                   <input type="checkbox" checked={selectedIds.has(session.id)}
-                    onChange={() => onToggleSelect(session.id)} aria-label={`Add ${session.title} to booking basket`} />
+                    onChange={() => onToggleSelect(session)} aria-label={`Add ${session.title} to booking basket`} />
                   Add
                 </label>
               ) : canBook ? (
