@@ -388,7 +388,7 @@ function SessionsHub() {
       {/* Next session panel — always visible when user has a booking */}
       {!loading && nextSession && <NextSessionPanel session={nextSession} />}
 
-      {!loading && supportsRelevance && relevantOnly && (
+      {!loading && displayMode === "list" && supportsRelevance && relevantOnly && (
         <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-sm text-cyan-950">
           <p className="font-semibold">Showing sessions recommended for you</p>
           <p className="mt-0.5 text-xs leading-5 text-cyan-800">
@@ -400,7 +400,7 @@ function SessionsHub() {
         </div>
       )}
 
-      {supportsRelevance && (
+      {displayMode === "list" && supportsRelevance && (
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -471,7 +471,7 @@ function SessionsHub() {
           )}
 
           {/* Filter button */}
-          {activeTab !== "past" && (
+          {activeTab !== "past" && displayMode === "list" && (
             <FilterBar
               relevantOnly={relevantOnly}
               setRelevantOnly={setRelevantOnly}
@@ -491,7 +491,7 @@ function SessionsHub() {
       </div>
 
       {/* Active filter chips */}
-      {activeTab !== "past" && hasActiveFilters && (
+      {activeTab !== "past" && displayMode === "list" && hasActiveFilters && (
         <ActiveFilterChips
           relevantOnly={supportsRelevance && relevantOnly}
           setRelevantOnly={setRelevantOnly}
@@ -502,6 +502,10 @@ function SessionsHub() {
           myCohortsOnly={myCohortsOnly}
           setMyCohortsOnly={setMyCohortsOnly}
         />
+      )}
+
+      {displayMode === "calendar" && activeTab !== "past" && (
+        <p className="text-xs text-slate-600">Calendar shows the published monthly schedule for your selected view. Open List to use the date, membership and activity filters.</p>
       )}
 
       {/* Content */}
