@@ -130,7 +130,7 @@ export function PersonalSwimCalendar({ activities, plans = [] }: {
     {selectedDay && <SwimModal title={new Date(selectedDay + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", weekday: "long", timeZone: "UTC" })} onClose={() => setSelectedDay(null)}>
       <p className="text-sm text-slate-600">Your commitments and published swims for this date</p>
       {layer !== "org" && personalOnDay.map(item => item.sessionId
-        ? <button type="button" key={item.key} onClick={() => {setSelectedDay(null);setSelectedSessionId(item.sessionId);}}
+        ? <button type="button" key={item.key} onClick={() => {setSelectedDay(null);setSelectedSessionId(item.sessionId ?? null);}}
             className="block w-full rounded-xl border border-slate-200 p-3 text-left hover:border-cyan-500">
             <strong>{item.title}</strong><span className="ml-2 text-sm text-slate-600">{bookingLabel[item.status] ?? item.status}</span>
           </button>
