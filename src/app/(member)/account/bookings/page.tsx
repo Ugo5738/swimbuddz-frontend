@@ -2,12 +2,13 @@
 
 import { MultiSelectBar } from "@/components/sessions/MultiSelectBar";
 import { AdditionalSwimRecords } from "@/components/swims/AdditionalSwimRecords";
+import { MySwimsCalendar } from "@/components/swims/MySwimsCalendar";
 import { type SessionWithRides } from "@/components/sessions/SessionCard";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiPost } from "@/lib/api";
-import { ArrowRight, Calendar, CheckSquare, Waves, X } from "lucide-react";
+import { ArrowRight, Calendar, CalendarDays, CheckSquare, List, Waves, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useMemo, useState } from "react";
@@ -69,6 +70,7 @@ function SessionsHub() {
 
   // Multi-select for bundle booking
   const [selectMode, setSelectMode] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"list" | "calendar">("list");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const toggleSelected = useCallback((sessionId: string) => {
@@ -373,13 +375,19 @@ function SessionsHub() {
           Explore upcoming swims, manage confirmed bookings, review history and browse all sessions.
         </p>
         <p className="text-sm text-slate-500">
-          Want to book your next swim? <Link href="/account/book-next-swim" className="font-semibold text-cyan-700 hover:underline">Book My Next Swim</Link>. Need independent pool access? <Link href="/pool-access" className="font-medium text-cyan-700 hover:underline">Explore Pool Access</Link>.{" "}
+          Plan your next swim or select a date on your calendar. <Link href="/pool-access" className="font-medium text-cyan-700 hover:underline">Independent Pool Access</Link>.{" "}
           Know a pool we should partner with?{" "}
           <Link href="/account/pools/suggest" className="font-medium text-cyan-700 hover:underline">
             Suggest a pool &rarr;
           </Link>
         </p>
       </header>
+
+      <div className="flex flex-wrap gap-2">
+        <Link href="/account/book-next-swim" className="inline-flex min-h-11 items-center rounded-xl bg-cyan-700 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-800">Book My Next Swim</Link>
+        <Link href="/account/find-a-swim" className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Find a Swim</Link>
+        <Link href="/pools" className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Explore Swimming Pools</Link>
+      </div>
 
       {/* Next session panel — always visible when user has a booking */}
       {!loading && nextSession && <NextSessionPanel session={nextSession} />}
@@ -436,7 +444,15 @@ function SessionsHub() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {activeTab !== "past" && (
+            <div className="flex rounded-lg border border-slate-200 p-1" aria-label="Swim display mode">
+              <button type="button" onClick={() => setDisplayMode("list")} aria-pressed={displayMode === "list"}
+                className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm ${displayMode === "list" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"}`}><List className="h-4 w-4" /> List</button>
+              <button type="button" onClick={() => setDisplayMode("calendar")} aria-pressed={displayMode === "calendar"}
+                className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm ${displayMode === "calendar" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"}`}><CalendarDays className="h-4 w-4" /> Calendar</button>
+            </div>
+          )}
           {/* Multi-select toggle — only on upcoming/all tabs */}
           {(activeTab === "upcoming" || activeTab === "all") && (
             <button
@@ -506,7 +522,17 @@ function SessionsHub() {
           <Alert variant="error" title="Error loading sessions">
             {error}
           </Alert>
-        ) : activeTab === "past" ? null : (
+        ) : activeTab === "past" ? null : displayMode === "calendar" ? (
+          <MySwimsCalendar
+            sessions={filteredSessions}
+            bookedSessionIds={bookedSessionIds}
+            enrolledCohortIds={enrolledCohortIds}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelected}
+            onStartSelecting={() => setSelectMode(true)}
+          />
+        ) : (
           renderContent()
         )}
         {!loading && !error && activeTab === "booked" && (
