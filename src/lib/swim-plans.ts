@@ -18,6 +18,7 @@ export type SwimPlan = {
   venue_status: "pending" | "verified" | "not_required" | "rejected";
   linked_event_id?: string | null;
   venue_confirmation_reference?: string | null;
+  selling_price_kobo?: number | null;
   admin_notes?: string | null;
 };
 export type SwimPlanInput = {
@@ -53,7 +54,7 @@ export const SwimPlansApi = {
     apiPut<{ auto_approve_public: boolean }>(`${ROOT}/admin/policy`, { auto_approve_public }, { auth: true }),
   review: (id: string, approved: boolean, notes?: string) =>
     apiPut<SwimPlan>(`${ROOT}/admin/${id}/review`, { approved, notes }, { auth: true }),
-  verifyVenue: (id: string, confirmed: boolean, reference?: string, notes?: string) =>
-    apiPut<SwimPlan>(`${ROOT}/admin/${id}/verify-venue`, { confirmed, reference, notes }, { auth: true }),
+  verifyVenue: (id: string, confirmed: boolean, reference?: string, notes?: string, selling_price_naira?: number) =>
+    apiPut<SwimPlan>(`${ROOT}/admin/${id}/verify-venue`, { confirmed, reference, notes, selling_price_naira }, { auth: true }),
   publish: (id: string) => apiPost<SwimPlan>(`${ROOT}/admin/${id}/publish`, {}, { auth: true }),
 };
