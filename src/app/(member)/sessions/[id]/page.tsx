@@ -7,6 +7,7 @@ import type { HistoricalAttendance } from "@/lib/personal-swim-history";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CalendarDays, Clock3, MapPin } from "lucide-react";
+import { SessionWeatherChip } from "@/components/sessions/SessionWeatherChip";
 
 const formatDate = (date: string | null) => {
   if (!date) return "Date unavailable";
@@ -27,14 +28,19 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
       setLoading(true);
       setError("");
       setNotAvailable(false);
+      const attendancePromise = apiGet<HistoricalAttendance[]>(
+        "/api/v1/attendance/me?include_session=true&limit=200", { auth: true }
+      ).catch(() => [] as HistoricalAttendance[]);
       try {
         const session = await getSession(params.id, { auth: true });
-        if (alive) setDetails(activeSessionDetail(session as Session));
+        const records = await attendancePromise;
+        const attendance = records.find(record => record.session_id === params.id);
+        if (alive) setDetails({ ...activeSessionDetail(session as Session), attendanceStatus: attendance?.status ?? null });
       } catch (cause) {
         // Fallback only when the session endpoint cannot provide this record.
         // An attendance record belongs to the authenticated member.
         try {
-          const records = await apiGet<HistoricalAttendance[]>("/api/v1/attendance/me", { auth: true });
+          const records = await attendancePromise;
           if (!alive) return;
           const historical = historicalSessionDetail(records, params.id);
           if (historical) setDetails(historical);
@@ -82,14 +88,23 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
         {details.description && <p className="border-t border-slate-200 pt-4">{details.description}</p>}
         {details.historicalSnapshot && <p className="border-t border-slate-200 pt-4 text-sm text-slate-600">Historical details from your attendance record. Some original session information may no longer be available.</p>}
       </section>
+      <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
+        <h2 className="font-semibold text-slate-900">Weather at this swim</h2>
+        {details.startsAt && Date.parse(details.startsAt) > Date.now() && details.poolId && details.endsAt ? (
+          <SessionWeatherChip poolId={details.poolId} startsAt={details.startsAt} endsAt={details.endsAt} />
+        ) : <p className="text-sm text-slate-600">Historical weather was not saved for this swim. Current forecasts do not represent past conditions.</p>}
+      </section>
+      {attended && <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <h2 className="mb-2 font-semibold text-slate-900">Session media</h2>
+        <p className="mb-3 text-sm text-slate-600">View shared photos and videos or contribute your own. Session access and media permissions still apply.</p>
+        <div className="flex flex-wrap gap-3">
+          <Link href={`/account/media-vault?session=${details.id}&action=view`} className="rounded-lg border border-cyan-700 px-4 py-3 text-sm font-semibold text-cyan-800">View session media</Link>
+          <Link href={`/account/media-vault?session=${details.id}&action=contribute`} className="rounded-lg bg-cyan-700 px-4 py-3 text-sm font-semibold text-white">Contribute media</Link>
+        </div>
+      </section>}
       <div className="flex flex-wrap gap-3">
         {details.canBook && <Link href={`/sessions/${details.id}/book`} className="rounded-lg bg-cyan-700 px-4 py-3 font-semibold text-white">Book session</Link>}
-        {attended && (
-          <>
-            <Link href={`/account/media-vault?session=${details.id}&action=view`} className="rounded-lg border border-cyan-700 px-4 py-3 font-semibold text-cyan-800">View session media</Link>
-            <Link href={`/account/media-vault?session=${details.id}&action=contribute`} className="rounded-lg bg-cyan-700 px-4 py-3 font-semibold text-white">Contribute media</Link>
-          </>
-        )}
+
       </div>
     </main>
   );

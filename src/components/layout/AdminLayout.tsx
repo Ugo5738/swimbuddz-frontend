@@ -90,6 +90,7 @@ const navSections: NavSection[] = [
     title: "Sessions & Attendance",
     items: [
       { href: "/admin/sessions", label: "Sessions", icon: Calendar },
+      { href: "/admin/swim-plans", label: "Swim Plan Requests", icon: CalendarClock },
       { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
       { href: "/admin/makeups", label: "Make-ups", icon: CalendarClock },
       { href: "/admin/ai/queue", label: "Stroke Lab Queue", icon: Activity },
