@@ -8,6 +8,8 @@ import { SESSION_TYPES_QUERY } from "@/app/(member)/sessions/constants";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CalendarPlus, MapPin, Plus, ShoppingCart } from "lucide-react";
 import Link from "next/link";
+import { SwimModal } from "@/components/swims/SwimModal";
+import { SessionDetailContent } from "@/components/swims/SessionDetailContent";
 import { useMemo, useState } from "react";
 
 type Props = {
@@ -47,6 +49,8 @@ export function MySwimsCalendar({
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [dayOpen, setDayOpen] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [day, setDay] = useState(() => {
     const now = new Date();
     return keyFor(now.getFullYear(), now.getMonth(), now.getDate());
@@ -104,6 +108,7 @@ export function MySwimsCalendar({
     const m = next.getUTCMonth();
     setMonth({ year, month: m });
     setDay(keyFor(year, m, 1));
+    setDayOpen(false);
   };
   const dateLabel = new Intl.DateTimeFormat("en-NG", { month: "long", year: "numeric", timeZone: "UTC" })
     .format(new Date(Date.UTC(month.year, month.month, 1)));
@@ -140,7 +145,7 @@ export function MySwimsCalendar({
               bookedSessionIds.has(session.id) || isAssignedAcademyClass(session, enrolledCohortIds));
             return (
               <button key={key} type="button" aria-label={`View swims on ${key}`}
-                aria-pressed={day === key} onClick={() => setDay(key)}
+                aria-pressed={day === key} onClick={() => {setDay(key);setDayOpen(true);}}
                 className={`flex min-h-14 flex-col items-center justify-center rounded-lg border p-1 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-700 ${
                   day === key ? "border-cyan-700 bg-cyan-50 font-semibold text-cyan-900"
                     : "border-transparent hover:bg-slate-50 text-slate-700"
@@ -160,9 +165,8 @@ export function MySwimsCalendar({
         </div>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+      {dayOpen && <SwimModal title={`Swims on ${day}`} onClose={() => setDayOpen(false)}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-semibold text-slate-900">Swims on {day}</h3>
           <Link href={findHref} className="inline-flex items-center gap-1 rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-800">
             <CalendarPlus className="h-4 w-4" /> Find a swim on this day
           </Link>
@@ -215,14 +219,17 @@ export function MySwimsCalendar({
               <ShoppingCart className="h-4 w-4" /> Book several swims
             </button>
           )}
-          <Link href="/pools" className="inline-flex items-center gap-1 text-cyan-700 hover:underline">
+          <Link href="/account/pools" className="inline-flex items-center gap-1 text-cyan-700 hover:underline">
             <MapPin className="h-4 w-4" /> Explore swimming pools
           </Link>
           <Link href={`/account/plan-a-swim?date=${day}`} className="inline-flex items-center gap-1 text-cyan-700 hover:underline">
             <Plus className="h-4 w-4" /> Plan a swim
           </Link>
         </div>
-      </div>
+      </SwimModal>}
+      {selectedSessionId && <SwimModal title="Session details" onClose={() => setSelectedSessionId(null)}>
+        <SessionDetailContent sessionId={selectedSessionId}/>
+      </SwimModal>}
     </div>
   );
 }
