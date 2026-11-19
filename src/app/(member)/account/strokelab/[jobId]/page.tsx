@@ -24,6 +24,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -246,8 +247,9 @@ export default function StrokeLabResultPage() {
                           </button>
                         ) : null}
                         {photo ? (
-                          <img src={photo} alt="Video frame supporting the observation"
-                            loading="lazy" className="mt-2 max-h-48 rounded-lg object-contain" />
+                          <Image src={photo} alt="Video frame supporting the observation"
+                            unoptimized width={320} height={180}
+                            className="mt-2 max-h-48 rounded-lg object-contain" />
                         ) : null}
                         {typeof finding.extra?.why_it_matters === "string" && finding.extra.why_it_matters ? (
                           <p className="mt-2 text-sm text-slate-600">{finding.extra.why_it_matters}</p>
