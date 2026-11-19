@@ -105,7 +105,7 @@ export function SessionDetailContent({ sessionId }: { sessionId: string }) {
           <SessionWeatherChip poolId={details.poolId} startsAt={details.startsAt} endsAt={details.endsAt} />
         ) : <p className="text-sm text-slate-600">Historical weather was not saved for this swim. Current forecasts do not represent past conditions.</p>}
       </section>
-      {(attended || (details.startsAt && Date.parse(details.startsAt) < Date.now())) && <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      {attended && <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="mb-2 font-semibold text-slate-900">Session media</h2>
         <p className="mb-3 text-sm text-slate-600">View shared photos and videos or contribute your own. Session access and media permissions still apply.</p>
         <div className="flex flex-wrap gap-3">
