@@ -206,9 +206,8 @@ export function MySwimsCalendar({
                 <Link href={`/sessions/${session.id}/book`}
                   className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-800">Book</Link>
               ) : null}
-              <Link href={`/sessions/${session.id}`} className="text-sm font-medium text-cyan-700 hover:underline">
-                Details
-              </Link>
+              <button type="button" onClick={() => {setDayOpen(false);setSelectedSessionId(session.id);}}
+                className="text-sm font-medium text-cyan-700 hover:underline">Details</button>
             </article>
           );
         })}
