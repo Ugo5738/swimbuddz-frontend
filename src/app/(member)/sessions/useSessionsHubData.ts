@@ -22,8 +22,7 @@ export function useSessionsHubData({ loadPast, date }: { loadPast: boolean; date
     if (!date || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return null;
     // Current SwimBuddz operating timezone (Africa/Lagos, UTC+01:00).
     const from = new Date(`${date}T00:00:00+01:00`);
-    if (Number.isNaN(from.getTime()) || from.toISOString().slice(0, 10) !==
-      new Date(Date.UTC(Number(date.slice(0,4)), Number(date.slice(5,7))-1, Number(date.slice(8,10)))).toISOString().slice(0,10)) return null;
+    if (Number.isNaN(from.getTime()) || new Date(from.getTime() + 60 * 60 * 1000).toISOString().slice(0, 10) !== date) return null;
     const to = new Date(from.getTime() + 24 * 60 * 60 * 1000);
     return { from: from.toISOString(), to: to.toISOString() };
   }, [date]);
