@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { SwimModal } from "@/components/swims/SwimModal";
+import { SessionDetailContent } from "@/components/swims/SessionDetailContent";
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePersonalSwims } from "@/hooks/usePersonalSwims";
@@ -50,7 +52,7 @@ function Status({ status }: { status: string }) {
     {label(status)}
   </span>;
 }
-function ActivityRow({ item, onChanged }: { item: SwimActivity; onChanged: () => Promise<unknown> }) {
+function ActivityRow({ item, onChanged, onDetails }: { item: SwimActivity; onChanged: () => Promise<unknown>; onDetails: (id: string) => void }) {
   const href = item.sessionId ? `/sessions/${item.sessionId}` : "/account/pool-access";
   return <article className="rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-300">
     <div className="flex flex-wrap items-center gap-3">
@@ -68,10 +70,10 @@ function ActivityRow({ item, onChanged }: { item: SwimActivity; onChanged: () =>
     {item.pool && <div className="mt-3 border-t border-slate-100 pt-3"><PoolVisitActions booking={item.pool} onChanged={() => void onChanged()}/></div>}
   </article>;
 }
-function HistoryRow({ item }: { item: PersonalSwimHistoryItem }) {
+function HistoryRow({ item, onDetails }: { item: PersonalSwimHistoryItem; onDetails: (id: string) => void }) {
   const href = item.sessionId ? `/sessions/${item.sessionId}` : "/account/pool-access";
   const outcome = item.attendanceStatus || item.bookingStatus || "not_recorded";
-  return <Link href={href} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-300">
+  const body = <div className="flex items-center gap-3">
     <div className="min-w-0 flex-1">
       <strong className="block text-base text-slate-950">{item.title}</strong>
       <p className="mt-1 text-sm text-slate-600">{formatTime(item.date)} · {item.location || "Location unavailable"}</p>
@@ -80,11 +82,15 @@ function HistoryRow({ item }: { item: PersonalSwimHistoryItem }) {
       ? <span className="text-xs text-slate-600">Attendance not recorded</span>
       : <Status status={outcome}/>}
     <span className="text-cyan-700" aria-hidden="true">→</span>
-  </Link>;
+  </div>;
+  return item.sessionId
+    ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="block w-full rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-cyan-300">{body}</button>
+    : <Link href={href} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-300">{body}</Link>;
 }
 function PageContent() {
   const searchParams = useSearchParams();
   const firstView = searchParams.get("view");
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>(
     ["history", "past"].includes(firstView || "") ? "history" : "list"
   );
@@ -180,7 +186,7 @@ function PageContent() {
               group(displayed, item => item.date).map(([day, rows]) =>
                 <div className="space-y-2" key={day}>
                   <h3 className="text-sm font-semibold text-slate-600">{day === "unconfirmed" ? "Date to be confirmed" : formatGroup(day)}</h3>
-                  {rows.map(item => <ActivityRow key={item.key} item={item} onChanged={projection.refetch}/>)}
+                  {rows.map(item => <ActivityRow key={item.key} item={item} onChanged={projection.refetch} onDetails={setSelectedSessionId}/>)}
                 </div>)}
             {pendingPlans.length > 0 && <section className="space-y-3 pt-2">
               <h2 className="text-lg font-semibold text-slate-950">Swim plans awaiting confirmation</h2>
@@ -197,7 +203,7 @@ function PageContent() {
               group(history, item => item.date).map(([day, records]) =>
                 <div key={day} className="space-y-2">
                   <h3 className="text-sm font-semibold text-slate-600">{day === "unconfirmed" ? "Unknown date" : formatGroup(day)}</h3>
-                  {records.map(record => <HistoryRow key={record.key} item={record}/>)}
+                  {records.map(record => <HistoryRow key={record.key} item={record} onDetails={setSelectedSessionId}/>)}
                 </div>)}
             <Link href="/account/attendance/history" className="inline-block text-sm font-semibold text-cyan-700 underline">
               Full attendance records
@@ -205,6 +211,7 @@ function PageContent() {
           </section>}
         </>}
     </>}
+    {selectedSessionId && <SwimModal title="Session details" onClose={() => setSelectedSessionId(null)}><SessionDetailContent sessionId={selectedSessionId}/></SwimModal>}
   </main>;
 }
 export default function MySwimsPage() {
