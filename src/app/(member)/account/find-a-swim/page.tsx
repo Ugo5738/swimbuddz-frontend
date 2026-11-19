@@ -33,7 +33,7 @@ function Discovery() {
   } = useSessionsHubData({ loadPast: false, date: date || undefined });
   const booked = useMemo(() => new Set([
     ...myBookings.filter(record => isConfirmedBooking(record.status)).map(record => record.session_id),
-    ...attendance.filter(record => ["present", "late", "checked_in"].includes(record.status.toLowerCase())).map(record => record.session_id),
+    ...attendance.filter(record => ["present", "late", "checked_in"].includes(String(record.status || "").toLowerCase())).map(record => record.session_id),
   ]), [myBookings, attendance]);
   const selectable = (session: SessionWithRides) =>
     session.access?.bookable === true &&
