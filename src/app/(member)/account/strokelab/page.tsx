@@ -155,9 +155,9 @@ export default function StrokeLabPage() {
           Stroke Lab
         </h1>
         <p className="text-sm text-slate-500">
-          Upload a freestyle clip; we measure stroke rate, body roll, and
-          breath balance. Surface-only, single swimmer, mobile clips work
-          best.
+          Upload a freestyle clip to receive AI-assisted technique feedback,
+          evidence frames and suggested corrections. Side-on videos with one
+          clearly visible swimmer work best.
         </p>
       </header>
 
