@@ -22,6 +22,9 @@ export type CalendarItem = {
   location_name: string | null;
   location_area: string | null;
   pool_id: string | null;
+  /** Populated for session projection only; membership still comes from Academy. */
+  cohort_id?: string | null;
+  cohort_fee_mode?: string | null;
   status: string;
   href: string;
   bookable: boolean;

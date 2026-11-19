@@ -30,6 +30,9 @@ function SessionsHub() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawView = searchParams.get("view");
+  // Arriving from My Swims calendar selects this day's actual server query.
+  const selectedDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(searchParams.get("date") ?? "")
+    ? searchParams.get("date") ?? undefined : undefined;
 
   // Map view param to tab. Default is "upcoming". Legacy "my" → "booked".
   const activeTab: ViewTab =
@@ -61,13 +64,14 @@ function SessionsHub() {
     pastError,
   } = useSessionsHubData({
     loadPast: activeTab === "past" || activeTab === "all",
+    date: selectedDate,
   });
 
   // Filters
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
   const [myCohortsOnly, setMyCohortsOnly] = useState(false);
-  const [relevantOnly, setRelevantOnly] = useState(true);
+  const [relevantOnly, setRelevantOnly] = useState(!selectedDate);
 
   // Multi-select for bundle booking
   const [selectMode, setSelectMode] = useState(false);
@@ -434,6 +438,15 @@ function SessionsHub() {
           </Link>
         </p>
       </header>
+
+      {selectedDate && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-950">
+          <p>Swims on <strong>{selectedDate}</strong> · Available sessions for your selected calendar day</p>
+          <Link href="/account/find-a-swim/sessions" className="font-semibold text-cyan-800 underline">
+            Clear date
+          </Link>
+        </div>
+      )}
 
       {/* Next session panel — always visible when user has a booking */}
       {!loading && nextSession && <NextSessionPanel session={nextSession} />}

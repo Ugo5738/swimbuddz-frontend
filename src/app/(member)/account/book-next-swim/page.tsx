@@ -1,65 +1,84 @@
 "use client";
 
+import { apiGet } from "@/lib/api";
 import Link from "next/link";
-import { useMemo } from "react";
-import { useSessionsHubData } from "@/app/(member)/sessions/useSessionsHubData";
-import { isConfirmedBooking } from "@/app/(member)/sessions/utils";
-import { rankNextSwims, isAssignedAcademyClass } from "@/lib/next-swim-recommendations";
-import { getSessionPriceDisplay } from "@/lib/sessionAccess";
-import { CalendarDays, MapPin, Waves } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
+type RecommendedSession = {
+  id: string;
+  title: string;
+  starts_at: string;
+  location_name?: string | null;
+  access?: { bookable?: boolean; fee_amount_kobo?: number | null } | null;
+};
+type NextSwimResult = {
+  primary: RecommendedSession | null;
+  alternatives: RecommendedSession[];
+  next_confirmed: RecommendedSession | null;
+};
+
+/** A navigation shortcut, not another browsing catalogue.
+ * The backend alone chooses and validates the candidate; checkout rechecks
+ * capacity, entitlements and final price before a reservation is confirmed.
+ */
 export default function BookNextSwimPage() {
-  const data = useSessionsHubData({ loadPast: false });
-  const confirmed = useMemo(() => new Set(data.myBookings.filter(b => isConfirmedBooking(b.status)).map(b => b.session_id)), [data.myBookings]);
-  const { bookable, scheduled } = useMemo(() => rankNextSwims(data.sessions, {
-    bookedSessionIds: confirmed, enrolledCohortIds: data.enrolledCohortIds,
-    myPodId: data.myPodId,
-    preferences: {
-      preferredDays: data.preferences?.available_days,
-      preferredTimes: data.preferences?.preferred_times,
-      preferredLocations: data.preferences?.preferred_locations,
-    },
-  }), [data.sessions, data.enrolledCohortIds, data.myPodId, data.preferences, confirmed]);
+  const router = useRouter();
+  const [result, setResult] = useState<NextSwimResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
 
-  const pending = data.upcomingLoading || data.personalizationLoading || data.bookingsLoading;
-  const first = bookable[0] ?? scheduled[0];
-  const isAssignedClass = (s: typeof first) => !!s && isAssignedAcademyClass(s, data.enrolledCohortIds);
-  const action = (s: typeof first) => {
-    const assigned = isAssignedClass(s);
-    const booked = confirmed.has(s.id);
-    return {
-      label: assigned ? "View My Next Class" : booked ? "View My Booking" : s.access?.bookable ? "Continue to Booking" : "View Session",
-      href: assigned ? `/sessions/${s.id}` : booked ? `/sessions/${s.id}` : s.access?.bookable ? `/sessions/${s.id}/book` : `/sessions/${s.id}`,
-    };
-  };
-  const card = (s: typeof first, primary = false) => {
-    if (!s) return null;
-    const price = getSessionPriceDisplay(s.access ?? null, s.pool_fee);
-    const cta = action(s);
-    return <article key={s.id} className={`space-y-3 rounded-2xl border bg-white p-5 ${primary?"border-cyan-300 shadow-sm":"border-slate-200"}`}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">{primary ? (bookable.length ? "Best match for your next booking" : "Your next scheduled swim") : "Other suitable swim"}</p>
-        {confirmed.has(s.id) && <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Already booked</span>}
-        {isAssignedClass(s) && <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">Assigned Academy class</span>}
-      </div>
-      <h2 className="text-lg font-bold text-slate-900">{s.title}</h2>
-      <p className="flex gap-2 text-sm text-slate-600"><CalendarDays className="h-4 w-4 shrink-0" />{new Date(s.starts_at).toLocaleString("en-NG", {dateStyle:"full",timeStyle:"short"})}</p>
-      <p className="flex gap-2 text-sm text-slate-600"><MapPin className="h-4 w-4 shrink-0" />{s.location_name || s.location || "Location to be confirmed"}</p>
-      {s.pod_id === data.myPodId && data.myPodName && <p className="text-sm text-cyan-800">Your pod: {data.myPodName}</p>}
-      <div className="flex flex-wrap justify-between gap-2 border-t pt-3 text-sm">
-        <span className="text-slate-600">{isAssignedClass(s) ? "Included in active Academy enrollment" : price.label}</span>
-        <strong>{isAssignedClass(s) ? "No separate reservation" : price.amountNaira === 0 ? "Included / ₦0" : `₦${price.amountNaira.toLocaleString("en-NG")}`}</strong>
-      </div>
-      <Link href={cta.href} className="flex min-h-11 items-center justify-center rounded-xl bg-cyan-700 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-800">{cta.label}</Link>
-      <Link href={`/sessions/${s.id}`} className="block text-center text-sm font-semibold text-cyan-700 underline">View full session details</Link>
-      <p className="text-xs text-slate-500">Final availability, eligibility and charges are verified when booking. Payment and booking confirmation are handled by the existing secure flow.</p>
-    </article>;
-  };
-  return <main className="mx-auto max-w-4xl space-y-6 px-3 py-6">
-    <header className="space-y-2"><p className="text-xs font-semibold uppercase tracking-widest text-cyan-700">Quick booking</p><h1 className="text-3xl font-bold text-slate-950">Book My Next Swim</h1><p className="text-sm text-slate-600">Your assigned classes and eligible sessions first. Browse alternatives without losing your usual pod or programme.</p></header>
-    {pending ? <p role="status">Finding your next suitable swim…</p> : data.upcomingError ? <p role="alert" className="rounded-xl bg-red-50 p-4">Sessions couldn't be loaded. Please try again.</p> :
-      first ? <div className="space-y-6">{card(first,true)}{bookable.length + scheduled.length>1&&<section className="space-y-3"><h2 className="text-lg font-semibold">Other suitable swims</h2><div className="grid gap-4 md:grid-cols-2">{[...bookable,...scheduled].filter(s=>s.id!==first.id).slice(0,6).map(s=>card(s))}</div></section>}</div> :
-      <div className="rounded-2xl border border-dashed p-8 text-center"><Waves className="mx-auto mb-3 h-10 w-10 text-cyan-700"/><p className="font-semibold">No suitable upcoming session found</p><p className="mt-2 text-sm text-slate-600">Check your pod, package, or eligibility; no unrelated session will be shown as a best match.</p></div>}
-    <Link href="/find-a-swim/sessions" className="inline-block text-sm font-semibold text-cyan-700 underline">Explore all published sessions</Link>
-  </main>;
+  useEffect(() => {
+    let active = true;
+    apiGet<NextSwimResult>("/api/v1/sessions/me/next-swim", { auth: true })
+      .then((response) => {
+        if (!active) return;
+        if (response.primary?.id && response.primary.access?.bookable === true) {
+          router.replace(`/sessions/${encodeURIComponent(response.primary.id)}/book?source=next-swim`);
+          return;
+        }
+        setResult(response);
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof Error ? err.message : "Could not find your next swim.");
+      });
+    return () => { active = false; };
+  }, [router, retry]);
+
+  return (
+    <main className="mx-auto max-w-xl space-y-5 px-4 py-10">
+      <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">Quick booking</p>
+      <h1 className="text-3xl font-bold text-slate-950">Book My Next Swim</h1>
+      {!result && !error ? (
+        <div role="status" className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-700">
+          Finding your next eligible, unbooked session…
+        </div>
+      ) : error ? (
+        <div role="alert" className="space-y-3 rounded-2xl border border-rose-200 bg-rose-50 p-6">
+          <p className="font-medium text-rose-900">We couldn't check your next swim.</p>
+          <p className="text-sm text-rose-800">{error}</p>
+          <button type="button" className="rounded-lg bg-cyan-700 px-4 py-2 font-semibold text-white"
+            onClick={() => { setError(null); setResult(null); setRetry((value) => value + 1); }}>Try again</button>
+        </div>
+      ) : (
+        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
+          <p className="font-semibold text-slate-900">No suitable unbooked swim was found in the checked schedule.</p>
+          {result?.next_confirmed && (
+            <div className="rounded-xl bg-cyan-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">Your next confirmed swim</p>
+              <p className="mt-1 font-semibold text-slate-900">{result.next_confirmed.title}</p>
+              <p className="text-sm text-slate-700">{new Date(result.next_confirmed.starts_at).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" })}</p>
+              <Link href={`/sessions/${result.next_confirmed.id}`} className="mt-2 inline-block text-sm font-semibold text-cyan-800 underline">View your swim</Link>
+            </div>
+          )}
+          <p className="text-sm text-slate-600">Try another day or explore sessions and independent Pool Access. No unrelated session will be booked automatically.</p>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/account/find-a-swim" className="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white">Find a Swim</Link>
+            <Link href="/account/bookings" className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">My Swims</Link>
+          </div>
+        </div>
+      )}
+      <Link href="/pools" className="inline-block text-sm font-semibold text-cyan-700 underline">Explore swimming pools</Link>
+    </main>
+  );
 }

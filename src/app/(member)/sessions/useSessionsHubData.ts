@@ -16,7 +16,16 @@ import type { AttendanceRecord, MemberProfile, MyBooking } from "./types";
 
 type RideConfigsBySession = Record<string, SessionWithRides["ride_configs"]>;
 
-export function useSessionsHubData({ loadPast }: { loadPast: boolean }) {
+/** A selected day is queried server-side, not filtered from the default 50 results. */
+export function useSessionsHubData({ loadPast, date }: { loadPast: boolean; date?: string }) {
+  const dateWindow = useMemo(() => {
+    if (!date || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return null;
+    // Current SwimBuddz operating timezone (Africa/Lagos, UTC+01:00).
+    const from = new Date(`${date}T00:00:00+01:00`);
+    if (Number.isNaN(from.getTime()) || new Date(from.getTime() + 60 * 60 * 1000).toISOString().slice(0, 10) !== date) return null;
+    const to = new Date(from.getTime() + 24 * 60 * 60 * 1000);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }, [date]);
   const profileQuery = useQuery({
     queryKey: ["sessions-hub", "profile"],
     queryFn: () => apiGet<MemberProfile>("/api/v1/members/me", { auth: true }),
@@ -55,10 +64,10 @@ export function useSessionsHubData({ loadPast }: { loadPast: boolean }) {
   });
 
   const upcomingQuery = useQuery({
-    queryKey: ["sessions-hub", "upcoming", SESSION_TYPES_QUERY],
+    queryKey: ["sessions-hub", "upcoming", SESSION_TYPES_QUERY, dateWindow?.from],
     queryFn: () =>
       apiGet<SessionWithRides[]>(
-        `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}&limit=50`,
+        `/api/v1/sessions?types=${encodeURIComponent(SESSION_TYPES_QUERY)}&limit=${dateWindow ? 100 : 50}${dateWindow ? `&from=${encodeURIComponent(dateWindow.from)}&to=${encodeURIComponent(dateWindow.to)}` : ""}`,
         { auth: true }
       ),
   });
