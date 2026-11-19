@@ -6,6 +6,7 @@ import { SwimPlansApi, type SwimPlan } from "@/lib/swim-plans";
 
 function PlanCard({ plan, refresh }: { plan: SwimPlan; refresh: () => Promise<void> }) {
   const [reference, setReference] = useState(plan.venue_confirmation_reference ?? "");
+  const [sellingPrice, setSellingPrice] = useState(plan.selling_price_kobo == null ? "" : String(plan.selling_price_kobo / 100));
   const [notes, setNotes] = useState(plan.admin_notes ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -57,9 +58,13 @@ function PlanCard({ plan, refresh }: { plan: SwimPlan; refresh: () => Promise<vo
           <input className="mt-1 w-full rounded-lg border border-slate-300 p-3" value={reference}
             maxLength={255} onChange={e => setReference(e.target.value)} placeholder="Partner confirmation number or booking reference" />
         </label>
-        <button disabled={busy || reference.trim().length < 8 || !plan.pool_id}
+        {plan.kind === "open" && <label className="block text-sm font-medium text-slate-700">Approved member price per swimmer (₦)
+          <input type="number" min="0" max="1000000" step="0.01" className="mt-1 w-full rounded-lg border border-slate-300 p-3"
+            value={sellingPrice} onChange={e => setSellingPrice(e.target.value)} placeholder="Public price, not partner operating cost" />
+        </label>}
+        <button disabled={busy || reference.trim().length < 8 || !plan.pool_id || (plan.kind === "open" && (sellingPrice === "" || !Number.isFinite(Number(sellingPrice))))}
           className="rounded-lg border border-cyan-700 px-3 py-2 text-sm font-semibold text-cyan-800 disabled:opacity-40"
-          onClick={() => void act(() => SwimPlansApi.verifyVenue(plan.id, true, reference.trim(), notes), "Venue verification recorded")}>
+          onClick={() => void act(() => SwimPlansApi.verifyVenue(plan.id, true, reference.trim(), notes, plan.kind === "open" ? Number(sellingPrice) : undefined), "Venue verification recorded")}>
           Verify booked pool time
         </button>
         {plan.kind === "open" && plan.approval_status === "approved" && plan.venue_status === "verified" &&
