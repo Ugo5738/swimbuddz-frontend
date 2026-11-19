@@ -8,7 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 type ConfirmedSession = { session_id: string; status?: string };
-type CohortEnrollment = { cohort_id?: string | null; cohort?: unknown; status?: string };
 
 export default function MemberCalendarPage() {
   const bookings = useQuery({
