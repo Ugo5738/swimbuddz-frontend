@@ -20,6 +20,7 @@ import {
 } from "@/lib/calendar";
 import type { DatesSetArg, EventClickArg, EventContentArg, EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import Link from "next/link";
 import FullCalendar from "@fullcalendar/react";
 import { addMonths, format, startOfMonth, subMonths } from "date-fns";
 import {
@@ -43,6 +44,8 @@ type TierCalendarProps = {
   title: string;
   subtitle: string;
   embedded?: boolean;
+  personalSessionIds?: ReadonlySet<string>;
+  personalCohortIds?: ReadonlySet<string>;
 };
 
 const AUDIENCES: CalendarAudience[] = ["community", "club", "academy"];
@@ -68,10 +71,11 @@ function itemKey(item: CalendarItem): string {
   return `${item.source}:${item.id}`;
 }
 
-export function TierCalendar({ authenticated, title, subtitle, embedded = false }: TierCalendarProps) {
+export function TierCalendar({ authenticated, title, subtitle, embedded = false, personalSessionIds, personalCohortIds }: TierCalendarProps) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [range, setRange] = useState(listRange);
   const [view, setView] = useState<CalendarView>("list");
+  const [layer, setLayer] = useState<"mine" | "org" | "both">("both");
   const [audience, setAudience] = useState<AudienceFilter>("all");
   const [activity, setActivity] = useState<ActivityFilter>("all");
   const [visibility, setVisibility] = useState<VisibilityFilter>("all");
@@ -106,9 +110,14 @@ export function TierCalendar({ authenticated, title, subtitle, embedded = false 
       ).sort((a, b) => a.localeCompare(b)),
     [items]
   );
+  const isPersonal = useCallback((item: CalendarItem) => item.source === "session" && (
+    !!personalSessionIds?.has(item.id) ||
+    !!(item.cohort_id && item.cohort_fee_mode !== "paid_extra" && personalCohortIds?.has(item.cohort_id))
+  ), [personalSessionIds, personalCohortIds]);
   const filteredItems = useMemo(
     () =>
       items.filter((item) => {
+        if (authenticated && layer === "mine" && !isPersonal(item)) return false;
         if (audience !== "all" && !calendarMatchesAudience(item, audience)) return false;
         if (visibility !== "all" && item.visibility !== visibility) return false;
         if (
@@ -123,23 +132,24 @@ export function TierCalendar({ authenticated, title, subtitle, embedded = false 
         }
         return true;
       }),
-    [activity, audience, items, location, visibility]
+    [activity, audience, items, location, visibility, authenticated, layer, isPersonal]
   );
   const calendarEvents = useMemo<EventInput[]>(
     () =>
       filteredItems.map((item) => {
         const colors = CALENDAR_AUDIENCE_COLORS[calendarPrimaryAudience(item)];
+        const personal = authenticated && layer !== "org" && isPersonal(item);
         return {
           id: itemKey(item),
-          title: item.title,
+          title: personal ? `✓ ${item.title}` : item.title,
           start: item.starts_at,
           end: item.ends_at ?? undefined,
           backgroundColor: colors.background,
-          borderColor: colors.border,
+          borderColor: personal ? "#0e7490" : colors.border,
           extendedProps: { item },
         };
       }),
-    [filteredItems]
+    [filteredItems, authenticated, layer, isPersonal]
   );
   const partialErrors = Object.values(data?.errors ?? {});
   const hasSecondaryFilters = activity !== "all" || visibility !== "all" || location !== "all";
@@ -218,6 +228,20 @@ export function TierCalendar({ authenticated, title, subtitle, embedded = false 
         </p>
       </header>}
 
+      {authenticated && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
+          <span className="text-sm font-medium text-slate-700">Show:</span>
+          {([{ id: "mine", text: "My schedule" }, { id: "org", text: "SwimBuddz" }, { id: "both", text: "Both" }] as const).map((option) => (
+            <button key={option.id} type="button" onClick={() => setLayer(option.id)} aria-pressed={layer === option.id}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold ${layer === option.id ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"}`}>
+              {option.text}
+            </button>
+          ))}
+          <Link href="/account/bookings" className="ml-auto text-sm font-semibold text-cyan-700 hover:underline">Manage My Swims</Link>
+          <Link href="/pools" className="text-sm font-semibold text-cyan-700 hover:underline">Explore pools</Link>
+          {layer === "mine" && <p className="w-full text-xs text-slate-500">Shows confirmed SwimBuddz session bookings and assigned Academy classes. Independent Pool Access and full history are in My Swims.</p>}
+        </div>
+      )}
       <div className="space-y-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex max-w-full gap-1 overflow-x-auto" aria-label="Calendar audience">
