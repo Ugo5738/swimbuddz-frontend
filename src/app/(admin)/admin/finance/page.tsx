@@ -22,6 +22,7 @@ const actions = [
   { href: "/admin/finance/treasury#requests", label: "Approvals", icon: ClipboardCheck, description: "Maker-checker queue and bank confirmation" },
   { href: "/admin/finance/treasury#budgets", label: "Budgets", icon: Wallet, description: "Operating and treasury funding ceilings" },
   { href: "/admin/finance/treasury#reconciliation", label: "Reconciliation", icon: BookOpenCheck, description: "Statement-to-ledger verification" },
+  { href: "/admin/finance/intelligence", label: "Finance Intelligence", icon: ChartNoAxesCombined, description: "Academy, Club, Store, payments and future obligations" },
   { href: "/admin/finance/reports", label: "Reports", icon: ChartNoAxesCombined, description: "Cash, profit and programme performance" },
   { href: "/admin/finance/users", label: "Finance Team", icon: Users, description: "Role-based finance access" },
 ];
