@@ -72,6 +72,7 @@ function SessionsHub() {
   const [selectMode, setSelectMode] = useState(false);
   const [displayMode, setDisplayMode] = useState<"list" | "calendar">("list");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedMonthRates, setSelectedMonthRates] = useState<Record<string, number>>({});
 
   const toggleSelected = useCallback((sessionId: string) => {
     setSelectedIds((prev) => {
@@ -191,22 +192,17 @@ function SessionsHub() {
   const nextSession = myUpcomingSessions[0] ?? null;
 
   // Bundle total and checkout URL for multi-select
-  const selectedSessions = useMemo(
-    () => sessions.filter((s) => selectedIds.has(s.id)),
-    [sessions, selectedIds]
-  );
-
+  // This is only a preview. Session bundle checkout obtains an authoritative
+  // server-side quote before collecting any money. Keep estimates for sessions
+  // selected from months beyond the default 50-result list.
   const bundleTotal = useMemo(
-    () =>
-      selectedSessions.reduce(
-        (sum, s) =>
-          sum +
-          (s.access?.fee_amount_kobo == null
-            ? s.pool_fee || 0
-            : s.access.fee_amount_kobo / 100),
-        0
-      ),
-    [selectedSessions]
+    () => Array.from(selectedIds).reduce((total, id) => {
+      const s = sessions.find((row) => row.id === id);
+      return total + (s
+        ? s.access?.fee_amount_kobo == null ? s.pool_fee || 0 : s.access.fee_amount_kobo / 100
+        : selectedMonthRates[id] ?? 0);
+    }, 0),
+    [sessions, selectedIds, selectedMonthRates]
   );
 
   // Creates a server-side SessionBundleCart, then navigates the user to
@@ -529,7 +525,15 @@ function SessionsHub() {
             enrolledCohortIds={enrolledCohortIds}
             selectMode={selectMode}
             selectedIds={selectedIds}
-            onToggleSelect={toggleSelected}
+            mode={activeTab === "booked" ? "booked" : activeTab === "all" ? "all" : "upcoming"}
+            onToggleSelect={(session) => {
+              setSelectedMonthRates((previous) => ({
+                ...previous,
+                [session.id]: session.access?.fee_amount_kobo == null
+                  ? session.pool_fee || 0 : session.access.fee_amount_kobo / 100,
+              }));
+              toggleSelected(session.id);
+            }}
             onStartSelecting={() => setSelectMode(true)}
           />
         ) : (
