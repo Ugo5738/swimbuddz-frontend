@@ -57,15 +57,15 @@ function ActivityRow({ item, onChanged, onDetails }: { item: SwimActivity; onCha
   return <article className="rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-300">
     <div className="flex flex-wrap items-center gap-3">
       <div className="min-w-0 flex-1">
-        <Link href={href} className="block text-base font-semibold text-slate-950 hover:text-cyan-700">
-          {item.title}
-        </Link>
+        {item.sessionId
+          ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="block text-left text-base font-semibold text-slate-950 hover:text-cyan-700">{item.title}</button>
+          : <Link href={href} className="block text-base font-semibold text-slate-950 hover:text-cyan-700">{item.title}</Link>}
         <p className="mt-1 text-sm text-slate-600">{formatTime(item.date)} · {item.location || "Location to be confirmed"}</p>
       </div>
       <Status status={item.status}/>
-      <Link href={href} className="text-sm font-semibold text-cyan-700 hover:underline" aria-label={`View ${item.title} details`}>
-        Details →
-      </Link>
+      {item.sessionId
+        ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="text-sm font-semibold text-cyan-700 hover:underline" aria-label={`View ${item.title} details`}>Details →</button>
+        : <Link href={href} className="text-sm font-semibold text-cyan-700 hover:underline">Details →</Link>}
     </div>
     {item.pool && <div className="mt-3 border-t border-slate-100 pt-3"><PoolVisitActions booking={item.pool} onChanged={() => void onChanged()}/></div>}
   </article>;
@@ -144,10 +144,10 @@ function PageContent() {
             timeZone: "Africa/Lagos", weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit",
           }) : "Date to be confirmed"} · {next.location || "Location to be confirmed"}
         </p>
-        <Link href={next.sessionId ? `/sessions/${next.sessionId}` : "/account/pool-access"}
-          className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">
-          View details
-        </Link>
+        {next.sessionId
+          ? <button type="button" onClick={() => setSelectedSessionId(next.sessionId!)}
+              className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View details</button>
+          : <Link href="/account/pool-access" className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View visit</Link>}
       </section>}
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3" role="tablist" aria-label="My Swims views">
         {([{ id: "list", name: "List" }, { id: "calendar", name: "Calendar" }, { id: "history", name: "History" }] as const)
