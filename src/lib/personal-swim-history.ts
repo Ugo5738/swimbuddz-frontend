@@ -17,6 +17,7 @@ export type HistoricalAttendance = {
     starts_at?: string;
     ends_at?: string;
     location_name?: string;
+    pool_id?: string | null;
   } | null;
 };
 
