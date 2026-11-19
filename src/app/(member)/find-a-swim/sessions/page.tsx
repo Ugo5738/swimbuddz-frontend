@@ -11,5 +11,5 @@ export default async function LegacyMemberSessions({
     if (typeof value === "string") query.set(key, value);
     else if (Array.isArray(value)) value.forEach((item) => query.append(key, item));
   }
-  redirect(`/account/find-a-swim/sessions${query.size ? `?${query.toString()}` : ""}`);
+  redirect(`/account/find-a-swim${query.size ? `?${query.toString()}` : ""}`);
 }

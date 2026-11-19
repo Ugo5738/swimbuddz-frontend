@@ -1,5 +1,6 @@
 "use client";
 
+import { apiGet } from "@/lib/api";
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useApi } from "@/hooks/useApi";
@@ -84,6 +85,7 @@ const navSections: NavSection[] = [
       { href: "/account/find-a-swim", label: "Find a Swim", icon: Waves },
       { href: "/account/bookings", label: "My Swims", icon: CalendarDays },
       { href: "/account/calendar", label: "SwimBuddz Calendar", icon: CalendarDays },
+      { href: "/pools", label: "Explore Pools", icon: Waves },
       { href: "/account/onboarding", label: "Complete Setup", icon: CheckCircle },
     ],
   },
@@ -149,6 +151,25 @@ const MEMBER_NAV_EXPANDED_KEY = "swimbuddz-member-nav-expanded";
 
 export function MemberLayout({ children }: MemberLayoutProps) {
   const router = useRouter();
+  const [quickBookingBusy, setQuickBookingBusy] = useState(false);
+  const openNextSwim = async () => {
+    if (quickBookingBusy) return;
+    setQuickBookingBusy(true);
+    try {
+      const result = await apiGet<{primary: { id: string; access?: {bookable?: boolean} } | null}>(
+        "/api/v1/sessions/me/next-swim", {auth: true}
+      );
+      const next = result.primary;
+      router.push(next?.id && next.access?.bookable === true
+        ? `/sessions/${encodeURIComponent(next.id)}/book?source=next-swim`
+        : "/account/book-next-swim");
+    } catch {
+      router.push("/account/book-next-swim");
+    } finally {
+      setQuickBookingBusy(false);
+      setSidebarOpen(false);
+    }
+  };
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -519,14 +540,21 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                         <li key={item.href}>
                           <Link
                             href={item.href}
-                            onClick={() => setSidebarOpen(false)}
+                            onClick={(event) => {
+                              if (item.href === "/account/book-next-swim") {
+                                event.preventDefault();
+                                void openNextSwim();
+                              } else {
+                                setSidebarOpen(false);
+                              }
+                            }}
                             aria-current={active ? "page" : undefined}
                             title={item.label}
                             {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                             className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : item.href === "/account/book-next-swim" ? "border border-white/50 text-white font-semibold hover:bg-white/10" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
                           >
                             <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-                            <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{item.label}</span>
+                            <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{item.href === "/account/book-next-swim" && quickBookingBusy ? "Finding next swim…" : item.label}</span>
                             {external && <ExternalLink className={`h-3.5 w-3.5 ${sidebarCollapsed ? "md:hidden" : ""}`} aria-hidden="true" />}
                           </Link>
                         </li>

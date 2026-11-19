@@ -11,6 +11,7 @@ export type SessionDetailView = {
   endsAt: string | null;
   locationName: string | null;
   locationAddress: string | null;
+  poolId: string | null;
   attendanceStatus: string | null;
   /** Archived attendance only contains a historical snapshot, not current access. */
   historicalSnapshot: boolean;
@@ -29,6 +30,7 @@ export function activeSessionDetail(session: Session): SessionDetailView {
     endsAt: session.ends_at,
     locationName: session.location_name || session.location || null,
     locationAddress: session.location_address || null,
+    poolId: session.pool_id || null,
     attendanceStatus: null,
     historicalSnapshot: false,
     canBook: session.status === "scheduled" &&
@@ -59,6 +61,7 @@ export function historicalSessionDetail(
     endsAt: snapshot?.ends_at || null,
     locationName: snapshot?.location_name || null,
     locationAddress: null,
+    poolId: snapshot?.pool_id || null,
     attendanceStatus: record.status,
     historicalSnapshot: true,
     canBook: false,

@@ -218,8 +218,8 @@ export function MySwimsCalendar({
           <Link href="/pools" className="inline-flex items-center gap-1 text-cyan-700 hover:underline">
             <MapPin className="h-4 w-4" /> Explore swimming pools
           </Link>
-          <Link href="/community/events/create" className="inline-flex items-center gap-1 text-cyan-700 hover:underline">
-            <Plus className="h-4 w-4" /> Host an open swim
+          <Link href={`/account/plan-a-swim?date=${day}`} className="inline-flex items-center gap-1 text-cyan-700 hover:underline">
+            <Plus className="h-4 w-4" /> Plan a swim
           </Link>
         </div>
       </div>
