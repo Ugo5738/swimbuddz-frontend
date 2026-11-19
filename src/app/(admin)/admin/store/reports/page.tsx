@@ -30,10 +30,12 @@ interface TopSellingProduct {
 
 interface InventoryReport {
   total_variants: number;
-  total_stock: number;
+  total_stock_on_hand: number;
+  valuation_complete: boolean;
+  unvalued_sku_count: number;
   low_stock_count: number;
   out_of_stock_count: number;
-  total_stock_value_ngn: number;
+  total_stock_value_ngn: number | null;
 }
 
 interface SupplierPerformanceItem {
@@ -101,7 +103,9 @@ export default function StoreReportsPage() {
           () =>
             ({
               total_variants: 0,
-              total_stock: 0,
+              total_stock_on_hand: 0,
+              valuation_complete: false,
+              unvalued_sku_count: 0,
               low_stock_count: 0,
               out_of_stock_count: 0,
               total_stock_value_ngn: 0,
@@ -174,7 +178,7 @@ export default function StoreReportsPage() {
     },
     {
       label: "Total Stock",
-      value: inventory?.total_stock ?? 0,
+      value: inventory?.total_stock_on_hand ?? 0,
       subtext: "Units in stock",
       icon: Package,
       color: "bg-emerald-500",
@@ -309,7 +313,7 @@ export default function StoreReportsPage() {
           <span className="text-sm text-slate-500">
             Stock value:{" "}
             <span className="font-medium text-slate-900">
-              ₦{(inventory?.total_stock_value_ngn ?? 0).toLocaleString()}
+              {inventory?.valuation_complete && inventory.total_stock_value_ngn != null ? `₦${inventory.total_stock_value_ngn.toLocaleString()}` : `Needs reconciliation (${inventory?.unvalued_sku_count ?? "?"} SKUs)`}
             </span>
           </span>
         </div>
