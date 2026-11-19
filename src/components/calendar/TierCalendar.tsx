@@ -20,6 +20,8 @@ import {
 } from "@/lib/calendar";
 import type { DatesSetArg, EventClickArg, EventContentArg, EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin, { type DateClickArg } from "@fullcalendar/interaction";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import FullCalendar from "@fullcalendar/react";
 import { addMonths, format, startOfMonth, subMonths } from "date-fns";
@@ -72,6 +74,7 @@ function itemKey(item: CalendarItem): string {
 }
 
 export function TierCalendar({ authenticated, title, subtitle, embedded = false, personalSessionIds, personalCohortIds }: TierCalendarProps) {
+  const router = useRouter();
   const calendarRef = useRef<FullCalendar | null>(null);
   const [range, setRange] = useState(listRange);
   const [view, setView] = useState<CalendarView>("list");
@@ -164,6 +167,10 @@ export function TierCalendar({ authenticated, title, subtitle, embedded = false,
     setSelectedItem(null);
   }, []);
 
+  const handleDayClick = useCallback((info: DateClickArg) => {
+    if (authenticated) router.push(`/account/find-a-swim/sessions?date=${encodeURIComponent(info.dateStr)}`);
+  }, [authenticated, router]);
+
   const handleEventClick = useCallback((info: EventClickArg) => {
     const item = info.event.extendedProps.item as CalendarItem | undefined;
     if (item) setSelectedItem(item);
@@ -240,6 +247,7 @@ export function TierCalendar({ authenticated, title, subtitle, embedded = false,
           <Link href="/account/bookings" className="ml-auto text-sm font-semibold text-cyan-700 hover:underline">Manage My Swims</Link>
           <Link href="/pools" className="text-sm font-semibold text-cyan-700 hover:underline">Explore pools</Link>
           {layer === "mine" && <p className="w-full text-xs text-slate-500">Shows confirmed SwimBuddz session bookings and assigned Academy classes. Independent Pool Access and full history are in My Swims.</p>}
+          <p className="w-full text-xs text-slate-500">In Month view, select any date to find available swims on that day.</p>
         </div>
       )}
       <div className="space-y-3">
@@ -423,7 +431,8 @@ export function TierCalendar({ authenticated, title, subtitle, embedded = false,
         <div className="calendar-shell hidden border-y border-slate-200 bg-white py-3 md:block">
           <FullCalendar
             ref={calendarRef}
-            plugins={[dayGridPlugin]}
+            plugins={[dayGridPlugin, interactionPlugin]}
+            dateClick={handleDayClick}
             initialView="dayGridMonth"
             initialDate={visibleMonth}
             headerToolbar={false}
