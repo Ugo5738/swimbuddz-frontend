@@ -4,6 +4,7 @@ import { apiGet } from "@/lib/api";
 import { DirectoryMap } from "@/components/pools/DirectoryMap";
 import { MapPin, Search, Waves, Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 type Pool = {
@@ -18,6 +19,9 @@ type Pool = {
 type Results = { items: Pool[]; total: number; page: number; page_size: number };
 
 export default function PoolsDirectoryPage() {
+  const memberView = usePathname()?.startsWith("/account/pools");
+  const poolBase = memberView ? "/account/pools" : "/pools";
+  const offerBase = memberView ? "/account/pool-time" : "/pool-access";
   const [search, setSearch] = useState("");
   const [area, setArea] = useState("");
   const [mapOpen,setMapOpen] = useState(false);
@@ -53,9 +57,9 @@ export default function PoolsDirectoryPage() {
       <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Find a swimming pool</h1>
       <p className="max-w-2xl text-slate-600">Discover pools by name or neighbourhood, compare facilities and read moderated swimmer reviews. Listings do not imply SwimBuddz partnership or available booking.</p>
       <div className="flex flex-wrap gap-4 text-sm font-semibold">
-        <Link href="/pools/suggest" className="text-cyan-700 underline">Suggest a pool</Link>
-        <Link href="/pool-access" className="text-cyan-700 underline">See bookable pool visits</Link>
-        <Link href="/calendar" className="text-cyan-700 underline">SwimBuddz calendar</Link>
+        <Link href={`${poolBase}/suggest`} className="text-cyan-700 underline">Suggest a pool</Link>
+        <Link href={offerBase} className="text-cyan-700 underline">See bookable pool visits</Link>
+        <Link href={memberView ? "/account/calendar" : "/calendar"} className="text-cyan-700 underline">SwimBuddz calendar</Link>
       </div>
     </header>
 
@@ -82,7 +86,7 @@ export default function PoolsDirectoryPage() {
     {!loading && !error && results?.items.length === 0 && <section className="rounded-2xl border bg-white p-8 text-center">
       <Waves className="mx-auto mb-3 h-9 w-9 text-cyan-600" /><h2 className="text-lg font-semibold">No published pools match yet</h2>
       <p className="mt-2 text-sm text-slate-600">Try another area or help our team discover a missing swimming pool.</p>
-      <Link href="/pools/suggest" className="mt-3 inline-block text-cyan-700 underline">Suggest a pool</Link>
+      <Link href={`${poolBase}/suggest`} className="mt-3 inline-block text-cyan-700 underline">Suggest a pool</Link>
     </section>}
     {results?.items && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {results.items.map(pool => <article key={pool.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-cyan-300">
@@ -99,7 +103,7 @@ export default function PoolsDirectoryPage() {
         <p className="flex items-start gap-1 text-sm text-slate-600"><MapPin className="mt-0.5 h-4 w-4 shrink-0"/>{[pool.location_area,pool.address].filter(Boolean).join(" · ") || "Location details pending verification"}</p>
         <p className="text-sm text-slate-600">{pool.pool_length_m ? `${pool.pool_length_m}m pool · ` : ""}{pool.has_lifeguard === true ? "Lifeguard reported" : "Check safety arrangements before visiting"}</p>
         <p className="flex items-center gap-1 text-sm"><Star className="h-4 w-4 text-amber-500"/>{pool.rating_count ? `${pool.rating_average}/5 from ${pool.rating_count} reviews` : "No published reviews yet"}</p>
-        <Link href={`/pools/${pool.id}`} className="mt-auto inline-flex min-h-11 items-center gap-1 font-semibold text-cyan-700 hover:underline">Explore pool <ArrowRight className="h-4 w-4"/></Link>
+        <Link href={`${poolBase}/${pool.id}`} className="mt-auto inline-flex min-h-11 items-center gap-1 font-semibold text-cyan-700 hover:underline">Explore pool <ArrowRight className="h-4 w-4"/></Link>
       </article>)}
     </div>}
     {results && results.total > results.page_size && <nav aria-label="Pool search pages" className="flex items-center justify-center gap-4">

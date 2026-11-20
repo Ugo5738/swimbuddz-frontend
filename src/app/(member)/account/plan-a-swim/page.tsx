@@ -165,9 +165,8 @@ function Form() {
       </label>}
       {poolId && <div className="space-y-2 rounded-xl border border-cyan-200 bg-cyan-50 p-4">
         <p className="font-semibold text-cyan-950">{selectedPool?.name || "Selected pool"}</p>
-        <p className="text-sm text-cyan-950">Pool time: <strong>Awaiting verification</strong>. A listed pool does not automatically have the requested slot available.</p>
-        <p className="text-sm text-cyan-950">Payable price: <strong>To be quoted by SwimBuddz</strong>. Internal pool operating rates are not member prices.</p>
-        {matchingOffers.length > 0 && <p className="text-sm text-cyan-950">A published access offer starts at this time. <Link href={`/pool-access?pool_id=${poolId}`} className="font-semibold underline">View the existing offer and its checkout price</Link>.</p>}
+        <p className="text-sm text-cyan-950">Select your preferred time and send a request. We'll confirm whether this pool can accommodate your swim before asking you to pay.</p>
+        {matchingOffers.length > 0 && <p className="text-sm text-cyan-950">A published pool visit may already be available for this time. <Link href={`/account/pool-time?pool_id=${poolId}`} className="font-semibold underline">View the existing offer and its checkout price</Link>.</p>}
         <p className="text-sm text-cyan-950">Weather: {weather.isLoading ? "Loading forecast…" : weather.data ?
           `${weather.data.condition_text} · ${weather.data.temperature_high_c ?? "—"}°C high${weather.data.stale ? " (stale forecast)" : ""}`
           : "No reliable forecast available for this session window."}</p>
@@ -187,7 +186,7 @@ function Form() {
         <div><dt className="text-slate-500">Pool</dt><dd className="font-semibold">{selectedPool?.name || location}</dd></div>
       </dl>
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-        This submits a plan for availability verification; it is not a confirmed booking or payment. Public Open Swims are subject to the admin publication policy and verified pool allocation. Coached sessions also need an available coach.
+        This is a request, not a confirmed booking. We will check pool availability and, for coached swims, coach availability. You will see the final price and applicable terms before deciding whether to pay.
       </div>
       {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
       <div className="flex flex-wrap gap-3">
@@ -199,7 +198,7 @@ function Form() {
     </section>}
     {step === "complete" && <section className="space-y-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
       <h2 className="text-xl font-bold text-cyan-950">Swim plan submitted</h2>
-      <p className="text-sm text-cyan-950">Your request is saved, but pool time, price and admission are not yet confirmed. We will review availability before any payment or publication.</p>
+      <p className="text-sm text-cyan-950">Your request has been received. We will confirm your pool time and price before you commit to a booking.</p>
       <p className="text-xs text-cyan-800">Request: {planId} · {status.replaceAll("_", " ")}</p>
       <Link href="/account/bookings" className="inline-flex rounded-xl bg-cyan-700 px-5 py-3 text-sm font-semibold text-white">Back to My Swims</Link>
     </section>}
