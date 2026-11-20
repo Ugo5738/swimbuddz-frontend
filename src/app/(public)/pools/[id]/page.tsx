@@ -4,12 +4,15 @@ import { apiGet, apiPost } from "@/lib/api";
 import { getCurrentAccessToken } from "@/lib/auth";
 import { MapPin, ShieldCheck, Star, Waves } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type Pool = { photos:{id:string;url:string;caption:string|null}[];swimbuddz_assessment_rating:number|null;swimbuddz_assessment_summary:string|null;swimbuddz_assessment_updated_at:string|null;id:string;name:string;location_area:string|null;address:string|null;pool_length_m:number|null;depth_min_m:number|null;depth_max_m:number|null;indoor_outdoor:string|null;has_lifeguard:boolean|null;has_changing_rooms:boolean|null;has_showers:boolean|null;has_lockers:boolean|null;has_parking:boolean|null;rating_average:number|null;rating_count:number;bookable:boolean;last_verified_at:string|null;latitude:number|null;longitude:number|null };
 type Review = {id:string;rating:number;review:string;created_at:string;attribution:string};
 export default function PoolDetailPage() {
+  const memberView = usePathname()?.startsWith("/account/pools");
+  const poolBase = memberView ? "/account/pools" : "/pools";
+  const offerBase = memberView ? "/account/pool-time" : "/pool-access";
   const { id } = useParams() as {id:string};
   const [pool,setPool] = useState<Pool|null>(null);
   const [reviews,setReviews] = useState<Review[]>([]);
@@ -31,7 +34,7 @@ export default function PoolDetailPage() {
   },[id]);
   async function submit(e:React.FormEvent) {
     e.preventDefault();setFeedback("");
-    if(!await getCurrentAccessToken()){window.location.assign(`/pool-access/visitor?next=${encodeURIComponent("/pools/"+id)}`);return;}
+    if(!await getCurrentAccessToken()){window.location.assign(`/pool-access/visitor?next=${encodeURIComponent(poolBase+"/"+id)}`);return;}
     setBusy(true);
     try {
       await apiPost(`/api/v1/pools/directory/${encodeURIComponent(id)}/reviews`,{rating,review:review.trim()},{auth:true});
@@ -42,7 +45,7 @@ export default function PoolDetailPage() {
   }
   async function submitCorrection(e:React.FormEvent) {
     e.preventDefault();setCorrectionFeedback("");
-    if(!await getCurrentAccessToken()){window.location.assign(`/pool-access/visitor?next=${encodeURIComponent("/pools/"+id)}`);return;}
+    if(!await getCurrentAccessToken()){window.location.assign(`/pool-access/visitor?next=${encodeURIComponent(poolBase+"/"+id)}`);return;}
     setBusy(true);
     try {
       await apiPost(`/api/v1/pools/directory/${encodeURIComponent(id)}/corrections`,{details:correction.trim()},{auth:true});
@@ -52,15 +55,15 @@ export default function PoolDetailPage() {
     finally{setBusy(false);}
   }
   if(loading)return <main className="mx-auto max-w-4xl p-6" role="status">Loading pool details…</main>;
-  if(error||!pool)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-bold">Pool unavailable</h1><p role="alert">{error||"This pool is not currently listed."}</p><Link href="/pools" className="text-cyan-700 underline">Explore pools</Link></main>;
+  if(error||!pool)return <main className="mx-auto max-w-4xl p-6"><h1 className="text-xl font-bold">Pool unavailable</h1><p role="alert">{error||"This pool is not currently listed."}</p><Link href={poolBase} className="text-cyan-700 underline">Explore pools</Link></main>;
   const amenities=[["Changing rooms",pool.has_changing_rooms],["Showers",pool.has_showers],["Lockers",pool.has_lockers],["Parking",pool.has_parking],["Lifeguard",pool.has_lifeguard]].filter(x=>x[1]===true).map(x=>x[0] as string);
   return <main className="mx-auto max-w-4xl space-y-7 px-4 py-9">
-    <Link href="/pools" className="text-sm font-semibold text-cyan-700 underline">← All pools</Link>
+    <Link href={poolBase} className="text-sm font-semibold text-cyan-700 underline">← All pools</Link>
     <header className="space-y-3">
       <p className="text-sm font-semibold uppercase tracking-wide text-cyan-700">Pool directory</p>
       <h1 className="text-3xl font-bold text-slate-950">{pool.name}</h1>
       <p className="flex items-start gap-2 text-slate-600"><MapPin className="h-5 w-5 shrink-0"/>{[pool.location_area,pool.address].filter(Boolean).join(" · ")||"Address awaiting verification"}</p>
-      {pool.bookable ? <Link href={`/pool-access?pool_id=${pool.id}`} className="inline-flex min-h-11 items-center rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white">Check SwimBuddz booking availability</Link>
+      {pool.bookable ? <Link href={`${offerBase}?pool_id=${pool.id}`} className="inline-flex min-h-11 items-center rounded-lg bg-cyan-700 px-5 py-3 font-semibold text-white">Check SwimBuddz booking availability</Link>
         : <p className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">This is a directory listing, not a bookable SwimBuddz visit. Verify admission and safety information with the facility before travelling.</p>}
     </header>
     {pool.photos?.length>0&&<section aria-label="Pool photos" className="space-y-3">

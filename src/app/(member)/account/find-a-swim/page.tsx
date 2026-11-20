@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { SwimModal } from "@/components/swims/SwimModal";
+import { SessionDetailContent } from "@/components/swims/SessionDetailContent";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { apiPost } from "@/lib/api";
@@ -26,6 +28,7 @@ function Discovery() {
   const [location, setLocation] = useState("all");
   const [selected, setSelected] = useState<Map<string, SessionWithRides>>(new Map());
   const [creating, setCreating] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const {
     sessions, myBookings, attendance, enrolledCohortIds, myPodId,
@@ -86,11 +89,11 @@ function Discovery() {
         + Plan a Swim
       </Link>
     </header>
-    <nav className="flex flex-wrap gap-3 border-b border-slate-200 pb-4" aria-label="Other ways to swim">
-      <span className="rounded-lg bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-900">Join a Swim</span>
-      <Link className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/pool-access">Book Pool Time</Link>
-      <Link className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/pools">Explore Pools & Reviews</Link>
-      <Link className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/account/bookings">My Swims</Link>
+    <nav className="flex flex-wrap gap-2 border-b border-slate-200 pb-4" aria-label="Ways to swim">
+      <span aria-current="page" className="rounded-lg bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-900">Join a Swim</span>
+      <Link className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/account/pool-time">Book Pool Time</Link>
+      <Link className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/account/plan-a-swim?kind=open">Host a Swim</Link>
+      <Link className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/account/plan-a-swim?kind=coached">Request a Coached Session</Link>
     </nav>
     <div className="flex flex-wrap items-end gap-3">
       <label className="text-xs font-semibold text-slate-700">Date
@@ -159,7 +162,7 @@ function Discovery() {
                       "Check eligibility in details"}
                   </p>
                 </div>
-                <Link href={`/sessions/${session.id}`} className="text-sm font-semibold text-cyan-700 hover:underline">Details</Link>
+                <button type="button" onClick={() => setSelectedSessionId(session.id)} className="text-sm font-semibold text-cyan-700 hover:underline">Details</button>
                 {canSelect && <button type="button" onClick={()=>toggleSelected(session)}
                   aria-pressed={selected.has(session.id)}
                   className={`rounded-lg px-3 py-2 text-sm font-semibold ${selected.has(session.id)?"bg-cyan-50 text-cyan-900 ring-1 ring-cyan-700":"bg-cyan-700 text-white"}`}>
@@ -179,6 +182,9 @@ function Discovery() {
       </div>
     </section>}
     {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{error}</p>}
+    {selectedSessionId && <SwimModal title="Session details" onClose={() => setSelectedSessionId(null)}>
+      <SessionDetailContent sessionId={selectedSessionId} />
+    </SwimModal>}
   </main>;
 }
 export default function FindASwimPage(){

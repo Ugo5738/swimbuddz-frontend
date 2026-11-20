@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { SwimModal } from "@/components/swims/SwimModal";
+import { SessionDetailContent } from "@/components/swims/SessionDetailContent";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/lib/api";
@@ -37,6 +39,7 @@ export function PersonalSwimCalendar({ activities, plans = [] }: {
 }) {
   const [month, setMonth] = useState(() => ({ y: new Date().getFullYear(), m: new Date().getMonth() }));
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [layer, setLayer] = useState<Layer>("mine");
   const range = useMemo(() => formMonth(month), [month]);
   const schedule = useQuery({
@@ -124,36 +127,44 @@ export function PersonalSwimCalendar({ activities, plans = [] }: {
       {schedule.isError && layer !== "mine" &&
         <p role="alert" className="mt-3 text-xs text-amber-800">Some published activities couldn't be loaded. Your personal commitments remain available.</p>}
     </div>
-    {selectedDay && <section className="space-y-3 rounded-2xl border border-cyan-200 bg-cyan-50 p-4" aria-label={`Swims on ${selectedDay}`}>
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="font-semibold text-cyan-950">Swims on {selectedDay}</h3>
-        <button type="button" onClick={() => setSelectedDay(null)} className="rounded-lg p-2 text-sm text-cyan-900 hover:bg-cyan-100" aria-label="Close selected day">✕</button>
-      </div>
-      {layer !== "org" && personalOnDay.map(item =>
-        <Link key={item.key} href={item.sessionId ? `/sessions/${item.sessionId}` : "/account/pool-access"}
-          className="block rounded-lg border border-cyan-100 bg-white p-3 text-sm text-cyan-950 hover:underline">
-          <strong>{item.title}</strong> · {bookingLabel[item.status] ?? item.status}
-        </Link>)}
+    {selectedDay && <SwimModal title={new Date(selectedDay + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", weekday: "long", timeZone: "UTC" })} onClose={() => setSelectedDay(null)}>
+      <p className="text-sm text-slate-600">Your commitments and published swims for this date</p>
+      {layer !== "org" && personalOnDay.map(item => item.sessionId
+        ? <button type="button" key={item.key} onClick={() => {setSelectedDay(null);setSelectedSessionId(item.sessionId ?? null);}}
+            className="block w-full rounded-xl border border-slate-200 p-3 text-left hover:border-cyan-500">
+            <strong>{item.title}</strong><span className="ml-2 text-sm text-slate-600">{bookingLabel[item.status] ?? item.status}</span>
+          </button>
+        : <Link key={item.key} href="/account/pool-access" className="block rounded-xl border border-slate-200 p-3 hover:border-cyan-500">
+            <strong>{item.title}</strong> · {bookingLabel[item.status] ?? item.status}
+          </Link>)}
       {layer !== "org" && plansOnDay.map(plan =>
-        <p className="rounded-lg border border-amber-200 bg-white p-3 text-sm text-amber-900" key={plan.id}>
-          <strong>{plan.title}</strong> · Request {plan.status.replaceAll("_", " ")} — not yet a confirmed swim
-        </p>)}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm" key={plan.id}>
+          <strong>{plan.title}</strong> · Request {plan.status.replaceAll("_", " ")}
+        </div>)}
       {layer !== "mine" && publishedOnDay.filter(item =>
         !personalOnDay.some(p => p.sessionId === item.id && item.source === "session")
-      ).map(item => <Link key={`${item.source}:${item.id}`} href={item.href}
-        className="block rounded-lg border border-cyan-100 bg-white p-3 text-sm text-cyan-950 hover:underline">
-        <strong>{item.title}</strong> · Published {item.source}
-      </Link>)}
+      ).map(item => item.source === "session"
+        ? <button type="button" key={`${item.source}:${item.id}`} onClick={() => {setSelectedDay(null);setSelectedSessionId(item.id);}}
+            className="block w-full rounded-xl border border-slate-200 p-3 text-left hover:border-cyan-500">
+            <strong>{item.title}</strong> · View details
+          </button>
+        : <Link key={`${item.source}:${item.id}`} href={item.href}
+            className="block rounded-xl border border-slate-200 p-3 hover:border-cyan-500">
+            <strong>{item.title}</strong> · View activity
+          </Link>)}
       {(layer === "mine" ? personalOnDay.length + plansOnDay.length :
         layer === "org" ? publishedOnDay.length :
           personalOnDay.length + plansOnDay.length + publishedOnDay.length) === 0 &&
-        <p className="text-sm text-cyan-900">No activities shown on this date.</p>}
-      <div className="flex flex-wrap gap-2 pt-2">
-        <Link className="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white"
-          href={`/account/plan-a-swim?date=${selectedDay}`}>+ Plan a swim</Link>
-        <Link className="rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900"
+        <p className="text-sm text-slate-600">No activities shown on this date. You can still plan a new swim.</p>}
+      <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
+        <Link className="rounded-lg bg-cyan-700 px-4 py-3 text-sm font-semibold text-white"
+          href={`/account/plan-a-swim?date=${selectedDay}`}>+ Plan a new swim</Link>
+        <Link className="rounded-lg border border-cyan-700 px-4 py-3 text-sm font-semibold text-cyan-900"
           href={`/account/find-a-swim?date=${selectedDay}`}>Find swims on this date</Link>
       </div>
-    </section>}
+    </SwimModal>}
+    {selectedSessionId && <SwimModal title="Session details" onClose={() => setSelectedSessionId(null)}>
+      <SessionDetailContent sessionId={selectedSessionId} />
+    </SwimModal>}
   </div>;
 }
