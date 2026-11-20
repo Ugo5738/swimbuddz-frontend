@@ -769,6 +769,13 @@ or frontend control is introduced by the scoped operator repair. See backend
 `docs/SESSION_WALLET_REALLOCATION_RUNBOOK.md` for checks and accounting replay.
 
 
+### Finance intelligence availability (20 Nov 2026)
+
+The Finance Intelligence page gets its operational rollup from the Ledger
+service. The signed-in caller needs an active Ledger membership at viewer level
+or above. The page uses the existing report contract after Ledger startup
+recovery.
+
 ### Store availability and procurement authorization (19 Nov 2026)
 
 The public Store catalogue starts independently of Finance. Owner-only Store
