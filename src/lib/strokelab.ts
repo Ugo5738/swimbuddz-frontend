@@ -47,6 +47,29 @@ export type TrackingGap = {
   duration_s: number;
 };
 
+export type StrokeLabCoachFinding = {
+  component: string;
+  observation: string;
+  severity: "fix" | "strength" | "info" | "unavailable";
+  confidence: number;
+  available: boolean;
+  evidence_frames: Array<{ index: number; timestamp_s: number }>;
+  extra?: Record<string, unknown>;
+};
+
+export type StrokeLabCoachResult = {
+  input_profile: string;
+  gate_tier: string;
+  refused: boolean;
+  results: Array<{
+    component: string;
+    findings: StrokeLabCoachFinding[];
+    error: string | null;
+    meta?: Record<string, unknown>;
+  }>;
+  meta?: Record<string, unknown>;
+};
+
 export type AnalysisResultPayload = {
   // Null on coach-primary runs (the legacy pose/metrics pass is retired).
   detected_stroke: string | null;
@@ -61,6 +84,9 @@ export type AnalysisResultPayload = {
   summary_text: string | null;
   observations: Observation[];
   tracking_gaps: TrackingGap[];
+  coach_result: StrokeLabCoachResult | null;
+  coach_evidence_urls: Record<string, string> | null;
+  coach_share_urls: Record<string, string> | null;
 };
 
 export type AnalysisJobDetail = AnalysisJob & {
