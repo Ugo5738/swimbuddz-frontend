@@ -103,8 +103,9 @@ function PageContent() {
   const data = projection.data;
   const upcoming = useMemo(() => (data?.upcoming ?? []).slice()
     .sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime()), [data]);
-  const next = upcoming.find(item => ["assigned", "confirmed"].includes(item.status))
-    ?? upcoming.find(item => item.scheduledClub);
+  const next = upcoming.find(item => [
+    "assigned", "confirmed", "scheduled_for_pod", "scheduled_for_club",
+  ].includes(item.status));
   const locations = useMemo(() =>
     Array.from(new Set((data?.activities ?? []).map(i => i.location).filter((i): i is string => !!i))).sort(),
     [data]);
