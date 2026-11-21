@@ -16,8 +16,51 @@ export type SwimSession = {
   start_time?: string | null;
   location_name?: string | null;
   cohort_id?: string | null;
+  club_id?: string | null;
+  pod_id?: string | null;
   status?: string | null;
+  access?: { access_source?: string | null; bookable?: boolean } | null;
 };
+
+export type ClubPodForSwims = {
+  id: string;
+  club_id: string;
+  status: string;
+};
+
+/** Only a real home Club entitlement makes an unbooked session part of My Swims.
+ * Visiting Club and community drop-in opportunities belong in Find a Swim.
+ */
+const HOME_CLUB_SOURCES = new Set([
+  "club_enrollment", "club_transition", "club_paid_addon",
+  "legacy_club_entitlement", "post_academy_bridge",
+]);
+
+export function isMyScheduledClubSession(
+  session: SwimSession,
+  pod: ClubPodForSwims | null
+): boolean {
+  if (classifySession(session) !== "club" ||
+    (session.status || "").toLowerCase() !== "scheduled" ||
+    !session.club_id ||
+    !HOME_CLUB_SOURCES.has(session.access?.access_source || "")) return false;
+
+  if (session.pod_id) {
+    return pod?.status === "active" &&
+      session.pod_id === pod.id && session.club_id === pod.club_id;
+  }
+  // General Club sessions belong to the member's own paid Club location.
+  // The sessions backend has already checked session-dated Club entitlement.
+  // An active pod narrows legacy location-agnostic entitlements to its Club.
+  if (["legacy_club_entitlement", "post_academy_bridge"].includes(
+    session.access?.access_source || ""
+  )) {
+    // These older grants can span locations. A real pod assignment is needed
+    // before we can claim a particular Club's schedule is the member's own.
+    return pod?.status === "active" && session.club_id === pod.club_id;
+  }
+  return true;
+}
 export type ClubQuarterSwim = {
   id: string;
   session_id: string;
@@ -53,9 +96,14 @@ export type SwimActivity = {
   location: string | null;
   status: string;
   sessionId?: string;
-  bookingId: string;
+  /** Present only when a real reservation/booking exists. */
+  bookingId?: string;
   /** Scheduled class inherited from an active Academy enrollment (not a booking). */
   assignedAcademy?: boolean;
+  /** Club programme calendar item, not an attendance record or a reservation. */
+  scheduledClub?: boolean;
+  /** UI hint only. Checkout revalidates member access and capacity. */
+  canBook?: boolean;
   club?: ClubQuarterSwim;
   pool?: PoolVisitBooking;
 };
@@ -96,7 +144,9 @@ export function buildSwimActivities(
   clubSwims: ClubQuarterSwim[],
   poolBookings: PoolVisitBooking[],
   offers: PoolVisitOffer[],
-  academyEnrollments: AcademyEnrollmentForSwims[] = []
+  academyEnrollments: AcademyEnrollmentForSwims[] = [],
+  myPod: ClubPodForSwims | null = null,
+  now = new Date()
 ): SwimActivity[] {
   const sessionById = new Map(sessions.map((s) => [s.id, s]));
   const offerById = new Map(offers.map((offer) => [offer.id, offer]));
@@ -152,6 +202,27 @@ export function buildSwimActivities(
     listedSessionIds.add(session.id);
   }
 
+  // Add upcoming home Club practices without fabricating booking records.
+  // Real bookings (including cancellations) always win over calendar entries.
+  for (const session of sessions) {
+    if (listedSessionIds.has(session.id) ||
+      !isMyScheduledClubSession(session, myPod)) continue;
+    const when = validDate(session.starts_at || session.start_time || null);
+    if (when === null || when < now.getTime()) continue;
+    result.push({
+      key: `club-scheduled:${session.id}`,
+      kind: "club",
+      title: session.title || session.name || "Club practice",
+      date: session.starts_at || session.start_time || null,
+      location: session.location_name || null,
+      status: session.pod_id ? "scheduled_for_pod" : "scheduled_for_club",
+      sessionId: session.id,
+      scheduledClub: true,
+      canBook: session.access?.bookable === true,
+    });
+    listedSessionIds.add(session.id);
+  }
+
   for (const booking of poolBookings) {
     const offer = offerById.get(booking.offer_id);
     result.push({
@@ -177,7 +248,7 @@ export function buildSwimActivities(
 
 export function categorizeActivities(activities: SwimActivity[], now = new Date()) {
   const today = now.getTime();
-  const active = (status: string) => ["confirmed", "pending", "pending_payment", "assigned"].includes(status);
+  const active = (status: string) => ["confirmed", "pending", "pending_payment", "assigned", "scheduled_for_pod", "scheduled_for_club"].includes(status);
   const upcoming = activities.filter((activity) => {
     const when = validDate(activity.date);
     return when !== null && when >= today && active(activity.status);
