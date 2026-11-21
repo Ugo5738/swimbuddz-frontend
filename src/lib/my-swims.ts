@@ -19,7 +19,7 @@ export type SwimSession = {
   club_id?: string | null;
   pod_id?: string | null;
   status?: string | null;
-  access?: { access_source?: string | null } | null;
+  access?: { access_source?: string | null; bookable?: boolean } | null;
 };
 
 export type ClubPodForSwims = {
@@ -101,6 +101,8 @@ export type SwimActivity = {
   assignedAcademy?: boolean;
   /** Club programme calendar item, not an attendance record or a reservation. */
   scheduledClub?: boolean;
+  /** UI hint only. Checkout revalidates member access and capacity. */
+  canBook?: boolean;
   club?: ClubQuarterSwim;
   pool?: PoolVisitBooking;
 };
@@ -216,6 +218,7 @@ export function buildSwimActivities(
       bookingId: session.id,
       sessionId: session.id,
       scheduledClub: true,
+      canBook: session.access?.bookable === true,
     });
     listedSessionIds.add(session.id);
   }
