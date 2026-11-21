@@ -84,6 +84,7 @@ export default function ProcurementPage() {
   return <main className="mx-auto max-w-6xl space-y-5 p-5">
     <header><Link className="text-sm text-cyan-700 underline" href="/admin/store">Back to Store</Link>
       <h1 className="mt-2 text-2xl font-semibold">Procurement & Inventory</h1>
+      <Link href="/admin/store/procurement/guide" className="text-sm font-medium text-cyan-700 underline">How to use Procurement</Link>
       <p className="text-sm text-slate-600">Purchasing is separate from supplier commission payouts, bank payment approvals and paid checkout orders.</p></header>
     {error && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm">{error}</p>}
     {notice && <p role="status" className="rounded-lg border border-slate-200 p-3 text-sm">{notice}</p>}
