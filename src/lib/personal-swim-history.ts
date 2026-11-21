@@ -67,6 +67,8 @@ export function buildPersonalSwimHistory({
   const cutoff = now.getTime();
 
   for (const activity of activities) {
+    // Publishing a Club schedule is not evidence of attendance or a booking.
+    if (activity.scheduledClub) continue;
     const dateMs = when(activity.date);
     if (dateMs === null || dateMs >= cutoff) continue;
 
