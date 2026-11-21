@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import { formatNaira } from "@/lib/format";
 
 type LedgerOption = { id: string; code: string; name: string };
@@ -139,6 +139,8 @@ export default function TreasuryPage() {
   const [kind, setKind] = useState<"expense" | "funding">("expense");
   const [bankId, setBankId] = useState("");
   const [showBankRegistration, setShowBankRegistration] = useState(false);
+  const [editingBankId, setEditingBankId] = useState<string | null>(null);
+  const [editLastFour, setEditLastFour] = useState("");
   const [newBankName, setNewBankName] = useState("");
   const [newBankPurpose, setNewBankPurpose] = useState<"treasury" | "operations">("operations");
   const [newBankLastFour, setNewBankLastFour] = useState("");
@@ -221,6 +223,12 @@ export default function TreasuryPage() {
             <h2 className="text-lg font-semibold">Company bank accounts</h2>
             <p className="text-sm text-slate-600">Account registration, ledger linking and live bank feeds are separate steps.</p>
           </div>
+          {owner && !banks.some((b) => b.code === "moniepoint") &&
+            <button type="button" className={secondary} disabled={busy}
+              onClick={() => void run(
+                () => apiPost(ROOT + "/banks", { code: "moniepoint" }, { auth: true }),
+                "Moniepoint registered with its existing SwimBuddz accounting mapping."
+              )}>Register original Moniepoint account</button>}
           {owner && <button type="button" className={secondary} onClick={() => setShowBankRegistration(!showBankRegistration)}>
             {showBankRegistration ? "Cancel" : "Register bank account"}
           </button>}
@@ -260,6 +268,24 @@ export default function TreasuryPage() {
           <p className="mt-2 text-xs text-slate-500">Account ending {bank.last_four || "not specified"}</p>
           <p className="mt-2 text-sm text-slate-600">Bank feed not connected — upload and reconcile verified statement evidence before relying on a cash balance.</p>
           <p className="mt-1 text-xs text-slate-500">{bank.ledger_account_id ? "Linked to accounting ledger" : "Accounting ledger not yet linked"}</p>
+          {owner && <div className="mt-3">
+            <button type="button" className={secondary} onClick={() => {
+              setEditingBankId(editingBankId === bank.id ? null : bank.id);
+              setEditLastFour(bank.last_four || "");
+            }}>{editingBankId === bank.id ? "Cancel editing" : "Edit account details"}</button>
+            {editingBankId === bank.id && <form className="mt-2 flex flex-wrap items-end gap-2"
+              onSubmit={(e) => { e.preventDefault(); void run(async () => {
+                await apiPatch(ROOT + "/banks/" + bank.id, { last_four: editLastFour || null }, { auth: true });
+                setEditingBankId(null);
+              }, "Account details updated. No live bank connection established."); }}>
+              <label className="text-sm">Last four account digits
+                <input className={control} value={editLastFour} inputMode="numeric"
+                  pattern="[0-9]{4}" maxLength={4} placeholder="1234"
+                  onChange={(e) => setEditLastFour(e.target.value)} />
+              </label>
+              <button type="submit" className={primary} disabled={busy}>Save</button>
+            </form>}
+          </div>}
           {owner && !bank.ledger_account_id && (bank.code === "stanbic" ?
             <button className={secondary} disabled={busy || !ledgerOptions.some((o) => o.code === "1110")}
               onClick={() => { const account = ledgerOptions.find((o) => o.code === "1110");
