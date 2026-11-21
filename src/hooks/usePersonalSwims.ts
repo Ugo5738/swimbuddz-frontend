@@ -52,8 +52,10 @@ async function loadUpcomingSessionSchedule(errors: string[]): Promise<SwimSessio
   const limit = 100;
   const maxClubPages = 3;
   const [general, club] = await Promise.all([
-    apiGet<SwimSession[]>("/api/v1/sessions?limit=100", { auth: true }),
-    (async () => {
+    tryFetch("Published session schedule",
+      apiGet<SwimSession[]>("/api/v1/sessions?limit=100", { auth: true }),
+      errors, [] as SwimSession[]),
+    tryFetch("Club schedule", (async () => {
       const all: SwimSession[] = [];
       for (let page = 0; page < maxClubPages; page++) {
         const query = new URLSearchParams({
@@ -67,7 +69,7 @@ async function loadUpcomingSessionSchedule(errors: string[]): Promise<SwimSessio
       }
       errors.push("Club session schedule is larger than the loaded window");
       return all;
-    })(),
+    })(), errors, [] as SwimSession[]),
   ]);
   return Array.from(new Map([...general, ...club].map(session => [session.id, session])).values());
 }
