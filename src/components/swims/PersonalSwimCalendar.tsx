@@ -30,6 +30,8 @@ function formMonth(month: { y: number; m: number }) {
 }
 const bookingLabel: Record<string, string> = {
   assigned: "Assigned", confirmed: "Confirmed",
+  scheduled_for_pod: "Scheduled for your pod · not booked",
+  scheduled_for_club: "Scheduled for your Club · not booked",
   pending_payment: "Payment pending", pending: "Pending",
   cancelled: "Cancelled", session_cancelled: "Cancelled",
 };
