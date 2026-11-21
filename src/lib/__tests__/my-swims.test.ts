@@ -98,6 +98,7 @@ describe("member swim activity aggregation", () => {
         scheduledClub: true, kind: "club",
       });
       expect(rows[0].club).toBeUndefined();
+      expect(rows[0].bookingId).toBeUndefined();
       expect(rows[0].canBook).toBe(false); // no authoritatively granted booking action
       expect(categorizeActivities(rows, today).upcoming).toHaveLength(1);
     });
