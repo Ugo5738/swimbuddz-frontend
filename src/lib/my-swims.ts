@@ -52,9 +52,12 @@ export function isMyScheduledClubSession(
   // General Club sessions belong to the member's own paid Club location.
   // The sessions backend has already checked session-dated Club entitlement.
   // An active pod narrows legacy location-agnostic entitlements to its Club.
-  if (pod?.status === "active" &&
-    session.access?.access_source === "legacy_club_entitlement") {
-    return session.club_id === pod.club_id;
+  if (["legacy_club_entitlement", "post_academy_bridge"].includes(
+    session.access?.access_source || ""
+  )) {
+    // These older grants can span locations. A real pod assignment is needed
+    // before we can claim a particular Club's schedule is the member's own.
+    return pod?.status === "active" && session.club_id === pod.club_id;
   }
   return true;
 }
