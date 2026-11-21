@@ -96,7 +96,8 @@ export type SwimActivity = {
   location: string | null;
   status: string;
   sessionId?: string;
-  bookingId: string;
+  /** Present only when a real reservation/booking exists. */
+  bookingId?: string;
   /** Scheduled class inherited from an active Academy enrollment (not a booking). */
   assignedAcademy?: boolean;
   /** Club programme calendar item, not an attendance record or a reservation. */
@@ -215,7 +216,6 @@ export function buildSwimActivities(
       date: session.starts_at || session.start_time || null,
       location: session.location_name || null,
       status: session.pod_id ? "scheduled_for_pod" : "scheduled_for_club",
-      bookingId: session.id,
       sessionId: session.id,
       scheduledClub: true,
       canBook: session.access?.bookable === true,
