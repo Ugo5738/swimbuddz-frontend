@@ -64,9 +64,12 @@ function ActivityRow({ item, onChanged, onDetails }: { item: SwimActivity; onCha
         <p className="mt-1 text-sm text-slate-600">{formatTime(item.date)} · {item.location || "Location to be confirmed"}</p>
       </div>
       <Status status={item.status}/>
-      {item.sessionId
-        ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="text-sm font-semibold text-cyan-700 hover:underline" aria-label={`View ${item.title} details`}>Details →</button>
-        : <Link href={href} className="text-sm font-semibold text-cyan-700 hover:underline">Details →</Link>}
+      {item.scheduledClub && item.canBook && item.sessionId
+        ? <Link href={`/sessions/${item.sessionId}/book`}
+            className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-800">Book this swim</Link>
+        : item.sessionId
+          ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="text-sm font-semibold text-cyan-700 hover:underline" aria-label={`View ${item.title} details`}>Details →</button>
+          : <Link href={href} className="text-sm font-semibold text-cyan-700 hover:underline">Details →</Link>}
     </div>
     {item.scheduledClub && <p className="mt-2 text-xs text-slate-600">On your Club schedule · A spot is not yet reserved</p>}
     {item.pool && <div className="mt-3 border-t border-slate-100 pt-3"><PoolVisitActions booking={item.pool} onChanged={() => void onChanged()}/></div>}
