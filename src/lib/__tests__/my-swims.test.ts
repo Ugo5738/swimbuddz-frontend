@@ -98,7 +98,17 @@ describe("member swim activity aggregation", () => {
         scheduledClub: true, kind: "club",
       });
       expect(rows[0].club).toBeUndefined();
+      expect(rows[0].canBook).toBe(false); // no authoritatively granted booking action
       expect(categorizeActivities(rows, today).upcoming).toHaveLength(1);
+    });
+
+    it("only enables the booking CTA when the backend grants bookable access", () => {
+      const available = { ...home, access: { ...home.access, bookable: true } };
+      const unavailable = { ...home, id: "sold-out", access: { ...home.access, bookable: false } };
+      const rows = buildSwimActivities([], [available, unavailable], [], [], [], [], pod, today);
+      expect(rows.map(row => [row.sessionId, row.canBook])).toEqual([
+        ["practice-1", true], ["sold-out", false],
+      ]);
     });
 
     it("does not show another pod or Club location", () => {
