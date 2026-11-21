@@ -138,6 +138,10 @@ export default function TreasuryPage() {
   const [message, setMessage] = useState("");
   const [kind, setKind] = useState<"expense" | "funding">("expense");
   const [bankId, setBankId] = useState("");
+  const [showBankRegistration, setShowBankRegistration] = useState(false);
+  const [newBankName, setNewBankName] = useState("");
+  const [newBankPurpose, setNewBankPurpose] = useState<"treasury" | "operations">("operations");
+  const [newBankLastFour, setNewBankLastFour] = useState("");
   const [destinationId, setDestinationId] = useState("");
   const [category, setCategory] = useState("pool_fees");
   const [amount, setAmount] = useState("");
@@ -174,8 +178,11 @@ export default function TreasuryPage() {
   useEffect(() => { void load(); }, [load]);
 
   const banks = summary?.banks ?? [];
-  const treasury = banks.find((b) => b.purpose === "treasury");
-  const operations = banks.find((b) => b.purpose === "operations");
+  // Never silently choose between several accounts that share a purpose.
+  const treasuryBanks = banks.filter((b) => b.purpose === "treasury");
+  const operationsBanks = banks.filter((b) => b.purpose === "operations");
+  const treasury = treasuryBanks.length === 1 ? treasuryBanks[0] : undefined;
+  const operations = operationsBanks.length === 1 ? operationsBanks[0] : undefined;
   const canPrepare = member?.role === "operations" || member?.role === "accountant" || member?.role === "admin" || member?.role === "owner";
   const owner = member?.role === "owner";
   const availableBudgets = budgets.filter((b) => b.category === category && b.kind === kind);
@@ -194,7 +201,7 @@ export default function TreasuryPage() {
       <header className="space-y-2">
         <Link href="/admin/finance" className="text-sm text-cyan-700 hover:underline">Finance overview</Link>
         <h1 className="text-3xl font-bold text-slate-900">Treasury & Operations</h1>
-        <p className="text-sm text-slate-600">Stanbic is the primary collection and treasury bank; Moniepoint holds controlled operating funds. Platform approvals do not execute bank transfers.</p>
+        <p className="text-sm text-slate-600">Register and reconcile each company bank account independently. Internal approvals do not execute payments or establish a live bank connection.</p>
       </header>
       {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       {message && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p>}
@@ -208,23 +215,64 @@ export default function TreasuryPage() {
         ].map(([label, value]) => <div key={String(label)} className={tile}><p className="text-xs text-slate-500">{label}</p><p className="mt-2 text-xl font-semibold">{value ?? "—"}</p></div>)}
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2">
-        {(["stanbic", "moniepoint"] as const).map((code) => {
-          const bank = banks.find((b) => b.code === code);
-          return <div key={code} className={tile}>
-            <div className="flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">{code === "stanbic" ? "Stanbic IBTC" : "Moniepoint"}</h2><span className="text-xs uppercase text-slate-500">{code === "stanbic" ? "Treasury" : "Operations"}</span></div>
-            {bank ? <>
-              <p className="mt-2 text-xs text-slate-500">Account ending {bank.last_four || "not specified"}</p>
-              <p className="mt-2 text-sm text-slate-600">Bank balance: Not connected — reconcile statement evidence before relying on a cash figure.</p>
-              <p className="mt-1 text-xs text-slate-500">{bank.ledger_account_id ? "Linked to accounting ledger" : "Accounting ledger not yet linked"}</p>
-              {owner && !bank.ledger_account_id && (code === "moniepoint" ?
-                <button className={secondary} disabled={busy} onClick={() => void run(() => apiPost(ROOT + "/banks/" + bank.id + "/create-operations-ledger", {}, { auth: true }), "Moniepoint ledger account created and linked.")}>Create dedicated Moniepoint ledger account</button> :
-                <button className={secondary} disabled={busy || !ledgerOptions.some((o) => o.code === "1110")} onClick={() => { const account = ledgerOptions.find((o) => o.code === "1110"); if (account && window.confirm("Confirm Stanbic is the bank represented by the existing NGN operating ledger account, including its historical postings.")) void run(() => apiPost(ROOT + "/banks/" + bank.id + "/link-ledger", { account_id: account.id }, { auth: true }), "Stanbic linked to the existing settlement ledger."); }}>Link existing Stanbic NGN ledger</button>)}
-            </> : <div className="mt-3 space-y-2"><p className="text-sm text-amber-700">Not registered in the finance ledger.</p>
-              {owner && <button className={secondary} disabled={busy} onClick={() => void run(() => apiPost(ROOT + "/banks", { code }, { auth: true }), "Bank account created. Opening balance must be independently verified.")}>Register {code === "stanbic" ? "Stanbic" : "Moniepoint"}</button>}
-            </div>}
-          </div>;
-        })}
+      <section className={tile}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Company bank accounts</h2>
+            <p className="text-sm text-slate-600">Account registration, ledger linking and live bank feeds are separate steps.</p>
+          </div>
+          {owner && <button type="button" className={secondary} onClick={() => setShowBankRegistration(!showBankRegistration)}>
+            {showBankRegistration ? "Cancel" : "Register bank account"}
+          </button>}
+        </div>
+        {owner && showBankRegistration && <form className="mt-4 grid gap-3 sm:grid-cols-3"
+          onSubmit={(e) => { e.preventDefault(); void run(async () => {
+            await apiPost(ROOT + "/banks", {
+              bank_name: newBankName.trim(), purpose: newBankPurpose, last_four: newBankLastFour || null,
+            }, { auth: true });
+            setNewBankName(""); setNewBankLastFour(""); setShowBankRegistration(false);
+          }, "Bank account registered. No live bank feed or opening balance has been inferred."); }}>
+          <label className="text-sm">Bank or financial institution
+            <input className={control} value={newBankName} onChange={(e) => setNewBankName(e.target.value)}
+              placeholder="e.g. Stanbic IBTC" minLength={2} maxLength={120} required />
+          </label>
+          <label className="text-sm">Account purpose
+            <select className={control} value={newBankPurpose} onChange={(e) => setNewBankPurpose(e.target.value as "treasury" | "operations")}>
+              <option value="treasury">Treasury / collections</option>
+              <option value="operations">Operations</option>
+            </select>
+          </label>
+          <label className="text-sm">Last four digits (optional)
+            <input className={control} value={newBankLastFour} onChange={(e) => setNewBankLastFour(e.target.value)}
+              placeholder="1234" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} />
+          </label>
+          <div className="sm:col-span-3"><button className={primary} disabled={busy || !newBankName.trim()}>Register account</button></div>
+        </form>}
+      </section>
+
+      <section className="grid gap-3 md:grid-cols-2" aria-label="Registered bank accounts">
+        {banks.length === 0 && <div className={tile}><p className="text-sm text-slate-600">No bank accounts have been registered yet.</p></div>}
+        {banks.map((bank) => <div key={bank.id} className={tile}>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold">{bank.bank_name}</h2>
+            <span className="text-xs uppercase text-slate-500">{bank.purpose}</span>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">Account ending {bank.last_four || "not specified"}</p>
+          <p className="mt-2 text-sm text-slate-600">Bank feed not connected — upload and reconcile verified statement evidence before relying on a cash balance.</p>
+          <p className="mt-1 text-xs text-slate-500">{bank.ledger_account_id ? "Linked to accounting ledger" : "Accounting ledger not yet linked"}</p>
+          {owner && !bank.ledger_account_id && (bank.code === "stanbic" ?
+            <button className={secondary} disabled={busy || !ledgerOptions.some((o) => o.code === "1110")}
+              onClick={() => { const account = ledgerOptions.find((o) => o.code === "1110");
+                if (account && window.confirm("Confirm Stanbic is the bank represented by the historical NGN operating ledger account.")) {
+                  void run(() => apiPost(ROOT + "/banks/" + bank.id + "/link-ledger", { account_id: account.id }, { auth: true }), "Stanbic linked to the existing ledger.");
+                }}}>Link existing Stanbic ledger</button> :
+            <button className={secondary} disabled={busy}
+              onClick={() => void run(
+                () => apiPost(ROOT + "/banks/" + bank.id +
+                  (bank.code === "moniepoint" ? "/create-operations-ledger" : "/create-ledger"), {}, { auth: true }),
+                "Dedicated bank ledger created and linked. No transactions were imported."
+              )}>Create dedicated ledger account</button>)}
+        </div>)}
       </section>
 
       <section id="requests" className={tile}>
