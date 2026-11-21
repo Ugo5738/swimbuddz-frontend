@@ -50,11 +50,16 @@ export default function StrokeLabResultPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const pollHandle = useRef<ReturnType<typeof setTimeout> | null>(null);
   const annotatedVideoRef = useRef<HTMLVideoElement | null>(null);
+  const originalVideoRef = useRef<HTMLVideoElement | null>(null);
+  const originalDetailsRef = useRef<HTMLDetailsElement | null>(null);
 
-  // Seek the annotated clip to a moment flagged by an observation and play.
+  // Seek the original video for coach-primary analyses; overlays are retired.
   const jumpToTimestamp = useCallback((seconds: number) => {
-    const video = annotatedVideoRef.current;
+    const video = annotatedVideoRef.current ?? originalVideoRef.current;
     if (!video) return;
+    if (!annotatedVideoRef.current && originalDetailsRef.current) {
+      originalDetailsRef.current.open = true;
+    }
     video.currentTime = seconds;
     video.play().catch(() => {
       /* autoplay may be blocked; the seek still happened */
@@ -332,12 +337,13 @@ export default function StrokeLabResultPage() {
       ) : null}
 
       {job.original_video_url ? (
-        <details className="mb-6">
+        <details ref={originalDetailsRef} className="mb-6">
           <summary className="cursor-pointer text-sm text-cyan-700">
             Show original upload
           </summary>
           <div className="mt-3">
             <video
+              ref={originalVideoRef}
               controls
               playsInline
               src={job.original_video_url}
