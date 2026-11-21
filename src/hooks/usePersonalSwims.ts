@@ -41,30 +41,35 @@ async function tryFetch<T>(
 }
 
 /**
- * A single /sessions page can be filled by unrelated Academy or Community sessions.
- * Walk a bounded upcoming window so Club sessions are not accidentally absent
- * just because they fall after the first 100 globally published activities.
- * Keep the window bounded to avoid costly unbounded database scans.
+ * Session discovery is globally sorted, so a Club practice can be pushed
+ * beyond the first page by unrelated sessions. Fetch a bounded Club-only
+ * window as well as the original broad schedule used by Academy/bookings.
+ * The server still owns all membership and location access decisions.
  */
 async function loadUpcomingSessionSchedule(errors: string[]): Promise<SwimSession[]> {
   const start = new Date();
   const end = new Date(start.getTime() + 120 * 24 * 60 * 60 * 1000);
-  const all: SwimSession[] = [];
   const limit = 100;
-  const maxPages = 5;
-  for (let page = 0; page < maxPages; page++) {
-    const query = new URLSearchParams({
-      from: start.toISOString(),
-      to: end.toISOString(),
-      limit: String(limit),
-      offset: String(page * limit),
-    });
-    const chunk = await apiGet<SwimSession[]>(`/api/v1/sessions?${query}`, { auth: true });
-    all.push(...chunk);
-    if (chunk.length < limit) return all;
-  }
-  errors.push("More than 500 sessions were scheduled in the upcoming window; some later sessions may be missing");
-  return all;
+  const maxClubPages = 3;
+  const [general, club] = await Promise.all([
+    apiGet<SwimSession[]>("/api/v1/sessions?limit=100", { auth: true }),
+    (async () => {
+      const all: SwimSession[] = [];
+      for (let page = 0; page < maxClubPages; page++) {
+        const query = new URLSearchParams({
+          types: "club", status: "scheduled",
+          from: start.toISOString(), to: end.toISOString(),
+          limit: String(limit), offset: String(page * limit),
+        });
+        const chunk = await apiGet<SwimSession[]>(`/api/v1/sessions?${query}`, { auth: true });
+        all.push(...chunk);
+        if (chunk.length < limit) return all;
+      }
+      errors.push("Club session schedule is larger than the loaded window");
+      return all;
+    })(),
+  ]);
+  return Array.from(new Map([...general, ...club].map(session => [session.id, session])).values());
 }
 
 async function loadPersonalSwims(): Promise<PersonalSwimmingProjection> {
