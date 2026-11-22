@@ -158,6 +158,12 @@ time under the backend connection-canary runbook.
 
 ---
 
+### Swim rewards
+
+- The member dashboard shows reward days this week, the next earning opportunity and a link to the reward section in My Swims.
+- My Swims shows lifetime confirmed swims since the rewards launch, awarded value, current streak, weekly limit and progress toward swim badges. The reward history link opens the existing wallet history.
+- After a session starts, the coach or admin checks which swimmers actually attended, records exceptions and explicitly confirms Present/Late swimmers for rewards. The credit appears after the Attendance worker processes the confirmation.
+
 ## 4. Admin → Manage Sessions & Attendance
 
 ### Included Academy classes and paid extras

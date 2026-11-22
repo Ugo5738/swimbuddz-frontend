@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SwimRewards } from "@/components/swims/SwimRewards";
 import { SwimModal } from "@/components/swims/SwimModal";
 import { SessionDetailContent } from "@/components/swims/SessionDetailContent";
 import { Suspense, useMemo, useState } from "react";
@@ -149,6 +150,9 @@ function PageContent() {
               className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View details</button>
           : <Link href="/account/pool-access" className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View visit</Link>}
       </section>}
+    </>}
+    <SwimRewards />
+    {data && <>
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3" role="tablist" aria-label="My Swims views">
         {([{ id: "list", name: "List" }, { id: "calendar", name: "Calendar" }, { id: "history", name: "History" }] as const)
           .map(option => <button role="tab" key={option.id} type="button"
