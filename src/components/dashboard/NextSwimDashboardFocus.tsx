@@ -7,6 +7,8 @@ import { apiGet } from "@/lib/api";
 import { usePersonalSwims } from "@/hooks/usePersonalSwims";
 import type { SwimActivity } from "@/lib/my-swims";
 
+type SwimActivityWithClub = SwimActivity & { scheduledClub?: boolean; canBook?: boolean };
+
 type RecommendedSession = {
   id: string;
   title: string;
@@ -38,7 +40,7 @@ const statusLabels: Record<string, string> = {
   pending: "Awaiting confirmation", pending_payment: "Payment pending",
 };
 
-function primaryAction(activity: SwimActivity): { text: string; href: string } {
+function primaryAction(activity: SwimActivityWithClub): { text: string; href: string } {
   if (activity.scheduledClub) {
     if (activity.canBook && activity.sessionId) {
       return { text: "Book this swim", href: `/sessions/${encodeURIComponent(activity.sessionId)}/book` };
@@ -67,7 +69,7 @@ export function NextSwimDashboardFocus() {
 
   const next = projection.data?.upcoming.find(row =>
     ["confirmed", "assigned", "scheduled_for_pod", "scheduled_for_club"].includes(row.status)
-  ) ?? null;
+  ) as SwimActivityWithClub | undefined ?? null;
   const suggested = next ? null : recommendation.data?.primary;
   const action = next ? primaryAction(next) : suggested?.access?.bookable === true
     ? { text: "Book my next swim", href: `/sessions/${encodeURIComponent(suggested.id)}/book?source=next-swim` }
