@@ -1,5 +1,6 @@
 "use client";
 
+import { SwimRewards } from "@/components/swims/SwimRewards";
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { GreetingHero } from "@/components/dashboard/GreetingHero";
@@ -450,6 +451,8 @@ export default function MemberDashboardPage() {
         }
         signInEligible={upcomingBookings.length > 0 ? bookedSessionSignInEligible : false}
       />
+
+      <SwimRewards compact />
 
       {/* Key activity metrics are secondary to the next booking. */}
       {ytdStats && <YTDStatsOverview stats={ytdStats} year={currentYear} />}

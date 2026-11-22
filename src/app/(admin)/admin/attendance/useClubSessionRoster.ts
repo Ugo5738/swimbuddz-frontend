@@ -18,6 +18,7 @@ type ClubRosterMember = {
   name: string;
   email: string;
   access_source: string;
+  fee_amount_kobo?: number | null;
 };
 
 type ClubSessionRoster = { session_id: string; members: ClubRosterMember[] };

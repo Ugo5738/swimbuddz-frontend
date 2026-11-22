@@ -77,6 +77,13 @@ function LoginContent() {
       } = await supabase.auth.getSession();
       if (!isMounted) return;
       if (!session) return;
+      const adminRoles = session.user?.app_metadata?.roles as
+        | string[]
+        | undefined;
+      if (Array.isArray(adminRoles) && adminRoles.includes("admin")) {
+        router.replace(redirectPath ?? "/admin/dashboard");
+        return;
+      }
       if (redirectPath) {
         router.replace(await getPostAuthRedirectPath(redirectPath));
         return;
@@ -115,13 +122,14 @@ function LoginContent() {
     // dependency reads. `signInWithPassword` already returns the authenticated
     // user, so read roles from it directly rather than spending a second
     // network round-trip on `getUser()`.
+    const redirectTarget = safeReturnPath(searchParams.get("redirect"));
     const signedInUser = signInData.user;
     const adminRoles = signedInUser?.app_metadata?.roles as
       | string[]
       | undefined;
     if (Array.isArray(adminRoles) && adminRoles.includes("admin")) {
       setLoading(false);
-      router.push("/admin/dashboard");
+      router.push(redirectTarget ?? "/admin/dashboard");
       return;
     }
 
@@ -134,9 +142,8 @@ function LoginContent() {
 
     setLoading(false);
 
-    const redirect = searchParams.get("redirect");
-    if (redirect) {
-      router.push(await getPostAuthRedirectPath(safeReturnPath(redirect)));
+    if (redirectTarget) {
+      router.push(await getPostAuthRedirectPath(redirectTarget));
       return;
     }
 

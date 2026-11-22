@@ -1,6 +1,7 @@
 "use client";
 
 import { EvidenceMedia } from "@/components/academy/EvidenceMedia";
+import { LearnerKnowledgeQuizzes } from "@/components/academy/LearnerKnowledgeQuizzes";
 import { SupplementaryEvidence } from "@/components/academy/SupplementaryEvidence";
 import { MilestoneClaimModal } from "@/components/academy/MilestoneClaimModal";
 import {
@@ -417,6 +418,8 @@ export default function EnrollmentDetailPage() {
               )}
             </Card>
           )}
+
+          <LearnerKnowledgeQuizzes enrollmentId={enrollmentId} />
 
           {/* Milestones */}
           <Card className="p-6">

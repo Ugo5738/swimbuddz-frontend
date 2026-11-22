@@ -169,8 +169,19 @@ export default function AdminMembersPage() {
 
   // ---- Derived data ----
   const counts = useMemo(() => {
-    const c = { all: 0, pending: 0, membership_due: 0, programme_requests: 0, club: 0 };
+    const c = {
+      all: 0,
+      pending: 0,
+      membership_due: 0,
+      programme_requests: 0,
+      club: 0,
+      deactivated: 0,
+    };
     for (const m of members) {
+      if (m.is_active === false) {
+        c.deactivated++;
+        continue;
+      }
       c.all++;
       if (m.approval_status === "pending") c.pending++;
       if (membershipNeedsAction(m)) c.membership_due++;
@@ -181,7 +192,10 @@ export default function AdminMembersPage() {
   }, [members]);
 
   const filtered = useMemo(() => {
-    let list = members;
+    let list =
+      filterTab === "deactivated"
+        ? members.filter((m) => m.is_active === false)
+        : members.filter((m) => m.is_active !== false);
     if (filterTab === "pending") list = list.filter((m) => m.approval_status === "pending");
     else if (filterTab === "membership_due") list = list.filter(membershipNeedsAction);
     else if (filterTab === "programme_requests") list = list.filter(hasProgrammeRequest);
@@ -314,14 +328,44 @@ export default function AdminMembersPage() {
     setDeletingIds((prev) => new Set(prev).add(id));
     setDeleteModal(null);
     try {
-      await apiFetch(`/api/v1/admin/cleanup/members/${id}`, {
+      const res = await apiFetch(`/api/v1/admin/cleanup/members/${id}`, {
         method: "POST",
         body: JSON.stringify({ mode }),
       });
-      toast.success(`${name} deleted`);
+      const body = await res.json().catch(() => ({}));
+      const errs = Array.isArray(body?.errors) ? body.errors : [];
+      if (errs.length > 0) {
+        const summary = errs.map((e: { service?: string; error?: string }) => `${e.service}: ${e.error}`).join("; ");
+        toast.warning(`${name} ${mode === "soft" ? "deactivated" : "deleted"} with warnings: ${summary}`);
+      } else {
+        toast.success(mode === "soft" ? `${name} deactivated` : `${name} permanently deleted`);
+      }
       await fetchMembers();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeletingIds((prev) => {
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
+      });
+    }
+  };
+
+  const handleReactivate = async (member: Member) => {
+    const { id, first_name, last_name } = member;
+    const name = `${first_name} ${last_name}`;
+    setDeletingIds((prev) => new Set(prev).add(id));
+    setDeleteModal(null);
+    try {
+      await apiFetch(`/api/v1/members/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_active: true }),
+      });
+      toast.success(`${name} reactivated`);
+      await fetchMembers();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Reactivate failed");
     } finally {
       setDeletingIds((prev) => {
         const n = new Set(prev);
@@ -338,6 +382,7 @@ export default function AdminMembersPage() {
     { key: "membership_due", label: "Membership due" },
     { key: "programme_requests", label: "Programme requests" },
     { key: "club", label: "Club" },
+    { key: "deactivated", label: "Deactivated" },
   ];
 
   // ---- Render ----
@@ -448,7 +493,7 @@ export default function AdminMembersPage() {
                         </Link>
                         <p className="mt-0.5 truncate text-xs text-slate-500">{m.email}</p>
                       </div>
-                      <StatusBadge s={m.approval_status} />
+                      <StatusBadge s={m.approval_status} isActive={m.is_active} />
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
@@ -534,7 +579,7 @@ export default function AdminMembersPage() {
                         <td className="px-4 py-3"><MembershipSummary member={m} /></td>
                         <td className="px-4 py-3"><ProgrammeSummary member={m} /></td>
                         <td className="px-4 py-3"><ClubPlacement member={m} /></td>
-                        <td className="px-4 py-3"><StatusBadge s={m.approval_status} /></td>
+                        <td className="px-4 py-3"><StatusBadge s={m.approval_status} isActive={m.is_active} /></td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
                             <IBtn href={`/admin/members/${m.id}`} title="View">
@@ -688,12 +733,18 @@ export default function AdminMembersPage() {
               <strong>
                 {deleteModal.first_name} {deleteModal.last_name}
               </strong>
-              . Soft delete deactivates the account. Hard delete permanently removes all data.
+              . Soft delete deactivates the account and moves it to the Deactivated tab. Hard delete permanently removes all data.
             </p>
-            <div className="flex gap-3">
-              <Button variant="secondary" onClick={() => handleDelete("soft")}>
-                Soft Delete
-              </Button>
+            <div className="flex flex-wrap gap-3">
+              {deleteModal.is_active === false ? (
+                <Button variant="secondary" onClick={() => handleReactivate(deleteModal)}>
+                  Reactivate Account
+                </Button>
+              ) : (
+                <Button variant="secondary" onClick={() => handleDelete("soft")}>
+                  Soft Delete
+                </Button>
+              )}
               <Button variant="danger" onClick={() => handleDelete("hard")}>
                 Hard Delete
               </Button>

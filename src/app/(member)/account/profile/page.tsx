@@ -33,6 +33,8 @@ import {
 const mockProfile: Profile = {
   id: "mock-id-123",
   name: "Ada Obi",
+  firstName: "Ada",
+  lastName: "Obi",
   joinedAt: "2024-01-01",
   email: "ada@example.com",
   phone: "+234 801 234 5678",

@@ -55,5 +55,11 @@ export interface Member {
   current_pod_name?: string;
 }
 
-export type FilterTab = "all" | "pending" | "membership_due" | "programme_requests" | "club";
+export type FilterTab =
+  | "all"
+  | "pending"
+  | "membership_due"
+  | "programme_requests"
+  | "club"
+  | "deactivated";
 export type ApprovalAction = "approve" | "reject";

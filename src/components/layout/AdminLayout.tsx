@@ -2,6 +2,7 @@
 
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { apiGet } from "@/lib/api";
+import { shouldPollAdminQueues } from "@/lib/adminQueuePolling";
 import { supabase } from "@/lib/auth";
 import {
   Activity,
@@ -89,6 +90,7 @@ const navSections: NavSection[] = [
     title: "Sessions & Attendance",
     items: [
       { href: "/admin/sessions", label: "Sessions", icon: Calendar },
+      { href: "/admin/swim-plans", label: "Swim Plan Requests", icon: CalendarClock },
       { href: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
       { href: "/admin/makeups", label: "Make-ups", icon: CalendarClock },
       { href: "/admin/ai/queue", label: "Stroke Lab Queue", icon: Activity },
@@ -130,6 +132,8 @@ const navSections: NavSection[] = [
     title: "Finance",
     items: [
       { href: "/admin/finance", label: "Finance Overview", icon: LayoutDashboard },
+      { href: "/admin/finance/intelligence", label: "Finance Intelligence", icon: BarChart3 },
+      { href: "/admin/finance/treasury", label: "Treasury & Operations", icon: Banknote },
       { href: "/admin/finance/reports", label: "Reports", icon: Banknote },
       { href: "/admin/finance/deferred-revenue", label: "Deferred Revenue", icon: Hourglass },
       { href: "/admin/finance/journal-entries", label: "Journal Entries", icon: FileText },
@@ -147,6 +151,7 @@ const navSections: NavSection[] = [
       { href: "/admin/pools/access/bookings", label: "Pool Access Settlements", icon: Receipt },
       { href: "/admin/pools/access/cancellations", label: "Pool Access Refund Reviews", icon: Receipt },
       { href: "/admin/store", label: "Store", icon: ShoppingBag },
+      { href: "/admin/store/procurement", label: "Procurement", icon: ShoppingBag },
       { href: "/admin/reports", label: "Quarterly Reports", icon: BarChart3 },
       { href: "/admin/flywheel", label: "Flywheel", icon: TrendingUp },
       { href: "/admin/reports/seasonality", label: "Seasonality", icon: CalendarDays },
@@ -171,6 +176,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
+  const [isFinanceMember, setIsFinanceMember] = useState(false);
+  const [isProcurementMember, setIsProcurementMember] = useState(false);
   const [adminMemberId, setAdminMemberId] = useState<string | undefined>();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [newOrderCount, setNewOrderCount] = useState(0);
@@ -232,6 +239,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       // Global admin (full nav) vs finance-only staff (Finance section only).
       const roles = (user?.app_metadata?.roles as string[] | undefined) ?? [];
       setIsGlobalAdmin(Array.isArray(roles) && roles.includes("admin"));
+      if (!roles.includes("admin")) {
+        // A failed optional capability probe grants nothing; APIs recheck
+        // permissions for every request.
+        const [finance, procurement] = await Promise.all([
+          apiGet<{ role: string }>("/api/v1/admin/finance/users/me", { auth: true }).catch(() => null),
+          apiGet<{ role: string }>("/api/v1/admin/store/procurement/me", { auth: true }).catch(() => null),
+        ]);
+        setIsFinanceMember(Boolean(finance));
+        setIsProcurementMember(Boolean(procurement));
+      }
+
       // Fetch member ID for announcement notifications
       try {
         const member = await apiGet<{ id: string }>("/api/v1/members/me", { auth: true });
@@ -248,19 +266,38 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, []);
 
-  // Poll small operational queues so the sidebar surfaces work that needs attention.
+  // Poll operational queues only while an admin is actively viewing the tab.
+  // A hidden browser tab should not trigger two backend reads every 30 seconds.
+  // Never overlap requests when the server is slow; refresh once on return.
   useEffect(() => {
-    // -1 means "initial load" — fetchNewOrderCount skips sound when prevCountRef < 0
+    // Finance-only users must not poll unrelated admin queues or spend backend quota.
+    if (!isGlobalAdmin) return;
+    // -1 means "initial load" — skip the first order notification sound.
     prevCountRef.current = -1;
-    const refreshCounts = () => {
-      void fetchNewOrderCount();
-      void fetchPaymentReviewCount();
+    let active = true;
+    let inFlight = false;
+    const refreshCounts = async () => {
+      if (!active || !shouldPollAdminQueues(document.visibilityState, inFlight)) return;
+      inFlight = true;
+      try {
+        await Promise.all([fetchNewOrderCount(), fetchPaymentReviewCount()]);
+      } finally {
+        inFlight = false;
+      }
     };
-    refreshCounts();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void refreshCounts();
+    };
 
-    const interval = setInterval(refreshCounts, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchNewOrderCount, fetchPaymentReviewCount]);
+    void refreshCounts();
+    const interval = setInterval(() => void refreshCounts(), 30_000);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      active = false;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [fetchNewOrderCount, fetchPaymentReviewCount, isGlobalAdmin]);
 
   // Restore the admin's sidebar preferences on this device.
   useEffect(() => {
@@ -310,7 +347,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   // the Finance section; global admins see the full nav.
   const visibleSections = isGlobalAdmin
     ? navSections
-    : navSections.filter((section) => section.title === "Finance");
+    : [
+        ...(isFinanceMember ? navSections.filter((section) => section.title === "Finance") : []),
+        ...(isProcurementMember ? [{
+          title: "Store",
+          items: [{ href: "/admin/store/procurement", label: "Procurement", icon: ShoppingBag }],
+        }] : []),
+      ];
 
   const isActive = (href: string) => {
     if (!pathname) return false;
@@ -373,7 +416,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-700 p-4 lg:p-6">
-            <Link href="/admin/dashboard" className="flex items-center gap-2 lg:gap-3">
+            <Link href={isGlobalAdmin ? "/admin/dashboard" : "/admin/finance"} className="flex items-center gap-2 lg:gap-3">
               <NextImage
                 src="/logo.png"
                 alt="SwimBuddz Logo"

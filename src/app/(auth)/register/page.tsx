@@ -334,7 +334,9 @@ function RegisterContent() {
           formData.phone &&
           formData.state &&
           formData.city &&
-          formData.country
+          (isCoachRegistration
+            ? Boolean(formData.phone && formData.state && formData.city && formData.country)
+            : true)
         );
 
       case "confirm":
@@ -496,6 +498,7 @@ function RegisterContent() {
           <RegistrationEssentialsStep
             includeAcquisitionSource={false}
             includeSwimLevel={false}
+            includeContactDetails={isCoachRegistration}
             formData={{
               firstName: formData.firstName,
               lastName: formData.lastName,

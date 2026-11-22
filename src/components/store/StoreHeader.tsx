@@ -3,12 +3,14 @@
 import { useStoreCart } from "@/lib/storeCart";
 import { ArrowLeft, Search, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 
 export function StoreHeader() {
   const { itemCount, isAuthenticated } = useStoreCart();
   const router = useRouter();
+  const pathname = usePathname();
+  const isStoreRoot = pathname === "/store";
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -42,24 +44,43 @@ export function StoreHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           {/* Back link + Logo + Nav */}
-          <div className="flex items-center gap-4 md:gap-6">
-            <Link
-              href="/"
-              className="flex items-center gap-1 text-sm text-slate-400 hover:text-cyan-600 transition-colors"
-              title="Back to SwimBuddz"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">SwimBuddz</span>
-            </Link>
-            <div className="w-px h-5 bg-slate-200 hidden sm:block" />
+          <div className="flex items-center gap-3 sm:gap-5">
+            {isStoreRoot ? (
+              <Link
+                href="/"
+                className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 hover:text-cyan-600 transition-colors"
+                title="Back to SwimBuddz Home"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">SwimBuddz Home</span>
+                <span className="sm:hidden font-medium">Home</span>
+              </Link>
+            ) : (
+              <Link
+                href="/store"
+                className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-700 hover:text-cyan-600 transition-colors font-semibold"
+                title="Back to Store Catalog"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Store</span>
+              </Link>
+            )}
+
+            <div className="w-px h-5 bg-slate-200" />
+
             <Link href="/store" className="flex items-center gap-2">
               <span className="text-xl">🏊</span>
-              <span className="font-bold text-lg text-slate-900 hidden sm:inline">Store</span>
+              <span className="font-bold text-base sm:text-lg text-slate-900 hidden xs:inline">Store</span>
             </Link>
+
             <nav className="hidden md:flex items-center gap-5">
               <Link
                 href="/store"
-                className="text-sm text-slate-600 hover:text-cyan-600 transition-colors"
+                className={`text-sm transition-colors ${
+                  isStoreRoot
+                    ? "font-semibold text-cyan-700"
+                    : "text-slate-600 hover:text-cyan-600"
+                }`}
               >
                 All Products
               </Link>
@@ -122,7 +143,7 @@ export function StoreHeader() {
             ) : (
               <div className="flex items-center gap-1">
                 <Link
-                  href="/login"
+                  href={`/login?redirect=${encodeURIComponent(pathname || "/store")}`}
                   className="px-2.5 py-1.5 text-sm text-cyan-700 hover:bg-cyan-50 rounded-lg transition-colors"
                 >
                   Login

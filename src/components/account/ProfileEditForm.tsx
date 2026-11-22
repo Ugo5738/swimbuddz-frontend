@@ -48,6 +48,8 @@ import { levelLabels } from "@/app/(member)/account/profile/utils";
 export function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFormProps) {
   const { options: locationOptions } = useLocationOptions("areas", profile.locationPreference);
   const [formState, setFormState] = useState<FormState>({
+    firstName: profile.firstName,
+    lastName: profile.lastName,
     phone: profile.phone,
     city: profile.city,
     country: profile.country,
@@ -163,10 +165,13 @@ export function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFor
       paymentNotes: formState.paymentNotes,
     };
 
+    if (!formState.firstName.trim() || !formState.lastName.trim()) { setError("First and last name are required."); setSaving(false); return; }
     try {
       await apiPatch(
         "/api/v1/members/me",
         {
+          first_name: formState.firstName.trim(),
+          last_name: formState.lastName.trim(),
           profile_photo_media_id: formState.profilePhotoMediaId || null,
           profile: {
             phone: formState.phone || undefined,
@@ -217,7 +222,7 @@ export function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFor
         },
         { auth: true }
       );
-      onSuccess(updatedProfile);
+      onSuccess({ ...updatedProfile, name: `${formState.firstName.trim()} ${formState.lastName.trim()}`, firstName: formState.firstName.trim(), lastName: formState.lastName.trim() });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to save profile.";
       setError(message);
@@ -249,6 +254,14 @@ export function ProfileEditForm({ profile, onSuccess, onCancel }: ProfileEditFor
               })
             }
           />
+        </div>
+        <div className="md:col-span-2 space-y-3">
+          <h3 className="font-medium text-slate-900">Personal Information</h3>
+          <p className="text-xs text-slate-600">Use your preferred legal name for certificates and billing records. Contact support if an issued document needs correction.</p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input label="First name" value={formState.firstName} onChange={e=>setFormState({...formState,firstName:e.target.value})} />
+            <Input label="Last name" value={formState.lastName} onChange={e=>setFormState({...formState,lastName:e.target.value})} />
+          </div>
         </div>
         {/* Contact & Location */}
         <div className="md:col-span-2 space-y-4">

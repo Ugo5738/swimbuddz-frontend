@@ -1,529 +1,225 @@
 "use client";
 
-import { MultiSelectBar } from "@/components/sessions/MultiSelectBar";
-import { AdditionalSwimRecords } from "@/components/swims/AdditionalSwimRecords";
-import { type SessionWithRides } from "@/components/sessions/SessionCard";
-import { Alert } from "@/components/ui/Alert";
-import { Badge } from "@/components/ui/Badge";
-import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiPost } from "@/lib/api";
-import { ArrowRight, Calendar, CheckSquare, Waves, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { SwimRewards } from "@/components/swims/SwimRewards";
+import { SwimModal } from "@/components/swims/SwimModal";
+import { SessionDetailContent } from "@/components/swims/SessionDetailContent";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { usePersonalSwims } from "@/hooks/usePersonalSwims";
+import { PersonalSwimCalendar, swimDay } from "@/components/swims/PersonalSwimCalendar";
+import { PoolVisitActions } from "@/components/swims/PoolVisitActions";
+import type { SwimActivity } from "@/lib/my-swims";
+import type { PersonalSwimHistoryItem } from "@/lib/personal-swim-history";
 
-import { ActiveFilterChips, DateGroupedSessions, FilterBar, NextSessionPanel } from "@/app/(member)/sessions/components";
-import { TABS } from "@/app/(member)/sessions/constants";
-import type { DateFilter, MyBooking, ViewTab } from "@/app/(member)/sessions/types";
-import { useSessionsHubData } from "@/app/(member)/sessions/useSessionsHubData";
-import {
-  filterByDate,
-  filterByType,
-  isActiveBooking,
-  isConfirmedBooking,
-  isSessionRelevant,
-} from "@/app/(member)/sessions/utils";
-
-// ── Inner component (needs searchParams) ────────────────────────────────
-
-function SessionsHub() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const rawView = searchParams.get("view");
-
-  // Map view param to tab. Default is "upcoming". Legacy "my" → "booked".
-  const activeTab: ViewTab =
-    rawView === "booked" || rawView === "my"
-      ? "booked"
-      : rawView === "past" || rawView === "history"
-        ? "past"
-        : rawView === "all"
-          ? "all"
-          : "upcoming";
-
-  const {
-    sessions,
-    pastSessions,
-    attendance,
-    myBookings,
-    cohortMap,
-    enrolledCohortIds,
-    myPodId,
-    myPodName,
-    membership,
-    membershipLabel,
-    upcomingLoading,
-    bookingsLoading,
-    attendanceLoading,
-    personalizationLoading,
-    pastLoading,
-    upcomingError,
-    pastError,
-  } = useSessionsHubData({
-    loadPast: activeTab === "all",
-  });
-
-  // Filters
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
-  const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
-  const [myCohortsOnly, setMyCohortsOnly] = useState(false);
-  const [relevantOnly, setRelevantOnly] = useState(true);
-
-  // Multi-select for bundle booking
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  const toggleSelected = useCallback((sessionId: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(sessionId)) {
-        next.delete(sessionId);
-      } else {
-        if (next.size >= 10) return prev; // max 10 per bundle
-        next.add(sessionId);
-      }
-      return next;
-    });
-  }, []);
-
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-  }, []);
-
-  const exitSelectMode = useCallback(() => {
-    setSelectMode(false);
-    setSelectedIds(new Set());
-  }, []);
-
-  const supportsRelevance = activeTab === "upcoming" || activeTab === "all";
-  const hasActiveFilters =
-    dateFilter !== "all" ||
-    typeFilters.size > 0 ||
-    myCohortsOnly ||
-    (supportsRelevance && relevantOnly);
-
-  const toggleTypeFilter = useCallback((type: string) => {
-    setTypeFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) {
-        next.delete(type);
-      } else {
-        next.add(type);
-      }
-      return next;
-    });
-  }, []);
-
-  const clearFilters = useCallback(() => {
-    setDateFilter("all");
-    setTypeFilters(new Set());
-    setMyCohortsOnly(false);
-    setRelevantOnly(false);
-  }, []);
-
-  const loading =
-    activeTab === "booked"
-      ? upcomingLoading || bookingsLoading || attendanceLoading
-      : activeTab === "past"
-        ? false
-        : upcomingLoading || (supportsRelevance && personalizationLoading);
-  const error = (activeTab === "past" ? false : upcomingError)
-    ? "Unable to load sessions. Please try again later."
-    : null;
-
-  // ── Derived data ───────────────────────────────────────────────────────
-  const bookedSessionIds = useMemo(() => {
-    const ids = new Set<string>();
-    // Legacy/day-of path: an attendance record in a non-cancelled state.
-    for (const record of attendance) {
-      if (!record.session_id) continue;
-      if (isActiveBooking(record.status)) {
-        ids.add(record.session_id);
-      }
-    }
-    // SessionBooking path: a CONFIRMED (paid) reservation that has no
-    // attendance record yet (attendance is created day-of at sign-in).
-    // The fetch already scopes to status_filter=confirmed; guard with
-    // isConfirmedBooking anyway so a PENDING (unpaid / abandoned) booking
-    // never counts as "Booked" even if the filter is ever dropped.
-    for (const booking of myBookings) {
-      if (!booking.session_id) continue;
-      if (isConfirmedBooking(booking.status)) {
-        ids.add(booking.session_id);
-      }
-    }
-    return ids;
-  }, [attendance, myBookings]);
-
-  // Map session_id → the member's active booking for that session. Powers
-  // per-card self-report actions ("I can't make it" / "I'll be late") that
-  // need the booking_id, not just whether-the-session-is-booked.
-  const bookingsBySession = useMemo(() => {
-    const map = new Map<string, MyBooking>();
-    for (const booking of myBookings) {
-      if (!booking.session_id) continue;
-      // Self-report actions (excuse / running-late) require a CONFIRMED
-      // booking server-side, so only map confirmed ones here.
-      if (isConfirmedBooking(booking.status)) {
-        map.set(booking.session_id, booking);
-      }
-    }
-    return map;
-  }, [myBookings]);
-
-  const attendanceBySession = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const record of attendance) {
-      if (record.session_id && record.status) {
-        map.set(record.session_id, record.status);
-      }
-    }
-    return map;
-  }, [attendance]);
-
-  const myUpcomingSessions = useMemo(() => {
-    const now = new Date();
-    return sessions
-      .filter((s) => bookedSessionIds.has(s.id) && new Date(s.starts_at) > now)
-      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
-  }, [sessions, bookedSessionIds]);
-
-  const nextSession = myUpcomingSessions[0] ?? null;
-
-  // Bundle total and checkout URL for multi-select
-  const selectedSessions = useMemo(
-    () => sessions.filter((s) => selectedIds.has(s.id)),
-    [sessions, selectedIds]
-  );
-
-  const bundleTotal = useMemo(
-    () =>
-      selectedSessions.reduce(
-        (sum, s) =>
-          sum +
-          (s.access?.fee_amount_kobo == null
-            ? s.pool_fee || 0
-            : s.access.fee_amount_kobo / 100),
-        0
-      ),
-    [selectedSessions]
-  );
-
-  // Creates a server-side SessionBundleCart, then navigates the user to
-  // /sessions/bundle/{bundleId}/book to complete checkout.
-  const [creatingBundle, setCreatingBundle] = useState(false);
-  const handleCheckoutBundle = useCallback(async () => {
-    if (selectedIds.size === 0) return;
-    setCreatingBundle(true);
-    try {
-      const cart = await apiPost<{ id: string }>(
-        "/api/v1/sessions/bundles",
-        { session_ids: Array.from(selectedIds) },
-        { auth: true }
-      );
-      router.push(`/sessions/bundle/${cart.id}/book`);
-    } catch (err) {
-      console.error("Failed to create bundle cart:", err);
-      const message =
-        err instanceof Error ? err.message : "Could not start bundle checkout. Please try again.";
-      toast.error(message);
-      setCreatingBundle(false);
-    }
-  }, [selectedIds, router]);
-
-  // Apply filters to sessions for current tab
-  const filteredSessions = useMemo(() => {
-    let result: SessionWithRides[];
-    const now = new Date();
-
-    if (activeTab === "upcoming") {
-      // Only future sessions (strict filter)
-      result = sessions.filter((s) => new Date(s.starts_at) > now);
-    } else if (activeTab === "booked") {
-      result = myUpcomingSessions;
-    } else if (activeTab === "past") {
-      result = [];
-    } else {
-      // "all" tab — everything, past + future
-      result = [...pastSessions, ...sessions];
-    }
-
-    result = filterByDate(result, dateFilter);
-    result = filterByType(result, typeFilters);
-
-    if (supportsRelevance && relevantOnly) {
-      result = result.filter((session) =>
-        isSessionRelevant(session, { bookedSessionIds, enrolledCohortIds, myPodId })
-      );
-    }
-
-    if (myCohortsOnly && enrolledCohortIds.size > 0) {
-      result = result.filter((s) => s.cohort_id && enrolledCohortIds.has(s.cohort_id));
-    }
-
-    return result;
-  }, [
-    activeTab,
-    sessions,
-    myUpcomingSessions,
-    pastSessions,
-    dateFilter,
-    typeFilters,
-    relevantOnly,
-    supportsRelevance,
-    bookedSessionIds,
-    myCohortsOnly,
-    enrolledCohortIds,
-    myPodId,
-  ]);
-
-  // ── Tab switching ──────────────────────────────────────────────────────
-  const setTab = useCallback(
-    (tab: ViewTab) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (tab === "upcoming") {
-        // Upcoming is the default — no param needed
-        params.delete("view");
-      } else {
-        params.set("view", tab);
-      }
-      const qs = params.toString();
-      router.replace(`/account/bookings${qs ? `?${qs}` : ""}`, { scroll: false });
-    },
-    [router, searchParams]
-  );
-
-  // ── Render ─────────────────────────────────────────────────────────────
-  const renderContent = () => {
-    if (filteredSessions.length === 0) {
-      // Empty states per tab
-
-
-      // All tab empty
-      return (
-        <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center space-y-3">
-          <Waves className="mx-auto h-12 w-12 text-slate-300" />
-          <p className="text-slate-600">
-            {hasActiveFilters
-              ? "No sessions match your filters. Try adjusting them."
-              : "No upcoming sessions found."}
-          </p>
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="inline-flex items-center gap-2 text-sm font-medium text-cyan-600 hover:text-cyan-700"
-            >
-              <X className="h-4 w-4" />
-              Clear filters
-            </button>
-          )}
-        </div>
-      );
-    }
-
-    // Result count
-    const countLabel = `${filteredSessions.length} ${filteredSessions.length === 1 ? "session" : "sessions"}`;
-
-    return (
-      <div className="space-y-2">
-        <p className="text-sm text-slate-500">{countLabel}</p>
-        <DateGroupedSessions
-          sessions={filteredSessions}
-          bookedSessionIds={bookedSessionIds}
-          bookingsBySession={bookingsBySession}
-          membership={membership}
-          isPast={activeTab === "past"}
-          attendanceBySession={activeTab === "past" ? attendanceBySession : undefined}
-          cohortMap={cohortMap}
-          enrolledCohortIds={enrolledCohortIds}
-          selectMode={selectMode}
-          selectedIds={selectedIds}
-          onToggleSelect={toggleSelected}
-        />
-
-        {activeTab === "past" && (
-          <div className="text-center pt-4">
-            <Link
-              href="/account/attendance/history"
-              className="inline-flex items-center gap-2 text-sm text-cyan-600 hover:text-cyan-700 font-medium"
-            >
-              View full attendance history
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        )}
-      </div>
-    );
+type Tab = "list" | "calendar" | "history";
+function label(status: string) {
+  const labels: Record<string, string> = {
+    confirmed: "Confirmed", assigned: "Assigned",
+    pending_payment: "Payment pending", pending: "Awaiting confirmation",
+    cancelled: "Cancelled", session_cancelled: "Cancelled",
+    present: "Attended", checked_in: "Attended", late: "Attended (late)",
+    no_show: "Absent", excused: "Excused", absent: "Absent",
   };
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <header className="space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-600">My Swims</p>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">My Swims</h1>
-          <Badge variant="info">{membershipLabel}</Badge>
-        </div>
-        <p className="text-base text-slate-600">
-          Browse, book and manage your swimming sessions, including attendance and session history.
-        </p>
-        <p className="text-sm text-slate-500">
-          Your Club, Academy, pool reservations and recorded attendance are together in the Booked and Past tabs.
-        </p>
-        <p className="text-sm text-slate-500">
-          Need independent pool access? <Link href="/pool-access" className="font-medium text-cyan-700 hover:underline">Explore Pool Access</Link>.{" "}
-          Know a pool we should partner with?{" "}
-          <Link href="/account/pools/suggest" className="font-medium text-cyan-700 hover:underline">
-            Suggest a pool &rarr;
-          </Link>
-        </p>
-      </header>
-
-      {/* Next session panel — always visible when user has a booking */}
-      {!loading && nextSession && <NextSessionPanel session={nextSession} />}
-
-      {!loading && supportsRelevance && relevantOnly && (
-        <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-sm text-cyan-950">
-          <p className="font-semibold">Showing sessions recommended for you</p>
-          <p className="mt-0.5 text-xs leading-5 text-cyan-800">
-            Based on your {membershipLabel} access
-            {myPodName ? `, ${myPodName} Pod` : ""}
-            {enrolledCohortIds.size > 0 ? ", and Academy cohort" : ""}. Remove the Recommended
-            filter to explore every published session.
-          </p>
-        </div>
-      )}
-
-      {/* Segmented control + filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex rounded-xl bg-slate-100 p-1 flex-1 sm:flex-initial">
-          {TABS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex-1 sm:flex-initial rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                activeTab === key
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              {label}
-              {key === "booked" && myUpcomingSessions.length > 0 && (
-                <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-100 px-1.5 text-xs font-semibold text-cyan-700">
-                  {myUpcomingSessions.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex items-center gap-2">
-          {/* Multi-select toggle — only on upcoming/all tabs */}
-          {(activeTab === "upcoming" || activeTab === "all") && (
-            <button
-              onClick={() => {
-                if (selectMode) {
-                  exitSelectMode();
-                } else {
-                  setSelectMode(true);
-                }
-              }}
-              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
-                selectMode
-                  ? "border-cyan-600 bg-cyan-50 text-cyan-700"
-                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              <CheckSquare className="h-4 w-4" />
-              {selectMode ? "Cancel" : "Book multiple"}
-            </button>
-          )}
-
-          {/* Filter button */}
-          {activeTab !== "past" && (
-            <FilterBar
-              relevantOnly={relevantOnly}
-              setRelevantOnly={setRelevantOnly}
-              showRelevanceFilter={supportsRelevance}
-              dateFilter={dateFilter}
-              setDateFilter={setDateFilter}
-              typeFilters={typeFilters}
-              toggleTypeFilter={toggleTypeFilter}
-              myCohortsOnly={myCohortsOnly}
-              setMyCohortsOnly={setMyCohortsOnly}
-              showCohortFilter={enrolledCohortIds.size > 0}
-              clearFilters={clearFilters}
-              hasActiveFilters={hasActiveFilters}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Active filter chips */}
-      {activeTab !== "past" && hasActiveFilters && (
-        <ActiveFilterChips
-          relevantOnly={supportsRelevance && relevantOnly}
-          setRelevantOnly={setRelevantOnly}
-          dateFilter={dateFilter}
-          setDateFilter={setDateFilter}
-          typeFilters={typeFilters}
-          toggleTypeFilter={toggleTypeFilter}
-          myCohortsOnly={myCohortsOnly}
-          setMyCohortsOnly={setMyCohortsOnly}
-        />
-      )}
-
-      {/* Content */}
-      <section aria-live="polite">
-        {!loading && !error && activeTab === "past" && (
-          <div className="mb-6">
-            <AdditionalSwimRecords view="past" primaryHasSessions={filteredSessions.length > 0}
-              representedSessionIds={filteredSessions.map((session) => session.id)} />
-          </div>
-        )}
-        {loading ? (
-          <LoadingCard text="Loading sessions..." />
-        ) : error ? (
-          <Alert variant="error" title="Error loading sessions">
-            {error}
-          </Alert>
-        ) : activeTab === "past" ? null : (
-          renderContent()
-        )}
-        {!loading && !error && activeTab === "booked" && (
-          <div className="mt-6">
-            <AdditionalSwimRecords view="booked" primaryHasSessions={filteredSessions.length > 0}
-              representedSessionIds={filteredSessions.map((session) => session.id)} />
-          </div>
-        )}
-        {!loading && !error && activeTab === "all" && pastLoading && (
-          <p className="mt-3 text-center text-sm text-slate-500">Loading recent sessions…</p>
-        )}
-      </section>
-
-      {/* Sticky multi-select checkout bar */}
-      {selectMode && (
-        <MultiSelectBar
-          count={selectedIds.size}
-          totalNgn={bundleTotal}
-          onCheckout={handleCheckoutBundle}
-          onClear={clearSelection}
-          busy={creatingBundle}
-        />
-      )}
-    </div>
-  );
+  return labels[status.toLowerCase()] ?? status.replaceAll("_", " ");
 }
-
-// ── Page export (wrapped in Suspense for useSearchParams) ────────────────
-
-export default function MySwimsPage() {
-  return (
-    <Suspense fallback={<LoadingCard text="Loading sessions..." />}>
-      <SessionsHub />
-    </Suspense>
+function formatTime(date: string | null) {
+  if (!date) return "Date not confirmed";
+  const value = new Date(date);
+  return Number.isNaN(value.valueOf()) ? "Date not confirmed" :
+    value.toLocaleTimeString("en-NG", { timeZone: "Africa/Lagos", hour: "numeric", minute: "2-digit" });
+}
+function formatGroup(date: string) {
+  return new Date(date + "T12:00:00Z").toLocaleDateString("en-GB", {
+    timeZone: "UTC", weekday: "long", day: "numeric", month: "long",
+  });
+}
+function group<T>(rows: T[], getDate: (row: T) => string | null) {
+  const map = new Map<string, T[]>();
+  for (const row of rows) {
+    const date = swimDay(getDate(row)) || "unconfirmed";
+    map.set(date, [...map.get(date) ?? [], row]);
+  }
+  return Array.from(map.entries());
+}
+function Status({ status }: { status: string }) {
+  const s = status.toLowerCase();
+  const positive = ["confirmed", "present", "checked_in", "late"].includes(s);
+  const warning = ["pending", "pending_payment", "excused"].includes(s);
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${positive
+    ? "bg-emerald-50 text-emerald-800" : warning
+      ? "bg-amber-50 text-amber-900" : s === "assigned"
+        ? "bg-sky-50 text-sky-800" : "bg-slate-100 text-slate-700"}`}>
+    {label(status)}
+  </span>;
+}
+function ActivityRow({ item, onChanged, onDetails }: { item: SwimActivity; onChanged: () => Promise<unknown>; onDetails: (id: string) => void }) {
+  const href = item.sessionId ? `/sessions/${item.sessionId}` : "/account/pool-access";
+  return <article className="rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-300">
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="min-w-0 flex-1">
+        {item.sessionId
+          ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="block text-left text-base font-semibold text-slate-950 hover:text-cyan-700">{item.title}</button>
+          : <Link href={href} className="block text-base font-semibold text-slate-950 hover:text-cyan-700">{item.title}</Link>}
+        <p className="mt-1 text-sm text-slate-600">{formatTime(item.date)} · {item.location || "Location to be confirmed"}</p>
+      </div>
+      <Status status={item.status}/>
+      {item.sessionId
+        ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="text-sm font-semibold text-cyan-700 hover:underline" aria-label={`View ${item.title} details`}>Details →</button>
+        : <Link href={href} className="text-sm font-semibold text-cyan-700 hover:underline">Details →</Link>}
+    </div>
+    {item.pool && <div className="mt-3 border-t border-slate-100 pt-3"><PoolVisitActions booking={item.pool} onChanged={() => void onChanged()}/></div>}
+  </article>;
+}
+function HistoryRow({ item, onDetails }: { item: PersonalSwimHistoryItem; onDetails: (id: string) => void }) {
+  const href = item.sessionId ? `/sessions/${item.sessionId}` : "/account/pool-access";
+  const outcome = item.attendanceStatus || item.bookingStatus || "not_recorded";
+  const body = <div className="flex items-center gap-3">
+    <div className="min-w-0 flex-1">
+      <strong className="block text-base text-slate-950">{item.title}</strong>
+      <p className="mt-1 text-sm text-slate-600">{formatTime(item.date)} · {item.location || "Location unavailable"}</p>
+    </div>
+    {outcome === "not_recorded"
+      ? <span className="text-xs text-slate-600">Attendance not recorded</span>
+      : <Status status={outcome}/>}
+    <span className="text-cyan-700" aria-hidden="true">→</span>
+  </div>;
+  return item.sessionId
+    ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="block w-full rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-cyan-300">{body}</button>
+    : <Link href={href} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-300">{body}</Link>;
+}
+function PageContent() {
+  const searchParams = useSearchParams();
+  const firstView = searchParams.get("view");
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>(
+    ["history", "past"].includes(firstView || "") ? "history" : "list"
   );
+  const [type, setType] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [location, setLocation] = useState("all");
+  const projection = usePersonalSwims();
+  const data = projection.data;
+  const upcoming = useMemo(() => (data?.upcoming ?? []).slice()
+    .sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime()), [data]);
+  const next = upcoming.find(item => ["assigned", "confirmed"].includes(item.status));
+  const locations = useMemo(() =>
+    Array.from(new Set((data?.activities ?? []).map(i => i.location).filter((i): i is string => !!i))).sort(),
+    [data]);
+  const displayed = upcoming.filter(item =>
+    (type === "all" || type === item.kind) &&
+    (status === "all" || status === item.status) &&
+    (location === "all" || item.location === location)
+  );
+  const history = (data?.history ?? []).filter(item =>
+    (type === "all" || type === item.kind) &&
+    (status === "all" || status === item.attendanceStatus || status === item.bookingStatus) &&
+    (location === "all" || item.location === location)
+  );
+  const pendingPlans = (data?.plans ?? []).filter(p => !p.linked_event_id);
+  return <main className="mx-auto max-w-6xl space-y-5 px-4 py-8">
+    <header className="flex flex-wrap items-center justify-between gap-4">
+      <h1 className="text-3xl font-bold tracking-tight text-slate-950">My Swims</h1>
+      <Link href="/account/find-a-swim" className="rounded-xl bg-cyan-700 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-800">
+        + Find a Swim
+      </Link>
+    </header>
+    {projection.isLoading && <p role="status" className="rounded-xl border border-slate-200 p-4">Loading your swims…</p>}
+    {projection.isError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+      We couldn't load your swimming schedule. <button type="button" onClick={() => void projection.refetch()} className="font-semibold underline">Retry</button>
+    </p>}
+    {data && <>
+      {data.errors.length > 0 &&
+        <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+          Some records couldn't be loaded ({data.errors.join(", ")}). Missing information does not mean a swim was cancelled.
+          <button type="button" onClick={() => void projection.refetch()} className="ml-2 font-semibold underline">Retry</button>
+        </p>}
+      {next && <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-cyan-800">Your next swim</span>
+          <Status status={next.status}/>
+        </div>
+        <h2 className="mt-3 text-xl font-bold text-slate-950">{next.title}</h2>
+        <p className="mt-2 text-sm text-slate-700">
+          {next.date ? new Date(next.date).toLocaleString("en-NG", {
+            timeZone: "Africa/Lagos", weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit",
+          }) : "Date to be confirmed"} · {next.location || "Location to be confirmed"}
+        </p>
+        {next.sessionId
+          ? <button type="button" onClick={() => setSelectedSessionId(next.sessionId!)}
+              className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View details</button>
+          : <Link href="/account/pool-access" className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View visit</Link>}
+      </section>}
+    </>}
+    <SwimRewards />
+    {data && <>
+      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3" role="tablist" aria-label="My Swims views">
+        {([{ id: "list", name: "List" }, { id: "calendar", name: "Calendar" }, { id: "history", name: "History" }] as const)
+          .map(option => <button role="tab" key={option.id} type="button"
+            aria-selected={tab === option.id} onClick={() => setTab(option.id)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold ${tab === option.id ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
+            {option.name}
+          </button>)}
+      </div>
+      {tab === "calendar" ? <PersonalSwimCalendar activities={data.activities} plans={data.plans}/> :
+        <>
+          <div className="flex flex-wrap gap-2" aria-label="Filter swimming records">
+            <select aria-label="Activity type" value={type} onChange={e => setType(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+              <option value="all">All types</option>
+              {["club", "academy", "community", "session", "pool"].map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select aria-label="Booking or attendance status" value={status} onChange={e => setStatus(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+              <option value="all">All statuses</option>
+              {["assigned", "confirmed", "pending_payment", "pending", "present", "late", "excused", "no_show", "cancelled"].map(s =>
+                <option key={s} value={s}>{label(s)}</option>)}
+            </select>
+            <select aria-label="Location" value={location} onChange={e => setLocation(e.target.value)}
+              className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+              <option value="all">All locations</option>
+              {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+            </select>
+            {(type !== "all" || status !== "all" || location !== "all") &&
+              <button type="button" className="text-sm font-semibold text-cyan-700 underline"
+                onClick={() => { setType("all"); setStatus("all"); setLocation("all"); }}>Clear filters</button>}
+          </div>
+          {tab === "list" ? <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-950">Upcoming swims</h2>
+            {displayed.length === 0 ? <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-600">No upcoming commitments match these filters.</p> :
+              group(displayed, item => item.date).map(([day, rows]) =>
+                <div className="space-y-2" key={day}>
+                  <h3 className="text-sm font-semibold text-slate-600">{day === "unconfirmed" ? "Date to be confirmed" : formatGroup(day)}</h3>
+                  {rows.map(item => <ActivityRow key={item.key} item={item} onChanged={projection.refetch} onDetails={setSelectedSessionId}/>)}
+                </div>)}
+            {pendingPlans.length > 0 && <section className="space-y-3 pt-2">
+              <h2 className="text-lg font-semibold text-slate-950">Swim plans awaiting confirmation</h2>
+              {pendingPlans.map(plan => <article key={plan.id} className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <strong className="text-sm text-slate-950">{plan.title}</strong>
+                <p className="mt-1 text-xs text-amber-900">{new Date(plan.starts_at).toLocaleString("en-NG", { timeZone: "Africa/Lagos" })} · {plan.status.replaceAll("_", " ")}</p>
+                <p className="mt-1 text-xs text-amber-900">Not yet a confirmed reservation. No payment is due.</p>
+              </article>)}
+            </section>}
+          </section> :
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-950">Swimming history</h2>
+            {history.length === 0 ? <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-600">No historical swimming records match these filters.</p> :
+              group(history, item => item.date).map(([day, records]) =>
+                <div key={day} className="space-y-2">
+                  <h3 className="text-sm font-semibold text-slate-600">{day === "unconfirmed" ? "Unknown date" : formatGroup(day)}</h3>
+                  {records.map(record => <HistoryRow key={record.key} item={record} onDetails={setSelectedSessionId}/>)}
+                </div>)}
+            <Link href="/account/attendance/history" className="inline-block text-sm font-semibold text-cyan-700 underline">
+              Full attendance records
+            </Link>
+          </section>}
+        </>}
+    </>}
+    {selectedSessionId && <SwimModal title="Session details" onClose={() => setSelectedSessionId(null)}><SessionDetailContent sessionId={selectedSessionId}/></SwimModal>}
+  </main>;
+}
+export default function MySwimsPage() {
+  return <Suspense fallback={<p role="status" className="p-6">Loading My Swims…</p>}>
+    <PageContent />
+  </Suspense>;
 }

@@ -9,8 +9,8 @@ describe("Sessions Hub legacy route compatibility", () => {
     );
   });
   it("keeps old booked and past bookmarks working", () => {
-    expect(sessionDiscoveryUrl(new URLSearchParams("view=my"))).toBe("/account/bookings?view=upcoming");
-    expect(sessionDiscoveryUrl(new URLSearchParams("view=booked"))).toBe("/account/bookings?view=upcoming");
-    expect(sessionDiscoveryUrl(new URLSearchParams("view=past"))).toBe("/account/bookings?view=past");
+    expect(sessionDiscoveryUrl(new URLSearchParams("view=my"))).toBe("/account/bookings");
+    expect(sessionDiscoveryUrl(new URLSearchParams("view=booked"))).toBe("/account/bookings");
+    expect(sessionDiscoveryUrl(new URLSearchParams("view=past"))).toBe("/account/bookings?view=history");
   });
 });

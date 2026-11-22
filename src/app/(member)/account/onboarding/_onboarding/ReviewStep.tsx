@@ -69,6 +69,34 @@ export function ReviewStep({
           </Link>
         ) : null}
       </div>
+
+      <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-left">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Explore programmes & next steps
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/upgrade/club/readiness"
+            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-emerald-300 hover:shadow"
+          >
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Join Weekly Club</p>
+              <p className="text-xs text-slate-500">Structured practices & pods</p>
+            </div>
+            <span className="text-xs font-bold text-emerald-700">Start Application →</span>
+          </Link>
+          <Link
+            href="/upgrade/academy/cohort"
+            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-purple-300 hover:shadow"
+          >
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Learn in Academy</p>
+              <p className="text-xs text-slate-500">Small-group outcome cohorts</p>
+            </div>
+            <span className="text-xs font-bold text-purple-700">Browse Cohorts →</span>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

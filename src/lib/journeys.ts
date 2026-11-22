@@ -1,11 +1,9 @@
-import { type MemberStartPath } from "@/lib/memberPaths";
 import { safeReturnPath } from "@/lib/returnPath";
 
 /**
- * Journey configuration is deliberately separate from the account, billing and
- * programme domains. These stages describe navigation, NOT entitlements.
- * Backend services remain authoritative for pricing, readiness, payments,
- * enrollment and attendance eligibility.
+ * The journey coordinator chooses the next UI step. It NEVER grants member
+ * access, calculates a price or confirms enrollment/payment. Those decisions
+ * remain with the backend and route access guards.
  */
 export type JourneyStage =
   | "registration"
@@ -17,7 +15,13 @@ export type JourneyStage =
   | "onboarding"
   | "shopping";
 
-export type JourneyKind = "explore" | "academy" | "club" | "community" | "store" | "pool_access";
+export type JourneyKind =
+  | "explore"
+  | "academy"
+  | "club"
+  | "community"
+  | "store"
+  | "pool_access";
 
 export interface JourneyDefinition {
   readonly kind: JourneyKind;
@@ -28,44 +32,35 @@ export interface JourneyDefinition {
 
 export const JOURNEYS: Readonly<Record<JourneyKind, JourneyDefinition>> = {
   explore: {
-    kind: "explore",
-    title: "Explore SwimBuddz",
-    stages: ["registration", "selection"],
-    exploreHref: "/explore",
+    kind: "explore", title: "Explore SwimBuddz",
+    stages: ["registration", "selection"], exploreHref: "/explore",
   },
   academy: {
-    kind: "academy",
-    title: "Learn to swim",
+    kind: "academy", title: "Learn to swim",
     stages: ["selection", "registration", "enrollment", "checkout", "activation", "onboarding"],
     exploreHref: "/academy",
   },
   club: {
-    kind: "club",
-    title: "Swim regularly",
+    kind: "club", title: "Swim regularly",
     stages: ["selection", "registration", "application", "enrollment", "checkout", "activation", "onboarding"],
     exploreHref: "/club",
   },
   community: {
-    kind: "community",
-    title: "Join the community",
+    kind: "community", title: "Join the community",
     stages: ["selection", "registration", "checkout", "activation", "onboarding"],
     exploreHref: "/community",
   },
   store: {
-    kind: "store",
-    title: "Shop swimming essentials",
-    stages: ["shopping", "registration", "checkout"],
-    exploreHref: "/store",
+    kind: "store", title: "Shop swimming essentials",
+    stages: ["shopping", "registration", "checkout"], exploreHref: "/store",
   },
   pool_access: {
-    kind: "pool_access",
-    title: "Find a pool",
-    stages: ["selection", "registration", "checkout"],
-    exploreHref: "/pools",
+    kind: "pool_access", title: "Find a pool",
+    stages: ["selection", "registration", "checkout"], exploreHref: "/pools",
   },
 };
 
-/** A chosen offer can enter account creation without losing its destination. */
+/** Preserve the selected product across registration and email verification. */
 export function destinationForGoal(goal: string | null | undefined): string | null {
   switch (goal?.trim().toLowerCase()) {
     case "academy": return "/upgrade/academy/cohort";
@@ -83,38 +78,49 @@ function isPath(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(prefix + "/");
 }
 
-export function classifyJourneyDestination(destination: string | null | undefined): JourneyKind | null {
+/** Only explicit offering-related destinations bypass generic onboarding. */
+export function classifyJourneyDestination(
+  destination: string | null | undefined
+): JourneyKind | null {
   const safe = safeReturnPath(destination);
   if (!safe) return null;
   const { pathname, searchParams } = new URL(safe, "https://swimbuddz.invalid");
-  if (pathname === "/explore") return "explore";
+  if (isPath(pathname, "/explore")) return "explore";
   if (isPath(pathname, "/store") || isPath(pathname, "/account/orders")) return "store";
   if (isPath(pathname, "/pool-access") || isPath(pathname, "/pools")) return "pool_access";
-  if (isPath(pathname, "/upgrade/academy") || isPath(pathname, "/account/academy") || (pathname === "/checkout" && searchParams.get("purpose") === "academy_cohort")) return "academy";
-  if (isPath(pathname, "/upgrade/club") || isPath(pathname, "/account/club") || (pathname === "/checkout" && searchParams.get("purpose") === "club")) return "club";
-  if (pathname === "/community" || (pathname === "/checkout" && searchParams.get("purpose") === "community")) return "community";
+  if (
+    isPath(pathname, "/upgrade/academy") ||
+    isPath(pathname, "/account/academy") ||
+    (pathname === "/checkout" && searchParams.get("purpose") === "academy_cohort")
+  ) return "academy";
+  if (
+    isPath(pathname, "/upgrade/club") ||
+    isPath(pathname, "/account/club") ||
+    (pathname === "/checkout" && searchParams.get("purpose") === "club")
+  ) return "club";
+  if (
+    isPath(pathname, "/community") ||
+    (pathname === "/checkout" && searchParams.get("purpose") === "community")
+  ) return "community";
   return null;
 }
 
 export interface PostAuthJourneyContext {
-  /** Validated same-origin destination from a prior selection or checkout. */
   destination?: string | null;
-  requestedTiers?: readonly MemberStartPath[];
+  /** Input from the membership API; validate values, never trust the type. */
+  requestedTiers?: readonly string[];
   communityActive?: boolean;
   academyActive?: boolean;
   clubActive?: boolean;
+  isFreshRegistration?: boolean;
 }
 
-/**
- * Return the next actionable path, or null to let the existing member
- * dashboard/onboarding resolver handle a fully enrolled member.
- * Explicit user intent wins over inferred onboarding requirements: protected
- * routes are still checked independently by middleware and backend APIs.
- */
 export function resolvePostAuthJourney(context: PostAuthJourneyContext): string | null {
   const destination = safeReturnPath(context.destination);
-  if (destination) return destination;
+  if (destination && classifyJourneyDestination(destination)) return destination;
 
+  // A selected offering's enrollment/readiness continues independently of
+  // the annual Community membership and without a new account.
   if (context.requestedTiers?.includes("academy") && !context.academyActive) {
     return "/upgrade/academy/cohort";
   }
@@ -122,10 +128,13 @@ export function resolvePostAuthJourney(context: PostAuthJourneyContext): string 
     return "/upgrade/club/readiness";
   }
 
-  // An account is NOT an annual subscription. No selected product and no
-  // paid swimming entitlement means the person is free to explore or shop.
-  if (!context.communityActive && !context.clubActive && !context.academyActive) {
-    return "/explore";
-  }
+  // Only *fresh* identity-only accounts default to discovery. Existing members
+  // with expired or unpaid plans still use the established billing resolver.
+  if (
+    context.isFreshRegistration &&
+    !context.communityActive &&
+    !context.clubActive &&
+    !context.academyActive
+  ) return "/explore";
   return null;
 }

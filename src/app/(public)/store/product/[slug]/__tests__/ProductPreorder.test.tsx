@@ -25,7 +25,10 @@ describe("preorder product selection", () => {
     expect(preorder).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Increase quantity" }));
     fireEvent.click(preorder);
-    await waitFor(() => expect(mocks.addItem).toHaveBeenCalledWith("default", 2));
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(
+      "/store/checkout?buyNowVariant=default&quantity=2&product=starter-kit"
+    ));
+    expect(mocks.addItem).not.toHaveBeenCalled();
     expect(mocks.error).not.toHaveBeenCalled();
   });
   it("clearly disables ordering when no purchasable SKU exists", async () => {
@@ -48,7 +51,10 @@ describe("preorder product selection", () => {
     expect(screen.getByRole("button", { name: "Pre-order Now" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Blue" }));
     fireEvent.click(screen.getByRole("button", { name: "Pre-order Now" }));
-    await waitFor(() => expect(mocks.addItem).toHaveBeenCalledWith("large-blue", 1));
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(
+      "/store/checkout?buyNowVariant=large-blue&quantity=1&product=starter-kit"
+    ));
+    expect(mocks.addItem).not.toHaveBeenCalled();
   });
   it("requires an explicit choice for multiple unnamed option sets", async () => {
     vi.mocked(apiGet).mockResolvedValue(product([variant("kit-a"), variant("kit-b")]));
@@ -57,7 +63,10 @@ describe("preorder product selection", () => {
     expect(screen.getByRole("button", { name: "Pre-order Now" })).toBeDisabled();
     fireEvent.change(chooser, { target: { value: "kit-b" } });
     fireEvent.click(screen.getByRole("button", { name: "Pre-order Now" }));
-    await waitFor(() => expect(mocks.addItem).toHaveBeenCalledWith("kit-b", 1));
+    await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(
+      "/store/checkout?buyNowVariant=kit-b&quantity=1&product=starter-kit"
+    ));
+    expect(mocks.addItem).not.toHaveBeenCalled();
   });
   it("honors the public stock field for stocked products", async () => {
     vi.mocked(apiGet).mockResolvedValue(product([variant("default")], { sourcing_type: "stocked" }));

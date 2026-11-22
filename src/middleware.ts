@@ -107,7 +107,7 @@ export async function middleware(request: NextRequest) {
       // are the real boundary. This lets finance staff who are NOT global admins
       // use /admin/finance without the admin role. All other /admin/* still
       // require admin (checked below).
-      if (pathname.startsWith("/admin/finance")) {
+      if (pathname.startsWith("/admin/finance") || pathname.startsWith("/admin/store/procurement")) {
         return finish(response);
       }
 

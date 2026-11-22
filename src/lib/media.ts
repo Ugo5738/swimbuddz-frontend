@@ -44,7 +44,11 @@ export async function uploadAdjustedImage(
 }
 
 export function isLikelyVideoUrl(url: string): boolean {
-  return /\.(mp4|mov|webm|ogg|avi|m4v)(\?|$)/i.test(url) || url.includes("video");
+  return (
+    /\.(mp4|mov|webm|ogg|avi|m4v)(\?|$)/i.test(url) ||
+    url.includes("video") ||
+    /\/media\/[0-9a-f-]+\/play(?:\?|$)/i.test(url)
+  );
 }
 
 export function buildMediaPlaybackUrl(mediaId: string): string {

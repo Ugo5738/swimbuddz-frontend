@@ -1,5 +1,6 @@
 "use client";
 
+import { CohortAttendanceFields } from "@/components/admin/CohortAttendanceFields";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { useApi } from "@/hooks/useApi";
@@ -8,6 +9,8 @@ type CohortOption = { id: string; name: string; status: string };
 type Props = {
   cohortId: string | null;
   feeMode: "included" | "paid_extra";
+  attendanceMode: "automatic" | "individual";
+  onAttendanceModeChange: (mode: "automatic" | "individual") => void;
   onCohortChange: (id: string | null) => void;
   onFeeModeChange: (mode: "included" | "paid_extra") => void;
 };
@@ -15,6 +18,8 @@ type Props = {
 export function AcademyTemplateFields({
   cohortId,
   feeMode,
+  attendanceMode,
+  onAttendanceModeChange,
   onCohortChange,
   onFeeModeChange,
 }: Props) {
@@ -60,6 +65,7 @@ export function AcademyTemplateFields({
         <option value="included">Included in tuition / no extra charge</option>
         <option value="paid_extra">Paid extra class — charge separately</option>
       </Select>
+      <CohortAttendanceFields value={attendanceMode} paidExtra={feeMode === "paid_extra"} onChange={onAttendanceModeChange} />
       <p className="text-sm text-slate-600">
         {feeMode === "paid_extra"
           ? "Each student pays the booking price below for each extra class. Booking is confirmed after payment."

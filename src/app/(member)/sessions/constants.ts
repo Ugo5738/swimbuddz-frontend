@@ -14,7 +14,7 @@ export const SESSION_TYPES_QUERY = [
 export const TABS: { key: ViewTab; label: string }[] = [
   { key: "upcoming", label: "Upcoming" },
   { key: "booked", label: "Booked" },
-  { key: "past", label: "Past" },
+  { key: "past", label: "History" },
   { key: "all", label: "All" },
 ];
 

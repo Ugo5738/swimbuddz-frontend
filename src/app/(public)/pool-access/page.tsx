@@ -1,6 +1,7 @@
 "use client";
 import { apiGet, apiPost } from "@/lib/api";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {getCurrentAccessToken} from "@/lib/auth";
 import { useEffect, useMemo, useState } from "react";
 
@@ -12,6 +13,10 @@ type PaymentIntent={reference:string;checkout_url?:string|null;};
 const money=(minor:number,currency:string)=>new Intl.NumberFormat("en-NG",{style:"currency",currency}).format(minor/100);
 
 export default function PoolAccessPage(){
+ const memberView = usePathname()?.startsWith("/account/pool-time");
+ const offerBase = memberView ? "/account/pool-time" : "/pool-access";
+ const poolBase = memberView ? "/account/pools" : "/pools";
+ const findBase = memberView ? "/account/find-a-swim" : "/sessions";
  const [offers,setOffers]=useState<Offer[]>([]);
  const [poolFilter,setPoolFilter]=useState<string|null>(null);
  const [area,setArea]=useState("");
@@ -60,10 +65,13 @@ export default function PoolAccessPage(){
  return <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
   <header className="space-y-2"><p className="text-sm font-semibold uppercase tracking-widest text-cyan-700">Find a Swim</p>
    <h1 className="text-3xl font-bold text-slate-900">Pool Access</h1>
-   {poolFilter&&<p className="text-sm text-slate-700">Showing Pool Access availability for the selected pool. <Link href="/pool-access" className="font-semibold text-cyan-700 underline">View all pools</Link> · <Link href={`/pools/${poolFilter}`} className="font-semibold text-cyan-700 underline">Return to pool profile</Link></p>}
+   {poolFilter&&<p className="text-sm text-slate-700">Showing Pool Access availability for the selected pool. <Link href={offerBase} className="font-semibold text-cyan-700 underline">View all pools</Link> · <Link href={`${poolBase}/${poolFilter}`} className="font-semibold text-cyan-700 underline">Return to pool profile</Link></p>}
    <p className="max-w-2xl text-slate-600">Discover independent swims at published SwimBuddz partner locations. Coaching is not included. Entry requires a confirmed, paid booking and compliance with pool safety rules.</p>
-   <div className="flex flex-wrap gap-4 text-sm"><Link className="text-cyan-700 underline" href="/pool-access/visitor">New here? Book as a visitor</Link><Link className="text-cyan-700 underline" href="/login?redirect=%2Fpool-access">Sign in</Link><Link className="text-cyan-700 underline" href="/pool-access/my-bookings">My Pool Access tickets</Link></div>
-   <Link className="text-cyan-700 underline" href="/sessions">Looking for an organised Club or Community swim instead?</Link>
+   <div className="flex flex-wrap gap-4 text-sm">
+    {!memberView && <><Link className="text-cyan-700 underline" href="/pool-access/visitor">New here? Book as a visitor</Link><Link className="text-cyan-700 underline" href="/login?redirect=%2Fpool-access">Sign in</Link></>}
+    <Link className="text-cyan-700 underline" href={memberView ? "/account/pool-access" : "/pool-access/my-bookings"}>My Pool Access tickets</Link>
+   </div>
+   <Link className="text-cyan-700 underline" href={findBase}>Looking for an organised Club or Community swim instead?</Link>
   </header>
   {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
   {!selected&&!booking&&areas.length>0&&<label className="block max-w-sm text-sm font-semibold text-slate-800">Find a swim near your area
@@ -111,7 +119,7 @@ export default function PoolAccessPage(){
   </article>)}</div>:<div className="rounded-xl border bg-slate-50 p-8 text-center">
    <h2 className="font-semibold">No Pool Access visits published yet</h2>
    <p className="mt-2 text-sm text-slate-600">No published visits match this area. Adjust the filter or explore our organised swims.</p>
-   <Link href="/sessions" className="mt-3 inline-block text-cyan-700 underline">Browse sessions</Link>
+   <Link href={findBase} className="mt-3 inline-block text-cyan-700 underline">Browse sessions</Link>
   </div>}
  </main>;
 }

@@ -15,6 +15,8 @@ export interface CartItem {
   variant_name: string | null;
   sku: string | null;
   image_url: string | null;
+  requires_size_chart_ack?: boolean;
+  size_chart_url?: string | null;
 }
 
 export interface Cart {
@@ -23,6 +25,7 @@ export interface Cart {
   discount_code: string | null;
   member_discount_percent: number | null;
   items: CartItem[];
+  requires_size_chart_ack?: boolean;
   subtotal_ngn: number;
   discount_amount_ngn: number;
   total_ngn: number;

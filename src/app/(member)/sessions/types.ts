@@ -5,6 +5,7 @@ export type ViewTab = "upcoming" | "booked" | "past" | "all";
 export type DateFilter = "all" | "this_week" | "this_month" | "next_7" | "next_30";
 
 export type MemberProfile = {
+  availability?: {available_days?: string[]; preferred_times?: string[]; preferred_locations?: string[]} | null;
   membership?: {
     primary_tier?: string | null;
     active_tiers?: string[] | null;

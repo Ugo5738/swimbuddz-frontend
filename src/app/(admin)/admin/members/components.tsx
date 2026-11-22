@@ -14,7 +14,14 @@ import Link from "next/link";
 import { EMPTY_FORM, MOBILE_CLR } from "./constants";
 import type { Member } from "./types";
 
-export function StatusBadge({ s }: { s: string }) {
+export function StatusBadge({ s, isActive = true }: { s: string; isActive?: boolean }) {
+  if (!isActive)
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-300">
+        <XCircle className="h-3 w-3 text-slate-500" />
+        Deactivated
+      </span>
+    );
   if (s === "approved")
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">

@@ -42,6 +42,7 @@ export default function StrokeLabPage() {
   const [listError, setListError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isPublic, setIsPublic] = useState(false);
+  const [compressBeforeUpload, setCompressBeforeUpload] = useState(false);
   // phase drives the submit button + status text: idle → compressing → uploading
   const [phase, setPhase] = useState<"idle" | "compressing" | "uploading">(
     "idle",
@@ -89,37 +90,24 @@ export default function StrokeLabPage() {
         // Browser couldn't read metadata — let the server adjudicate.
       }
 
-      // Downscale + re-encode in the browser so a 4K phone clip (often
-      // 60-200 MB) becomes a few MB. The analysis downscales to 1280px
-      // anyway, so this loses nothing and saves a huge upload on mobile.
-      setPhase("compressing");
-      setCompressPct(0);
-      const result = await compressVideoForUpload(file, {
-        onProgress: (f) => setCompressPct(Math.round(f * 100)),
-      });
-
-      if (result.skipped && result.reason === "mediarecorder-unsupported") {
-        toast.message(
-          "Your browser can't compress video — uploading the original.",
-        );
-      } else if (!result.skipped) {
-        const fromMb = (result.originalBytes / 1024 / 1024).toFixed(1);
-        const toMb = (result.compressedBytes / 1024 / 1024).toFixed(1);
-        toast.success(`Compressed ${fromMb} MB → ${toMb} MB`);
+      // Keep original iPhone frames by default; compression is optional on
+      // metered connections. The backend builds a bounded analysis copy.
+      let uploadFile = file;
+      if (compressBeforeUpload) {
+        setPhase("compressing");
+        setCompressPct(0);
+        const compressed = await compressVideoForUpload(file, {
+          onProgress: (f) => setCompressPct(Math.round(f * 100)),
+        });
+        uploadFile = compressed.file;
+        if (!compressed.skipped) {
+          toast.success(
+            `Compressed ${(file.size / 1024 / 1024).toFixed(1)} MB → ${(uploadFile.size / 1024 / 1024).toFixed(1)} MB`,
+          );
+        }
       }
-
-      // After compression it should be well under the cap; if it somehow
-      // isn't (compression unsupported + a huge original), stop with a
-      // clear message rather than a 413 from the server.
-      if (result.file.size > MAX_UPLOAD_BYTES) {
-        setUploadError(
-          `Even after compression this is ${(
-            result.file.size /
-            1024 /
-            1024
-          ).toFixed(1)} MB (limit ${MAX_UPLOAD_BYTES / 1024 / 1024} MB). ` +
-            `Try a shorter clip.`,
-        );
+      if (uploadFile.size > MAX_UPLOAD_BYTES) {
+        setUploadError("Video exceeds the 2 GB direct-to-S3 upload limit.");
         setPhase("idle");
         return;
       }
@@ -127,7 +115,7 @@ export default function StrokeLabPage() {
       setUploadProgress(0);
       setPhase("uploading");
       const job = await createAnalysisJob({
-        file: result.file,
+        file: uploadFile,
         strokeType: "freestyle",
         isPublic,
         onProgress: setUploadProgress,
@@ -155,9 +143,9 @@ export default function StrokeLabPage() {
           Stroke Lab
         </h1>
         <p className="text-sm text-slate-500">
-          Upload a freestyle clip; we measure stroke rate, body roll, and
-          breath balance. Surface-only, single swimmer, mobile clips work
-          best.
+          Upload a freestyle clip to receive AI-assisted technique feedback,
+          evidence frames and suggested corrections. Side-on videos with one
+          clearly visible swimmer work best.
         </p>
       </header>
 
@@ -168,7 +156,7 @@ export default function StrokeLabPage() {
               htmlFor="strokelab-video"
               className="block text-sm font-medium text-slate-700"
             >
-              Freestyle video (mp4 / mov, ≤ {MAX_DURATION_SECONDS}s)
+              Freestyle video (mp4 / mov, ≤ {MAX_DURATION_SECONDS}s, ≤ 2 GB)
             </label>
             <div className="mt-2 flex items-center gap-3">
               <FileUpload
@@ -188,6 +176,16 @@ export default function StrokeLabPage() {
               </p>
             ) : null}
           </div>
+
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={compressBeforeUpload}
+              onChange={(e) => setCompressBeforeUpload(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+            />
+            Compress before upload to use less mobile data (optional).
+          </label>
 
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
             <input
@@ -218,7 +216,7 @@ export default function StrokeLabPage() {
                   : "Analyse my stroke"}
             </Button>
             <p className="text-xs text-slate-500">
-              Stroke Lab is a measurement tool — not a coach replacement.
+              Stroke Lab provides automated feedback, not a substitute for a qualified coach.
             </p>
           </div>
         </form>

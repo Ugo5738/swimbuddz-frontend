@@ -48,6 +48,24 @@ describe("Admin universal payment recording", () => {
       { auth: true }
     );
   });
+  it("submits a reference as evidence without recording a payment", async () => {
+    mocks.get.mockResolvedValue([{ ...payment, status: "pending", payment_method: "manual_transfer" }]);
+    await search();
+    fireEvent.change(screen.getByLabelText("Bank reference (optional with receipt)"), {
+      target: { value: "BANK-EVIDENCE-12" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit evidence for review" }));
+    await waitFor(() => expect(mocks.post).toHaveBeenCalledWith(
+      "/api/v1/payments/admin/PAY-TEST/evidence",
+      expect.objectContaining({ external_reference: "BANK-EVIDENCE-12" }),
+      { auth: true }
+    ));
+    expect(mocks.post).not.toHaveBeenCalledWith(
+      expect.stringContaining("/offline-payment"),
+      expect.anything(),
+      expect.anything()
+    );
+  });
   it("records only the saved payable amount and distinguishes pending fulfillment", async () => {
     mocks.get.mockResolvedValue([{ ...payment, status: "pending" }]);
     mocks.post.mockResolvedValue({ ...payment, entitlement_applied_at: null });

@@ -14,6 +14,8 @@ interface RegistrationEssentialsStepProps {
   mode?: "registration" | "onboarding";
   includeSwimLevel?: boolean;
   includeAcquisitionSource?: boolean;
+  /** Unrelated to account identity: collected at coaching or checkout time. */
+  includeContactDetails?: boolean;
   formData: {
     firstName: string;
     lastName: string;
@@ -35,6 +37,7 @@ export function RegistrationEssentialsStep({
   mode = "registration",
   includeSwimLevel = true,
   includeAcquisitionSource = true,
+  includeContactDetails = true,
   formData,
   onUpdate,
 }: RegistrationEssentialsStepProps) {
@@ -136,6 +139,8 @@ export function RegistrationEssentialsStep({
         </div>
       ) : null}
 
+      {includeContactDetails ? (
+        <>
       <div>
         <label htmlFor="registration-phone" className="block text-sm font-medium text-slate-700 mb-1">
           Phone Number <span className="text-red-500">*</span>
@@ -221,6 +226,10 @@ export function RegistrationEssentialsStep({
           }
         />
       </div>
+
+
+        </>
+      ) : null}
 
       {includeSwimLevel ? (
         <Select

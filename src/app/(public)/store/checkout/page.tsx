@@ -10,7 +10,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiPost } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { useApi } from "@/hooks/useApi";
 import { useStoreCart } from "@/lib/storeCart";
 import { ArrowLeft, CreditCard, MapPin, Package, Truck } from "lucide-react";
@@ -54,6 +54,28 @@ interface PaymentInitResponse {
   access_code: string | null;
 }
 
+interface BuyNowSelection {
+  variantId: string;
+  quantity: number;
+  slug: string;
+}
+
+interface BuyNowProduct {
+  name: string;
+  status: string;
+  sourcing_type: string;
+  base_price_ngn: number;
+  requires_size_chart_ack: boolean;
+  variants: Array<{
+    id: string;
+    name: string | null;
+    sku: string;
+    is_active: boolean;
+    price_override_ngn: number | null;
+    quantity_available: number;
+  }>;
+}
+
 export default function StoreCheckoutPage() {
   const router = useRouter();
   const { cart, loading: cartLoading, clearCart, isAuthenticated } = useStoreCart();
@@ -86,6 +108,91 @@ export default function StoreCheckoutPage() {
   const [customerNotes, setCustomerNotes] = useState("");
   const [useStoreCredit, setUseStoreCredit] = useState(false);
   const [bubblesToApply, setBubblesToApply] = useState<number>(0);
+  const [sizeChartAcked, setSizeChartAcked] = useState(false);
+  const [buyNowReady, setBuyNowReady] = useState(false);
+  const [buyNowSelection, setBuyNowSelection] = useState<BuyNowSelection | null>(null);
+  const [buyNowProduct, setBuyNowProduct] = useState<BuyNowProduct | null>(null);
+  const [buyNowError, setBuyNowError] = useState<string | null>(null);
+  const [buyNowLoading, setBuyNowLoading] = useState(false);
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const variantId = query.get("buyNowVariant");
+    if (variantId) {
+      const quantity = Number(query.get("quantity") ?? "1");
+      const slug = query.get("product") ?? "";
+      if (
+        !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(variantId) ||
+        !slug ||
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > 50
+      ) {
+        setBuyNowError("Invalid Buy Now selection. Return to the product and try again.");
+      } else {
+        setBuyNowSelection({ variantId, quantity, slug });
+      }
+    }
+    setBuyNowReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!buyNowSelection) return;
+    let cancelled = false;
+    setBuyNowLoading(true);
+    apiGet<BuyNowProduct>(`/api/v1/store/products/${encodeURIComponent(buyNowSelection.slug)}`)
+      .then((product) => {
+        if (cancelled) return;
+        const variant = product.variants.find(
+          (item) => item.id === buyNowSelection.variantId && item.is_active
+        );
+        if (!variant || product.status !== "active") {
+          setBuyNowError("This product option is no longer available.");
+          return;
+        }
+        setBuyNowProduct(product);
+      })
+      .catch(() => {
+        if (!cancelled) setBuyNowError("Unable to load the selected product.");
+      })
+      .finally(() => {
+        if (!cancelled) setBuyNowLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [buyNowSelection]);
+
+  // Buy Now is an independent single-SKU order. The ordinary cart, its discount
+  // code, and all its other items remain untouched for another checkout.
+  const quickVariant = buyNowProduct?.variants.find(
+    (variant) => variant.id === buyNowSelection?.variantId
+  );
+  const quickSubtotal = quickVariant && buyNowSelection
+    ? (quickVariant.price_override_ngn ?? buyNowProduct!.base_price_ngn) *
+      buyNowSelection.quantity
+    : 0;
+  const quickDiscountPercent = Number(cart?.member_discount_percent ?? 0);
+  const quickDiscount = Math.round(quickSubtotal * quickDiscountPercent) / 100;
+  const quickBuyCart = quickVariant && buyNowProduct && buyNowSelection
+    ? {
+        items: [{
+          id: quickVariant.id,
+          product_name: buyNowProduct.name,
+          quantity: buyNowSelection.quantity,
+          unit_price_ngn: quickVariant.price_override_ngn ?? buyNowProduct.base_price_ngn,
+        }],
+        requires_size_chart_ack: buyNowProduct.requires_size_chart_ack,
+        subtotal_ngn: quickSubtotal,
+        discount_amount_ngn: quickDiscount,
+        total_ngn: Math.max(0, quickSubtotal - quickDiscount),
+      }
+    : null;
+  const checkoutCart = buyNowSelection ? quickBuyCart : cart;
+  const requiresSizeChartAck = Boolean(
+    checkoutCart?.requires_size_chart_ack ||
+      (buyNowSelection ? false : cart?.items?.some((item) => item.requires_size_chart_ack))
+  );
 
   useEffect(() => {
     if (locations.data?.length)
@@ -95,13 +202,14 @@ export default function StoreCheckoutPage() {
   // Redirect if not logged in
   useEffect(() => {
     if (!isAuthenticated && !cartLoading) {
-      router.push("/login?redirect=/store/checkout");
+      const destination = `/store/checkout${window.location.search}`;
+      router.push(`/login?redirect=${encodeURIComponent(destination)}`);
     }
   }, [isAuthenticated, cartLoading, router]);
 
   const handleCheckout = async () => {
-    if (!cart || cart.items.length === 0) {
-      toast.error("Your cart is empty");
+    if (!checkoutCart || checkoutCart.items.length === 0) {
+      toast.error(buyNowSelection ? "Selected product is unavailable" : "Your cart is empty");
       return;
     }
 
@@ -117,6 +225,11 @@ export default function StoreCheckoutPage() {
       }
     }
 
+    if (requiresSizeChartAck && !sizeChartAcked) {
+      toast.error("Please review and acknowledge the swimwear size chart before placing your order");
+      return;
+    }
+
     setProcessing(true);
     try {
       // Step 1: Create the order
@@ -127,10 +240,17 @@ export default function StoreCheckoutPage() {
         customer_notes: customerNotes || undefined,
         apply_store_credit: useStoreCredit,
         bubbles_to_apply: effectiveBubbles > 0 ? effectiveBubbles : undefined,
+        size_chart_acknowledged: requiresSizeChartAck ? sizeChartAcked : true,
+
       };
 
+      const checkoutPath = buyNowSelection
+        ? `/api/v1/store/checkout/start?buy_now_variant_id=${encodeURIComponent(
+            buyNowSelection.variantId
+          )}&buy_now_quantity=${buyNowSelection.quantity}`
+        : "/api/v1/store/checkout/start";
       const orderResult = await apiPost<CheckoutResponse>(
-        "/api/v1/store/checkout/start",
+        checkoutPath,
         checkoutPayload,
         { auth: true }
       );
@@ -141,7 +261,7 @@ export default function StoreCheckoutPage() {
           ? ` ${orderResult.bubbles_applied} 🫧 Bubbles used.`
           : "";
         toast.success(`Order ${orderResult.order_number} placed!${bubblesMsg}`);
-        clearCart();
+        if (!buyNowSelection) clearCart();
         router.push(`/account/orders/${orderResult.order_number}`);
         return;
       }
@@ -154,14 +274,14 @@ export default function StoreCheckoutPage() {
       );
 
       if (paymentResult.authorization_url) {
-        clearCart();
+        if (!buyNowSelection) clearCart();
         window.location.href = paymentResult.authorization_url;
         return;
       }
 
       // Fallback: payment created but no URL
       toast.success(`Order ${orderResult.order_number} created!`);
-      clearCart();
+      if (!buyNowSelection) clearCart();
       router.push(`/account/orders/${orderResult.order_number}`);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Checkout failed";
@@ -175,11 +295,20 @@ export default function StoreCheckoutPage() {
     return <LoadingCard text="Redirecting to login..." />;
   }
 
-  if (loading || cartLoading) {
+  if (loading || cartLoading || !buyNowReady || buyNowLoading) {
     return <LoadingCard text="Loading checkout..." />;
   }
 
-  if (!cart || cart.items.length === 0) {
+  if (buyNowError) {
+    return (
+      <div className="max-w-lg mx-auto py-12 space-y-4">
+        <Alert variant="error" title="Buy Now unavailable">{buyNowError}</Alert>
+        <Link href="/store"><Button>Browse Store</Button></Link>
+      </div>
+    );
+  }
+
+  if (!checkoutCart || checkoutCart.items.length === 0) {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
         <Alert variant="info" title="Cart is empty">
@@ -193,8 +322,8 @@ export default function StoreCheckoutPage() {
   }
 
   const creditBalance = storeCredit?.balance_ngn || 0;
-  const creditToApply = useStoreCredit ? Math.min(creditBalance, cart.total_ngn) : 0;
-  const afterCredit = Math.max(0, cart.total_ngn - creditToApply);
+  const creditToApply = useStoreCredit ? Math.min(creditBalance, checkoutCart.total_ngn) : 0;
+  const afterCredit = Math.max(0, checkoutCart.total_ngn - creditToApply);
 
   // Partial Bubbles calculations
   const maxBubbles = walletBalance ?? 0;
@@ -210,7 +339,7 @@ export default function StoreCheckoutPage() {
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       {/* Back Link */}
       <Link
-        href="/store/cart"
+        href={buyNowSelection ? `/store/product/${buyNowSelection.slug}` : "/store/cart"}
         className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-cyan-600 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
@@ -463,7 +592,7 @@ export default function StoreCheckoutPage() {
 
             {/* Items */}
             <div className="space-y-2 text-sm pb-4 border-b border-slate-100">
-              {cart.items.map((item) => (
+              {checkoutCart.items.map((item) => (
                 <div key={item.id} className="flex justify-between">
                   <span className="text-slate-600 truncate max-w-[180px]">
                     {item.product_name} × {item.quantity}
@@ -478,13 +607,13 @@ export default function StoreCheckoutPage() {
             <div className="space-y-3 text-sm pt-4">
               <div className="flex justify-between">
                 <span className="text-slate-600">Subtotal</span>
-                <span className="text-slate-900">₦{cart.subtotal_ngn.toLocaleString()}</span>
+                <span className="text-slate-900">₦{checkoutCart.subtotal_ngn.toLocaleString()}</span>
               </div>
 
-              {cart.discount_amount_ngn > 0 && (
+              {checkoutCart.discount_amount_ngn > 0 && (
                 <div className="flex justify-between text-emerald-600">
                   <span>Discount</span>
-                  <span>-₦{cart.discount_amount_ngn.toLocaleString()}</span>
+                  <span>-₦{checkoutCart.discount_amount_ngn.toLocaleString()}</span>
                 </div>
               )}
 
@@ -535,11 +664,29 @@ export default function StoreCheckoutPage() {
               onChange={setPaymentMethod}
               disabled={processing}
             />
+
+            {/* Size Chart Acknowledgment */}
+            {requiresSizeChartAck && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl my-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sizeChartAcked}
+                    onChange={(e) => setSizeChartAcked(e.target.checked)}
+                    className="mt-0.5 w-5 h-5 rounded border-amber-300 text-cyan-600 focus:ring-cyan-500"
+                  />
+                  <span className="text-xs sm:text-sm text-amber-900 leading-relaxed font-medium">
+                    I have reviewed the size chart and understand that swimwear sizing may vary. All swimwear sales are final.
+                  </span>
+                </label>
+              </div>
+            )}
+
             <Button
               onClick={handleCheckout}
-              disabled={processing}
+              disabled={processing || (requiresSizeChartAck && !sizeChartAcked)}
               size="lg"
-              className="w-full mt-6"
+              className="w-full mt-2"
             >
               {processing ? (
                 "Processing..."

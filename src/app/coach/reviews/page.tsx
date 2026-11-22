@@ -70,7 +70,9 @@ export default function CoachReviewsPage() {
     setSuccessMessage(null);
 
     try {
-      await reviewMilestoneClaim(progressId, { action });
+      const coach_notes = action === "reject" ? window.prompt("Feedback is required. What should the learner improve?") : undefined;
+      if (action === "reject" && !coach_notes?.trim()) { setActionLoading(null); return; }
+      await reviewMilestoneClaim(progressId, { action, coach_notes: coach_notes?.trim() });
 
       // Remove from list
       setReviews((prev) => prev.filter((r) => r.progress_id !== progressId));

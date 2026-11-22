@@ -1,25 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { classifyJourneyDestination, destinationForGoal, JOURNEYS, resolvePostAuthJourney } from "../journeys";
+import {
+  classifyJourneyDestination,
+  destinationForGoal,
+  JOURNEYS,
+  resolvePostAuthJourney,
+} from "../journeys";
 
-describe("configurable journeys", () => {
-  it("keeps shop-only accounts separate from swimming membership", () => {
+describe("modular user journeys", () => {
+  it("lets a store-only customer register without swimming enrollment", () => {
     expect(JOURNEYS.store.stages).not.toContain("onboarding");
-    expect(resolvePostAuthJourney({})).toBe("/explore");
+    expect(resolvePostAuthJourney({ isFreshRegistration: true })).toBe("/explore");
     expect(resolvePostAuthJourney({ destination: "/store/checkout" })).toBe("/store/checkout");
     expect(classifyJourneyDestination("/account/orders")).toBe("store");
   });
-  it("preserves chosen swimming products and defers onboarding", () => {
+
+  it("retains a programme selection through email verification", () => {
     expect(destinationForGoal("academy")).toBe("/upgrade/academy/cohort");
     expect(resolvePostAuthJourney({ requestedTiers: ["academy"] })).toBe("/upgrade/academy/cohort");
     expect(resolvePostAuthJourney({ requestedTiers: ["club"] })).toBe("/upgrade/club/readiness");
     expect(resolvePostAuthJourney({ destination: "/checkout?purpose=community" })).toBe("/checkout?purpose=community");
   });
-  it("does not accept external return URLs", () => {
-    expect(resolvePostAuthJourney({ destination: "//attacker.test", communityActive: false })).toBe("/explore");
-    expect(classifyJourneyDestination("https://attacker.test")).toBeNull();
+
+  it("never accepts external return URLs or escalates an unrelated local URL", () => {
+    expect(resolvePostAuthJourney({ destination: "//other.example" })).toBeNull();
+    expect(resolvePostAuthJourney({ destination: "/admin/finance" })).toBeNull();
+    expect(classifyJourneyDestination("https://other.example")).toBeNull();
   });
-  it("does not override an enrolled member's default dashboard route", () => {
+
+  it("does not override existing members' onboarding/billing rules", () => {
     expect(resolvePostAuthJourney({ communityActive: true })).toBeNull();
     expect(resolvePostAuthJourney({ academyActive: true })).toBeNull();
+    expect(resolvePostAuthJourney({ isFreshRegistration: false })).toBeNull();
   });
 });

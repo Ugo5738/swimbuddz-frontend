@@ -135,6 +135,33 @@ export default function StrokeLabQueuePage() {
             />
           </section>
 
+          {snapshot.model_spend_24h_usd !== undefined ? (
+            <section className="mb-6">
+              <h2 className="mb-3 text-lg font-semibold text-slate-800">
+                StrokeLab model-provider costs
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <StatTile
+                  label="Last 24h"
+                  value={`${snapshot.model_spend_24h_usd.toFixed(2)}`}
+                  hint={`Daily budget: ${(snapshot.model_spend_limit_24h_usd ?? 0).toFixed(2)}`}
+                />
+                <StatTile
+                  label="Last 7 days"
+                  value={`${(snapshot.model_spend_7d_usd ?? 0).toFixed(2)}`}
+                  hint="Includes paid model calls on failed/retried jobs"
+                />
+                <StatTile
+                  label="Model cost per success"
+                  value={snapshot.model_spend_per_success_7d_usd != null
+                    ? `${snapshot.model_spend_per_success_7d_usd.toFixed(3)}`
+                    : "—"}
+                  hint="7-day model cost only; excludes S3, CPU, payment fees"
+                />
+              </div>
+            </section>
+          ) : null}
+
           <section>
             <h2 className="mb-3 text-lg font-semibold text-slate-800">
               Recent jobs

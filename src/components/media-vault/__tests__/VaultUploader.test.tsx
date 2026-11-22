@@ -93,4 +93,26 @@ describe("Vault uploader mobile UX", () => {
     );
     expect(screen.getByText(/5.0 MB\/s/)).toHaveTextContent("about 15 sec remaining");
   });
+
+  it("allows minimizing and expanding the queue during upload", () => {
+    const { container } = render(
+      <VaultUploader vault={vault} scope={{ kind: "member", vaultId: vault.id }} />
+    );
+    const file = new File(["video"], "drill-streamline.mov", { type: "video/quicktime" });
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(screen.getByText("drill-streamline.mov")).toBeInTheDocument();
+
+    const minimizeBtn = screen.getByRole("button", { name: /minimize/i });
+    fireEvent.click(minimizeBtn);
+
+    expect(screen.getByText(/Upload queue minimized/i)).toBeInTheDocument();
+    expect(screen.queryByText("drill-streamline.mov")).not.toBeInTheDocument();
+
+    const expandBtn = screen.getAllByRole("button", { name: /expand/i })[0];
+    fireEvent.click(expandBtn);
+
+    expect(screen.getByText("drill-streamline.mov")).toBeInTheDocument();
+  });
 });

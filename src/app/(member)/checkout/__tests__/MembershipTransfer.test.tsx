@@ -57,10 +57,10 @@ describe("annual Membership bank receipt", () => {
   it("offers manual transfer and routes to receipt upload without marking payment successful", async () => {
     render(<CheckoutPage />);
     fireEvent.click(await screen.findByRole("radio", { name: /Bank Transfer/ }));
-    expect(screen.getByText("Moniepoint MFB")).toBeInTheDocument();
-    expect(screen.getByText("6567710856")).toBeInTheDocument();
-    expect(screen.getByText("Swimbuddz Limited")).toBeInTheDocument();
-    expect(screen.queryByText("7033588400")).not.toBeInTheDocument();
+    expect(screen.getByText("Stanbic IBTC")).toBeInTheDocument();
+    expect(screen.getByText("0079760600")).toBeInTheDocument();
+    expect(screen.getByText("SWIMBUDDZ LIMITED")).toBeInTheDocument();
+    expect(screen.queryByText("6567710856")).not.toBeInTheDocument();
     const button = await screen.findByRole("button", { name: "Continue to transfer details" });
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);

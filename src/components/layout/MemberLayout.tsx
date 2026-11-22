@@ -1,9 +1,11 @@
 "use client";
 
+import { apiGet } from "@/lib/api";
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useApi } from "@/hooks/useApi";
 import { MemberProfileContext, type MemberInfo } from "@/lib/member-profile-context";
+import { shouldRefreshMemberProfileOnNavigation } from "@/lib/member-profile-refresh";
 import { supabase } from "@/lib/auth";
 import { listPodsILead } from "@/lib/pods";
 import {
@@ -19,6 +21,7 @@ import {
   Briefcase,
   Calendar,
   CalendarDays,
+  CalendarPlus,
   CheckCircle,
   ChevronDown,
   ChevronRight,
@@ -78,16 +81,12 @@ const navSections: NavSection[] = [
     title: "",
     items: [
       { href: "/account", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/account/book-next-swim", label: "Book My Next Swim", icon: CalendarPlus },
       { href: "/account/find-a-swim", label: "Find a Swim", icon: Waves },
+      { href: "/account/bookings", label: "My Swims", icon: CalendarDays },
       { href: "/account/calendar", label: "SwimBuddz Calendar", icon: CalendarDays },
+      { href: "/account/pools", label: "Explore Pools", icon: Waves },
       { href: "/account/onboarding", label: "Complete Setup", icon: CheckCircle },
-    ],
-  },
-  {
-    title: "My Swims",
-    icon: CalendarDays,
-    items: [
-      { href: "/account/bookings", label: "Sessions & Swimming History", icon: CalendarDays },
     ],
   },
   {
@@ -152,6 +151,25 @@ const MEMBER_NAV_EXPANDED_KEY = "swimbuddz-member-nav-expanded";
 
 export function MemberLayout({ children }: MemberLayoutProps) {
   const router = useRouter();
+  const [quickBookingBusy, setQuickBookingBusy] = useState(false);
+  const openNextSwim = async () => {
+    if (quickBookingBusy) return;
+    setQuickBookingBusy(true);
+    try {
+      const result = await apiGet<{primary: { id: string; access?: {bookable?: boolean} } | null}>(
+        "/api/v1/sessions/me/next-swim", {auth: true}
+      );
+      const next = result.primary;
+      router.push(next?.id && next.access?.bookable === true
+        ? `/sessions/${encodeURIComponent(next.id)}/book?source=next-swim`
+        : "/account/book-next-swim");
+    } catch {
+      router.push("/account/book-next-swim");
+    } finally {
+      setQuickBookingBusy(false);
+      setSidebarOpen(false);
+    }
+  };
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -179,7 +197,6 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    "My Swims": true,
     Community: true,
   });
   const profile = useApi<MemberInfo>("/api/v1/members/me");
@@ -229,16 +246,26 @@ export function MemberLayout({ children }: MemberLayoutProps) {
     ]);
   }, []);
 
-  // Keep sidebar membership/status in sync after in-app navigation
-  // (e.g., checkout -> billing without a Paystack reference query param).
-  // useApi fetches the profile on mount. Re-fetch only when navigating to a
-  // different path; otherwise mounting the layout immediately duplicates /me.
+  // The shell already fetches /members/me on mount. Refreshing on every
+  // client-side navigation creates unnecessary full-profile database queries.
+  // Keep display data fresh on occasional navigation, never on every click.
+  // Payment callbacks and explicit mutation refreshes remain immediate.
   const previousPathname = useRef(pathname);
+  const lastSidebarProfileRequestAt = useRef(Date.now());
   useEffect(() => {
     if (previousPathname.current === pathname) return;
     previousPathname.current = pathname;
+    const now = Date.now();
+    const needsRecovery = Boolean(profile.error) && !profile.loading;
+    if (
+      !needsRecovery &&
+      !shouldRefreshMemberProfileOnNavigation(lastSidebarProfileRequestAt.current, now)
+    ) {
+      return;
+    }
+    lastSidebarProfileRequestAt.current = now;
     refreshMember();
-  }, [pathname, refreshMember]);
+  }, [pathname, refreshMember, profile.error, profile.loading]);
 
   useEffect(() => {
     const reference = searchParams.get("reference") || searchParams.get("trxref");
@@ -383,14 +410,6 @@ export function MemberLayout({ children }: MemberLayoutProps) {
             : section.items.filter((item) => item.href !== "/account/onboarding"),
         };
       }
-      if (section.title === "My Swims") {
-        return {
-          ...section,
-          items: section.items.filter(
-            (item) => item.href !== "/account/club" || clubEntitled
-          ),
-        };
-      }
       if (section.title === "My Academy") {
         return {
           ...section,
@@ -521,14 +540,21 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                         <li key={item.href}>
                           <Link
                             href={item.href}
-                            onClick={() => setSidebarOpen(false)}
+                            onClick={(event) => {
+                              if (item.href === "/account/book-next-swim") {
+                                event.preventDefault();
+                                void openNextSwim();
+                              } else {
+                                setSidebarOpen(false);
+                              }
+                            }}
                             aria-current={active ? "page" : undefined}
                             title={item.label}
                             {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
+                            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : item.href === "/account/book-next-swim" ? "border border-white/50 text-white font-semibold hover:bg-white/10" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
                           >
                             <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-                            <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{item.label}</span>
+                            <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{item.href === "/account/book-next-swim" && quickBookingBusy ? "Finding next swim…" : item.label}</span>
                             {external && <ExternalLink className={`h-3.5 w-3.5 ${sidebarCollapsed ? "md:hidden" : ""}`} aria-hidden="true" />}
                           </Link>
                         </li>

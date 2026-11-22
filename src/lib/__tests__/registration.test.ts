@@ -193,6 +193,20 @@ describe("getPostAuthRedirectPath", () => {
     };
   }
 
+  it("starts a fresh store-only account with exploration rather than requiring community payment", async () => {
+    mockedApiGet.mockResolvedValue(buildMember({
+      profile_photo_media_id: null,
+      profile: { phone: null, swim_level: null },
+      membership: { tier_statuses: { community: { status: "approved_unpaid" } } },
+    }));
+    expect(await getPostAuthRedirectPath()).toBe("/explore");
+  });
+
+  it("preserves standalone store checkout before swimming onboarding", async () => {
+    expect(await getPostAuthRedirectPath("/store/checkout")).toBe("/store/checkout");
+    expect(mockedApiGet).not.toHaveBeenCalled();
+  });
+
   it("keeps a first-time Academy prospect's selected cohort through onboarding", async () => {
     mockedApiGet.mockResolvedValue(buildMember({ profile_photo_media_id: null, membership: { tier_statuses: { community: { status: "inactive" } } } }));
     expect(await getPostAuthRedirectPath("/account/academy/cohorts/chosen")).toBe("/account/academy/cohorts/chosen");
@@ -630,5 +644,53 @@ describe("getPostAuthRedirectPath", () => {
 
     const path = await getPostAuthRedirectPath();
     expect(path).toBe("/upgrade/academy/cohort");
+  });
+
+  // --- Store & explicit deep links ---
+
+  it("sends shoppers directly to /store/checkout without membership lookup even with incomplete onboarding", async () => {
+    expect(await getPostAuthRedirectPath("/store/checkout")).toBe("/store/checkout");
+    expect(mockedApiGet).not.toHaveBeenCalled();
+  });
+
+  it("does not hijack explicit deep links to /upgrade/academy/cohort when Academy was previously requested or expired", async () => {
+    mockedApiGet.mockResolvedValue(
+      buildMember({
+        membership: {
+          primary_tier: "community",
+          active_tiers: ["community"],
+          requested_tiers: ["academy"],
+          community_paid_until: "2027-07-22",
+          club_paid_until: "2026-10-22",
+          academy_paid_until: "2026-06-20",
+          paid_tier: "community",
+          paid_tiers: ["community"],
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "expired" },
+            academy: { status: "requested" },
+          },
+          academy_skill_assessment: { canFloat: true },
+          academy_goals: "Prepare for triathlon",
+          academy_preferred_coach_gender: "no_preference",
+          academy_lesson_preference: "flexible",
+        },
+      })
+    );
+
+    expect(await getPostAuthRedirectPath("/sessions/session-1")).toBe("/sessions/session-1");
+    expect(await getPostAuthRedirectPath()).toBe("/upgrade/academy/cohort");
+  });
+
+  it("preserves explicit destinations for active coaches instead of forcing /coach/dashboard", async () => {
+    mockedApiGet.mockResolvedValue(
+      buildMember({
+        roles: ["coach", "member"],
+        coach_profile: { status: "active" },
+      })
+    );
+
+    expect(await getPostAuthRedirectPath("/sessions/session-1")).toBe("/sessions/session-1");
+    expect(await getPostAuthRedirectPath()).toBe("/coach/dashboard");
   });
 });

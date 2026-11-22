@@ -1,5 +1,6 @@
 "use client";
 
+import { CohortAttendanceFields } from "@/components/admin/CohortAttendanceFields";
 import { PoolPicker } from "@/components/admin/PoolPicker";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -52,6 +53,7 @@ export function AddSessionModal({
     capacity: 10,
     pool_fee: 0,
     cohort_fee_mode: "included" as "included" | "paid_extra",
+    cohort_attendance_mode: "individual" as "automatic" | "individual",
     guest_fee: 0,
     community_dropin_fee: 0,
     notes: "",
@@ -82,6 +84,7 @@ export function AddSessionModal({
         capacity: formData.capacity,
         pool_fee: formData.pool_fee,
         cohort_fee_mode: formData.cohort_fee_mode,
+        cohort_attendance_mode: formData.cohort_fee_mode === "paid_extra" ? "individual" : formData.cohort_attendance_mode,
         guest_fee: formData.guest_fee || undefined,
         community_dropin_fee: formData.community_dropin_fee || undefined,
         notes: formData.notes || undefined,
@@ -104,6 +107,7 @@ export function AddSessionModal({
         capacity: 10,
         pool_fee: 0,
         cohort_fee_mode: "included",
+        cohort_attendance_mode: "individual",
         guest_fee: 0,
         community_dropin_fee: 0,
         notes: "",
@@ -233,6 +237,11 @@ export function AddSessionModal({
           <option value="included">Included in tuition / no extra charge</option>
           <option value="paid_extra">Paid extra class — charge separately</option>
         </Select>
+        <CohortAttendanceFields
+          value={formData.cohort_attendance_mode}
+          paidExtra={formData.cohort_fee_mode === "paid_extra"}
+          onChange={(mode) => setFormData({ ...formData, cohort_attendance_mode: mode })}
+        />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Capacity"

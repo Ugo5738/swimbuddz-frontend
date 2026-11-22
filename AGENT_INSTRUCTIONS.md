@@ -10,13 +10,26 @@ If you are an automated AI assistant modifying this codebase, you MUST follow th
 
 Before making code changes, always read:
 
-1. `ARCHITECTURE.md` – frontend structure & principles.
-2. `ROUTES_AND_PAGES.md` – the intended routes and page responsibilities.
-3. `UI_FLOWS.md` – user flows & UX expectations.
-4. `CONVENTIONS.md` – coding and UI conventions.
-5. `TODO.md` – the ordered list of tasks to implement.
+1. [`docs/DECISIONS.md`](./docs/DECISIONS.md) (and workspace root `../docs/DECISIONS.md`) – **canonical log of settled product, pricing, onboarding, attendance, and architecture decisions (`ADR-001`–`ADR-006`) and why they were made**.
+2. `ARCHITECTURE.md` – frontend structure & principles.
+3. `ROUTES_AND_PAGES.md` – the intended routes and page responsibilities.
+4. `UI_FLOWS.md` – user flows & UX expectations.
+5. `CONVENTIONS.md` – coding and UI conventions.
+6. `TODO.md` – the ordered list of tasks to implement.
 
 Do not start coding without absorbing these.
+
+---
+
+## 1A. Mandatory Cross-Agent Habit: Deliberate → Document → Code
+
+Every AI agent (OpenAI ChatGPT / Codex, Anthropic Claude, Google Gemini / Antigravity, Cursor, GitHub Copilot) MUST follow these two rules:
+
+1. **Never Override Settled Decisions Without Explicit Approval**:
+   - Before proposing or changing pricing/checkout UI, negotiated commercial terms vs. discount codes, bank receipt upload/reconciliation UI, Academy attendance UI, Club location onboarding/mobility UI, or admin member soft/hard delete flows, check [`docs/DECISIONS.md`](./docs/DECISIONS.md).
+   - Never silently undo or contradict a settled ADR in `docs/DECISIONS.md`. If a request conflicts with an ADR, point out the ADR number and rationale and confirm with the user first.
+2. **Always Update the Docs When Thinking Through or Implementing Features**:
+   - Whenever you and the user think through, discuss, or implement a product decision, UX flow, or architecture change, **update [`docs/DECISIONS.md`](./docs/DECISIONS.md) (and `../docs/DECISIONS.md` / `../swimbuddz-backend/docs/DECISIONS.md` if accessible) and `UI_FLOWS.md` / `ROUTES_AND_PAGES.md` in the same session/commit**.
 
 ---
 

@@ -24,6 +24,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -49,11 +50,16 @@ export default function StrokeLabResultPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const pollHandle = useRef<ReturnType<typeof setTimeout> | null>(null);
   const annotatedVideoRef = useRef<HTMLVideoElement | null>(null);
+  const originalVideoRef = useRef<HTMLVideoElement | null>(null);
+  const originalDetailsRef = useRef<HTMLDetailsElement | null>(null);
 
-  // Seek the annotated clip to a moment flagged by an observation and play.
+  // Seek the original video for coach-primary analyses; overlays are retired.
   const jumpToTimestamp = useCallback((seconds: number) => {
-    const video = annotatedVideoRef.current;
+    const video = annotatedVideoRef.current ?? originalVideoRef.current;
     if (!video) return;
+    if (!annotatedVideoRef.current && originalDetailsRef.current) {
+      originalDetailsRef.current.open = true;
+    }
     video.currentTime = seconds;
     video.play().catch(() => {
       /* autoplay may be blocked; the seek still happened */
@@ -171,7 +177,7 @@ export default function StrokeLabResultPage() {
               <p className="text-sm font-medium text-slate-800">
                 {job.status === "pending"
                   ? "Queued — we&apos;re about to start."
-                  : "Analysing — detecting your swimmer, then measuring."}
+                  : "Analysing — reviewing the visible freestyle technique."}
               </p>
               <p className="text-xs text-slate-500">
                 This updates automatically — no need to refresh. Most clips
@@ -198,46 +204,71 @@ export default function StrokeLabResultPage() {
 
       {result ? (
         <>
-          <section className="mb-6 grid gap-3 sm:grid-cols-3">
-            <MetricCard
-              label="Stroke rate"
-              value={
-                result.stroke_rate_spm != null
-                  ? `${result.stroke_rate_spm.toFixed(0)}`
-                  : "—"
-              }
-              unit="strokes / min"
-              hint="Each arm pull counts."
-            />
-            <MetricCard
-              label="Body roll"
-              value={
-                result.body_roll_proxy_degrees != null
-                  ? `${result.body_roll_proxy_degrees.toFixed(0)}°`
-                  : "—"
-              }
-              unit="from horizontal"
-              hint="Shoulder-line tilt across the clip."
-            />
-            <MetricCard
-              label="Breath balance"
-              value={
-                result.breath_balance_left_ratio != null
-                  ? `${Math.round(
-                      result.breath_balance_left_ratio * 100,
-                    )} / ${100 -
-                    Math.round(result.breath_balance_left_ratio * 100)}`
-                  : "—"
-              }
-              unit="left / right"
-              hint={
-                result.breath_count_left != null &&
-                result.breath_count_right != null
-                  ? `${result.breath_count_left}L · ${result.breath_count_right}R sustained breaths.`
-                  : "Detected sustained head-turns."
-              }
-            />
-          </section>
+          {result.coach_result ? (
+            <Card className="mb-6">
+              <h2 className="mb-2 text-lg font-semibold">Your freestyle technique review</h2>
+              <p className="mb-4 text-xs text-slate-500">
+                Automated observations based on the visible footage, not a
+                measured stroke rate or a substitute for your coach.
+              </p>
+              {result.coach_result.gate_tier === "borderline" ? (
+                <Alert variant="info" className="mb-4">
+                  The camera angle limits what Stroke Lab can verify.
+                  For more reliable feedback, record from the side.
+                </Alert>
+              ) : null}
+              {result.coach_result.results.flatMap((component) =>
+                component.findings.filter((finding) =>
+                  finding.available && ["fix", "strength", "info"].includes(finding.severity)
+                )
+              ).length === 0 ? (
+                <p className="text-sm text-slate-600">
+                  No reliable technique observations were available from this clip.
+                  Try a clearer side-on freestyle video.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {result.coach_result.results.flatMap((component) =>
+                    component.findings.filter((finding) =>
+                      finding.available && ["fix", "strength", "info"].includes(finding.severity)
+                    )
+                  ).map((finding, index) => {
+                    const evidence = finding.evidence_frames[0];
+                    const evidenceKey = evidence
+                      ? `${finding.component}:${evidence.index}` : null;
+                    const photo = evidenceKey
+                      ? result.coach_evidence_urls?.[evidenceKey] : null;
+                    return (
+                      <div key={`${finding.component}-${index}`} className="border-t border-slate-100 pt-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {finding.severity === "fix" ? "Work on this" :
+                           finding.severity === "strength" ? "What is working" : "Observation"}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-800">{finding.observation}</p>
+                        {evidence ? (
+                          <button type="button" onClick={() => jumpToTimestamp(evidence.timestamp_s)}
+                            className="mt-1 text-xs text-cyan-700 underline">
+                            View at {evidence.timestamp_s.toFixed(1)} seconds
+                          </button>
+                        ) : null}
+                        {photo ? (
+                          <Image src={photo} alt="Video frame supporting the observation"
+                            unoptimized width={320} height={180}
+                            className="mt-2 max-h-48 rounded-lg object-contain" />
+                        ) : null}
+                        {typeof finding.extra?.why_it_matters === "string" && finding.extra.why_it_matters ? (
+                          <p className="mt-2 text-sm text-slate-600">{finding.extra.why_it_matters}</p>
+                        ) : null}
+                        {typeof finding.extra?.drill === "string" && finding.extra.drill ? (
+                          <p className="mt-1 text-sm text-slate-600"><strong>Try:</strong> {finding.extra.drill}</p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          ) : null}
 
           {result.summary_text ? (
             <Card className="mb-6">
@@ -306,12 +337,13 @@ export default function StrokeLabResultPage() {
       ) : null}
 
       {job.original_video_url ? (
-        <details className="mb-6">
+        <details ref={originalDetailsRef} className="mb-6">
           <summary className="cursor-pointer text-sm text-cyan-700">
             Show original upload
           </summary>
           <div className="mt-3">
             <video
+              ref={originalVideoRef}
               controls
               playsInline
               src={job.original_video_url}
@@ -323,7 +355,7 @@ export default function StrokeLabResultPage() {
 
       <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
         <p className="text-xs text-slate-400">
-          Stroke Lab is a measurement tool — share with a coach for personal
+          Stroke Lab is an automated technique review — share with a coach for personal
           guidance.
         </p>
         <Button

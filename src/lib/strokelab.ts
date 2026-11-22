@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiUpload } from "./api";
+import { ApiError, apiDelete, apiGet, apiPost, apiUpload } from "./api";
 
 // ─── Types ────────────────────────────────────────────────────────────
 //
@@ -47,6 +47,29 @@ export type TrackingGap = {
   duration_s: number;
 };
 
+export type StrokeLabCoachFinding = {
+  component: string;
+  observation: string;
+  severity: "fix" | "strength" | "info" | "unavailable";
+  confidence: number;
+  available: boolean;
+  evidence_frames: Array<{ index: number; timestamp_s: number }>;
+  extra?: Record<string, unknown>;
+};
+
+export type StrokeLabCoachResult = {
+  input_profile: string;
+  gate_tier: string;
+  refused: boolean;
+  results: Array<{
+    component: string;
+    findings: StrokeLabCoachFinding[];
+    error: string | null;
+    meta?: Record<string, unknown>;
+  }>;
+  meta?: Record<string, unknown>;
+};
+
 export type AnalysisResultPayload = {
   // Null on coach-primary runs (the legacy pose/metrics pass is retired).
   detected_stroke: string | null;
@@ -61,6 +84,9 @@ export type AnalysisResultPayload = {
   summary_text: string | null;
   observations: Observation[];
   tracking_gaps: TrackingGap[];
+  coach_result: StrokeLabCoachResult | null;
+  coach_evidence_urls: Record<string, string> | null;
+  coach_share_urls: Record<string, string> | null;
 };
 
 export type AnalysisJobDetail = AnalysisJob & {
@@ -71,10 +97,9 @@ export type AnalysisJobDetail = AnalysisJob & {
 
 // ─── Constants ────────────────────────────────────────────────────────
 
-// Keep in lock-step with MAX_UPLOAD_BYTES + storage bucket limits on the
-// backend. Update here AND in services/ai_service/routers/analyze.py
-// AND in scripts/strokelab/setup_buckets.py if you change it.
-export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+// Member uploads use media_service presigned private S3 PUTs, not the 50 MiB
+// API-buffered legacy multipart path. Keep in sync with ai_service constants.
+export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024;
 export const MAX_DURATION_SECONDS = 60;
 
 export const ACCEPTED_VIDEO_MIME = "video/mp4,video/quicktime,video/x-m4v,video/webm";
@@ -88,29 +113,89 @@ export type CreateAnalysisJobInput = {
   onProgress?: (percent: number) => void;
 };
 
-/**
- * Multipart upload using the shared progress-aware transport.
- */
+type MemberDirectUpload = {
+  job_id: string;
+  upload_url: string;
+  headers: Record<string, string>;
+  expires_in: number;
+};
+
+function putMemberVideo(
+  file: File,
+  target: MemberDirectUpload,
+  onProgress?: (percent: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", target.upload_url);
+    for (const [name, value] of Object.entries(target.headers || {})) {
+      xhr.setRequestHeader(name, value);
+    }
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress?.(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(100);
+        resolve();
+      } else {
+        reject(new Error(`Private video upload failed (${xhr.status}). Try again on a stable connection.`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network connection lost while uploading your video."));
+    xhr.onabort = () => reject(new Error("Video upload cancelled."));
+    xhr.send(file);
+  });
+}
+
+/** Upload member footage directly to S3, then verify and enqueue on backend. */
 export async function createAnalysisJob({
   file,
   strokeType = "freestyle",
   isPublic = false,
   onProgress,
 }: CreateAnalysisJobInput): Promise<AnalysisJob> {
-  if (file.size > MAX_UPLOAD_BYTES) {
+  if (!file.size || file.size > MAX_UPLOAD_BYTES) {
     throw new Error(
-      `Video is ${(file.size / 1024 / 1024).toFixed(1)} MB — limit is ${
-        MAX_UPLOAD_BYTES / 1024 / 1024
-      } MB.`
+      `Video exceeds the 2 GB direct-upload limit (size ${(file.size / 1024 / 1024).toFixed(1)} MB).`
     );
   }
-
-  const formData = new FormData();
-  formData.append("video", file);
-  formData.append("stroke_type", strokeType);
-  formData.append("is_public", isPublic ? "true" : "false");
-
-  return apiUpload<AnalysisJob>("/api/v1/ai/analyze", formData, { auth: true, onProgress });
+  let target: MemberDirectUpload;
+  try {
+    target = await apiPost<MemberDirectUpload>(
+      "/api/v1/ai/analyze/uploads",
+      {
+        filename: file.name || "clip.mp4",
+        content_type: file.type || "video/mp4",
+        size_bytes: file.size,
+        stroke_type: strokeType,
+        is_public: isPublic,
+      },
+      { auth: true },
+    );
+  } catch (error) {
+    // Retain the old 50 MiB route only for a backend that has not yet
+    // deployed the direct-upload API, never as a large-file fallback.
+    if (error instanceof ApiError && [404, 405, 501].includes(error.status)
+      && file.size <= 50 * 1024 * 1024) {
+      const form = new FormData();
+      form.append("video", file);
+      form.append("stroke_type", strokeType);
+      form.append("is_public", isPublic ? "true" : "false");
+      return apiUpload<AnalysisJob>("/api/v1/ai/analyze", form, {
+        auth: true, onProgress,
+      });
+    }
+    throw error;
+  }
+  await putMemberVideo(file, target, onProgress);
+  return apiPost<AnalysisJob>(
+    `/api/v1/ai/analyze/${target.job_id}/complete-upload`,
+    {},
+    { auth: true },
+  );
 }
 
 export function getAnalysisJob(jobId: string) {
@@ -155,6 +240,10 @@ export type QueueSnapshot = {
   success_rate_pct: number;
   recent_jobs: QueueRecentJob[];
   queue_depth_approx: number;
+  model_spend_24h_usd?: number;
+  model_spend_7d_usd?: number;
+  model_spend_limit_24h_usd?: number;
+  model_spend_per_success_7d_usd?: number | null;
 };
 
 export function getQueueSnapshot(recentLimit = 25) {

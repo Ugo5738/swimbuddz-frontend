@@ -119,17 +119,11 @@ describe("MemberLayout desktop navigation", () => {
     );
   });
 
-  it("allows an active sidebar section to collapse and expand", async () => {
-    window.history.replaceState({}, "", "/account/bookings");
+  it("offers a direct next swim action and My Swims destination", async () => {
+    window.history.replaceState({}, "", "/account");
     render(<MemberLayout><div>Content</div></MemberLayout>);
-    const toggle = await screen.findByRole("button", { name: "My Swims" });
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("link", { name: "Sessions & Swimming History", hidden: true }).closest("ul")).toHaveClass("hidden");
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    window.history.replaceState({}, "", "/");
+    expect(await screen.findByRole("link", { name: "Book My Next Swim" })).toHaveAttribute("href", "/account/book-next-swim");
+    expect(screen.getByRole("link", { name: "My Swims" })).toHaveAttribute("href", "/account/bookings");
   });
 
   it("restores a previously collapsed sidebar", async () => {

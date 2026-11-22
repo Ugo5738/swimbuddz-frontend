@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 export type Profile = {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   joinedAt: string;
   email: string;
   phone: string;
@@ -148,6 +150,8 @@ export type ProfileEditFormProps = {
 };
 
 export type FormState = {
+  firstName: string;
+  lastName: string;
   phone: string;
   city: string;
   country: string;

@@ -511,6 +511,7 @@ export function VaultLibrary({ vaults, admin = false }: { vaults: MediaVault[]; 
       )}
       {viewingVideo && (
         <VaultVideoDialog
+          canEditClip={admin}
           item={viewingVideo}
           working={videoWorking}
           error={videoError}

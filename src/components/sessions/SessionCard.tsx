@@ -485,7 +485,7 @@ export function SessionCard({
             </div>
           )}
 
-        {isAcademy && cohortInfo?.isEnrolled && session.cohort_fee_mode !== "paid_extra" &&
+        {isAcademy && cohortInfo?.isEnrolled && session.cohort_fee_mode !== "paid_extra" && session.cohort_attendance_mode !== "individual" &&
           access?.reason !== "cohort_access_suspended" && !effectivelyPast &&
           <AcademyAttendanceException sessionId={session.id} startsAt={session.starts_at} attendanceStatus={attendanceStatus} />}
 

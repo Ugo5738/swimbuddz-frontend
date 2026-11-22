@@ -113,25 +113,32 @@ export function AcademyDetailsStep({
         <option value="no_preference">No preference</option>
       </Select>
 
+      {/* Format Callout & Preference */}
+      <div className="rounded-xl border border-purple-200 bg-purple-50/70 p-4 text-xs text-purple-900 space-y-1.5">
+        <p className="font-semibold text-purple-950">About Academy Classes & Structure</p>
+        <p>
+          SwimBuddz Academy programmes are structured <strong>small-group cohorts</strong> (typically 4–6 learners per coach).
+          Your lesson preference below is an indicator for personalized recommendations and helps us gauge demand for future 1-on-1 private lesson offerings.
+        </p>
+      </div>
+
       <Select
-        label="Lesson Preference"
+        label="Lesson Format Preference (for future recommendations)"
         name="academyLessonPreference"
         value={formData.academyLessonPreference}
         onChange={(e) => onUpdate("academyLessonPreference", e.target.value)}
+        hint="All scheduled Academy cohorts are small groups. Tell us your preference for recommendations or future private offerings."
         required
       >
         <option value="">Select preference</option>
-        <option value="group">Group lessons (more affordable)</option>
-        <option value="one_on_one">One-on-one lessons (personalized)</option>
-        <option value="flexible">Flexible - either works</option>
+        <option value="group">Group cohort (standard SwimBuddz Academy classes)</option>
+        <option value="one_on_one">1-on-1 private lessons (interest indicator for future private coaching)</option>
+        <option value="flexible">Flexible — open to either</option>
       </Select>
 
       <div className="rounded-lg bg-slate-100 p-4">
         <p className="text-sm text-slate-700">
-          <strong>Next steps:</strong> After onboarding, your dashboard will
-          show available Academy programs and cohorts that match your level and
-          goals. You can review details, schedules, and pricing before
-          enrolling.
+          <strong>Next steps:</strong> After onboarding, you will choose an upcoming <strong>small-group Academy cohort</strong> that matches your level and schedule. You can review details, schedules, and pricing before enrolling.
         </p>
       </div>
     </div>

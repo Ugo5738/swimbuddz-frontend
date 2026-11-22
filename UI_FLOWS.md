@@ -6,6 +6,32 @@ The implementation of pages should follow these flows closely.
 **Last Updated:** September 2026
 **Total Routes:** 103 pages across Community, Club, Academy, Store, Events, and Admin domains
 
+**17 November resource follow-up:** backend announcement filters ignore the
+non-audience membership label `prospect`, so unread-count/list/detail/statistics
+requests keep their existing visibility without enum errors. Membership mutation
+responses remain complete while their database loading is narrowed. Independent
+Members/Chat API connection canaries are prepared default-off; they change no
+frontend flow, entitlement or payment rule. Roll out and measure them one at a
+time under the backend connection-canary runbook.
+
+---
+
+## November 16, 2026 — request budgets and Media Vault bandwidth
+
+- The member shell reuses its loaded profile during rapid navigation, with
+  display revalidation at most once per 60 seconds. Explicit profile edits and
+  payment-return refreshes remain immediate; server access/settlement checks
+  remain authoritative.
+- The admin sidebar refreshes payment-review/store-order counts every 30 seconds
+  while visible, pauses in hidden tabs, avoids overlapping requests and refreshes
+  on return. Unmount removes its timer and visibility listener.
+- Media Vault bandwidth shows measured preview/derivative delivery separately
+  from matched originals and pending original estimates. This is S3 usage, not
+  Supabase egress or an authoritative AWS free-allowance balance.
+- Release the backend and retry migration first, verify its workflows, then
+  promote this frontend. The deployment recovery gate and staged connection-pool
+  pilot are documented in the backend operations runbooks.
+
 ---
 
 ## 1. New Visitor → Registered Member
@@ -131,6 +157,12 @@ The implementation of pages should follow these flows closely.
    - Optionally allow filtering by date range.
 
 ---
+
+### Swim rewards
+
+- The member dashboard shows reward days this week, the next earning opportunity and a link to the reward section in My Swims.
+- My Swims shows lifetime confirmed swims since the rewards launch, awarded value, current streak, weekly limit and progress toward swim badges. The reward history link opens the existing wallet history.
+- After a session starts, the coach or admin checks which swimmers actually attended, records exceptions and explicitly confirms Present/Late swimmers for rewards. The credit appears after the Attendance worker processes the confirmation.
 
 ## 4. Admin → Manage Sessions & Attendance
 
@@ -268,7 +300,7 @@ The implementation of pages should follow these flows closely.
    - Navigates to `/store/cart`.
    - Reviews items, quantities, subtotal.
    - Can update quantities or remove items.
-   - Clicks "Proceed to Checkout".
+   - Clicks "Proceed to Checkout" (or **"Login to Checkout"** if browsing as a guest, which redirects via `/login?redirect=/store/checkout` and returns straight to `/store/checkout` after login regardless of pending programme requests or onboarding status).
 
 4. On `/store/checkout`:
 
@@ -282,6 +314,12 @@ The implementation of pages should follow these flows closely.
    - Navigates to `/store/orders/[id]`.
    - Shows order confirmation with order number.
    - Member can track order status.
+
+For the reviewed Esther preorder correction, the order shows the replacement
+goggles at ₦15,000 and the revised ₦42,000 total. The original ₦37,000 receipt and
+₦5,000 top-up are reviewed separately in Admin Payments. Neither partial payment
+alone fulfills the order. This is a scoped operator correction, with no new
+exchange control in the UI; do not ask the member to pay the full total again.
 
 ---
 
@@ -721,3 +759,34 @@ this flow.
 - Reopening an outstanding session settlement resumes its existing payable attempt, even with another browser retry key. Incompatible choices and multiple historical links require Admin reconciliation. Paid receipts awaiting fulfillment never ask for another payment.
 - Academy caches both billing modes with zero-Bubbles fallbacks. Switching to an installment that cannot cover the selected Bubbles resets the applied amount to zero, explains the reset, and immediately shows the correct due. A valid amount stays selected across switches; toggling alone does not request another quote.
 - Admin settlement-link generation works without a member email. Email sharing is offered only when an address exists; the recipient signs in to the booking owner's account. The nullable reference is not displayed as a provider transaction.
+
+
+### Reviewed historical session and Bubble settlement correction (16 Nov 2026)
+
+Past attendance uses completed Sessions and Admin member/guest walk-ins. Verify the
+member admission quote; a configured visitor price does not imply every legacy
+Club member resolves as a visitor. Record an explicit agreed-price reason when
+needed. Combined settlement links cover the exact recorded member and guest debt.
+Missing guest consent stays pending. A reviewed zero-cash, fully reversed Bubble
+payment retains its original receipt but no longer blocks a new payment for the
+reopened booking. Private Admin proof is required; member metadata is insufficient.
+Billing shows the reopened fee and the correct swim as settled. No new public API
+or frontend control is introduced by the scoped operator repair. See backend
+`docs/SESSION_WALLET_REALLOCATION_RUNBOOK.md` for checks and accounting replay.
+
+
+### Finance intelligence availability (20 Nov 2026)
+
+The Finance Intelligence page gets its operational rollup from the Ledger
+service. The signed-in caller needs an active Ledger membership at viewer level
+or above. The page uses the existing report contract after Ledger startup
+recovery.
+
+### Store availability and procurement authorization (19 Nov 2026)
+
+The public Store catalogue starts independently of Finance. Owner-only Store
+procurement actions check the signed-in caller's current Finance membership over
+HTTP; an application admin or procurement grant does not imply Finance Owner
+access. Finance denial/unavailability fails the protected action, preserving
+independent approval, without preventing products from loading. This corrects a
+Store startup import failure and introduces no checkout or price changes.

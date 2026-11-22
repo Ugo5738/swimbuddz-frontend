@@ -34,7 +34,7 @@ const labels = {
   walk_in_guest: "Walk-in guest",
 };
 
-export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
+export function SessionSwimmerRoster({ sessionId, guestsOnly = false }: { sessionId: string; guestsOnly?: boolean }) {
   const roster = useApi<Roster>(`/api/v1/admin/sessions/${sessionId}/roster`);
   const [minutes, setMinutes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
@@ -109,6 +109,7 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
     }
   };
   const rows = (roster.data?.entries ?? []).filter((row) =>
+    (!guestsOnly || row.kind !== "member") &&
     `${row.full_name} ${labels[row.kind]} ${row.inviter || ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
@@ -116,9 +117,9 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
   return (
     <Card className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">All swimmers</h2>
+        <h2 className="text-lg font-semibold">{guestsOnly ? "Guests and visiting swimmers" : "All swimmers"}</h2>
         <p className="text-sm text-slate-600">
-          Members, guests on member bookings, self-paying guests and door walk-ins in one roster.
+          {guestsOnly ? "Guest passes, guests invited on member bookings, and unregistered walk-ins. Payment and waiver follow-up stays here." : "Members, guests on member bookings, self-paying guests and door walk-ins in one roster."}
         </p>
       </div>
       {roster.loading && <p className="text-sm">Loading swimmer roster...</p>}
@@ -244,7 +245,7 @@ export function SessionSwimmerRoster({ sessionId }: { sessionId: string }) {
         </table>
       </div>
       {!roster.loading && !roster.error && !rows.length && (
-        <p className="text-sm text-slate-500">No swimmers found.</p>
+        <p className="text-sm text-slate-500">{guestsOnly ? "No guest records for this session." : "No swimmers found."}</p>
       )}
       <Link
         href={`/admin/guest-passes?session_id=${sessionId}`}

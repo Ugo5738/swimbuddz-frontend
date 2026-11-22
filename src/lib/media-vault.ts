@@ -141,6 +141,22 @@ export type BandwidthSummary = {
   measurement_note: string;
 };
 
+/**
+ * S3-measured derivative/preview traffic has no original-download grant.
+ * The current stable API includes it in effective bytes; recover its
+ * disjoint share without changing the existing response contract.
+ */
+export function unattributedPreviewBytes(
+  month: BandwidthSummary["months"][number]
+): number {
+  return Math.max(
+    0,
+    month.download_effective_bytes -
+      month.download_reconciled_bytes -
+      month.download_pending_estimate_bytes
+  );
+}
+
 export const MEDIA_VAULT_CONTRIBUTOR_REOPEN_DAYS = 7;
 
 export const DEFAULT_MEDIA_VAULT_CHECKLIST = [

@@ -158,6 +158,8 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 
 ### Wallet & Rewards (Member)
 
+The member dashboard shows this week’s progress. My Swims at `/account/bookings#swim-rewards` shows the full activity and earnings summary.
+
 | Route                             | File                                                       | Purpose                                         |
 | --------------------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
 | `/account/wallet/referrals`       | `src/app/(member)/account/wallet/referrals/page.tsx`       | Referral hub — code, stats, ambassador, records |

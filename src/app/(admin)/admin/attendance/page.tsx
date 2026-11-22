@@ -1,13 +1,14 @@
 "use client";
 
+import { SessionParticipantManager } from "@/components/admin/SessionParticipantManager";
+import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
 import { CorrectMissingCohortFee } from "@/components/admin/CorrectMissingCohortFee";
 import {
   OfflineSessionPaymentModal,
   type OfflineSessionPaymentInput,
 } from "@/components/admin/OfflineSessionPaymentModal";
-import { RecordSessionWalkIn, type GuestWalkInInput } from "@/components/admin/RecordSessionWalkIn";
-import { GuestSessionAdminCard } from "@/components/guest-passes/GuestSessionAdminCard";
-import { SessionSwimmerRoster } from "@/components/guest-passes/SessionSwimmerRoster";
+import type { GuestWalkInInput } from "@/components/admin/RecordSessionWalkIn";
+
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
@@ -46,6 +47,7 @@ type Session = ClubSessionScope & {
   week_number: number | null;
   cohort_id: string | null;
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   session_type: string | null;
   pod_id: string | null;
   // Per-session pool fee in NAIRA (the member endpoint converts kobo→naira
@@ -54,6 +56,8 @@ type Session = ClubSessionScope & {
   // on rows that aren't yet booked so the admin sees the cost up front.
   pool_fee: number | null;
   guest_fee?: number | null;
+  allows_guests?: boolean;
+  guest_booking_mode?: "disabled" | "public" | "member_invite" | "approval_required";
 };
 
 type Cohort = {
@@ -90,6 +94,7 @@ type Attendance = {
   role: string;
   notes: string | null;
   member_id: string | null;
+  swim_verified_on?: string | null;
   participant_id?: string | null;
   ride_share_option?: string;
   needs_ride?: boolean;
@@ -129,6 +134,7 @@ type RosterRow = {
   member_id: string;
   name: string;
   email: string;
+  quotedFeeAmountKobo?: number | null;
   source: RosterSource;
   // The attendance record, if one exists. Absence of a row + cohort source =
   // default-present (the cohort attendance model).
@@ -621,6 +627,7 @@ export default function AdminAttendancePage() {
           member_id: member.member_id,
           name: member.name,
           email: member.email,
+          quotedFeeAmountKobo: member.fee_amount_kobo,
           source: "club",
           attendance,
           booking,
@@ -637,6 +644,7 @@ export default function AdminAttendancePage() {
         const effective = academyAttendanceStatus({
           recordedStatus: att?.status,
           feeMode: selectedSession?.cohort_fee_mode,
+          attendanceMode: selectedSession?.cohort_attendance_mode,
           hasConfirmedBooking: Boolean(booking),
           eligibleEnrollment: !e.access_suspended,
           joinedAt: e.created_at,
@@ -650,7 +658,7 @@ export default function AdminAttendancePage() {
           attendance: att,
           booking,
           ride_info: att?.ride_info,
-          effectiveStatus: effective,
+          effectiveStatus: !att && !booking && (selectedSession?.cohort_attendance_mode === "individual" || selectedSession?.cohort_fee_mode === "paid_extra") ? "awaiting" : effective,
         });
       }
     }
@@ -702,6 +710,7 @@ export default function AdminAttendancePage() {
     memberLookup,
     sessionStarted,
     selectedSession?.cohort_fee_mode,
+    selectedSession?.cohort_attendance_mode,
     selectedSession?.starts_at,
   ]);
 
@@ -743,7 +752,7 @@ export default function AdminAttendancePage() {
   // Mark walk-in: cohort member showed up without pre-booking. Creates an
   // admin-channel SessionBooking (fee defaulted by the backend to the
   // session's own pool_fee) and marks them PRESENT — all in one click.
-  const handleMarkWalkIn = async (memberId: string, feeAmountKobo?: number, note?: string) => {
+  const handleMarkWalkIn = async (memberId: string, feeAmountKobo?: number, note?: string, overrideReason?: string) => {
     if (!selectedSessionId) return;
     setSubmittingMark(true);
     setError(null);
@@ -756,6 +765,7 @@ export default function AdminAttendancePage() {
           member_id: memberId,
           ...(feeAmountKobo !== undefined ? { fee_amount_kobo: feeAmountKobo } : {}),
           ...(note ? { notes: note } : {}),
+          ...(overrideReason ? { fee_override_reason: overrideReason } : {}),
         },
         { auth: true }
       );
@@ -805,7 +815,7 @@ export default function AdminAttendancePage() {
       setMarkSuccess(
         result.attendance_recorded
           ? `Guest walk-in recorded for ${result.full_name_snapshot}.`
-          : `Guest saved for ${result.full_name_snapshot}, but attendance sync needs retry.`
+          : `Guest ${result.full_name_snapshot} recorded. Check waiver/permission before admitting to the pool; attendance was not confirmed.`
       );
       setRosterRefreshVersion((version) => version + 1);
     } catch (err) {
@@ -858,30 +868,32 @@ export default function AdminAttendancePage() {
     }
   };
 
-  const handleSaveRoster = async () => {
+  const confirmableSwimmers = filteredRoster.filter((row) =>
+    ["present", "late"].includes(row.effectiveStatus) && !row.attendance?.swim_verified_on &&
+    (!row.attendance || row.attendance.role === "swimmer")
+  );
+  const handleSaveRoster = async (confirmSwimmers = false) => {
     if (!selectedSessionId) return;
-    // Build entries from drafts whose target differs from current effective.
     const entries: CoachMarkEntry[] = [];
-    for (const r of roster) {
-      const target = drafts.get(r.member_id);
-      if (!target || target === r.effectiveStatus) continue;
-      entries.push({
-        member_id: r.member_id,
-        status: target,
-        notes: null,
-      });
+    if (confirmSwimmers) {
+      if (pendingChangeCount) return;
+      for (const row of confirmableSwimmers) {
+        entries.push({ member_id: row.member_id, status: row.effectiveStatus as DraftStatus, notes: null });
+      }
+    } else {
+      for (const row of roster) {
+        const target = drafts.get(row.member_id);
+        if (target && target !== row.effectiveStatus) entries.push({ member_id: row.member_id, status: target, notes: null });
+      }
     }
-    if (entries.length === 0) {
-      setMarkSuccess("No changes to save.");
-      return;
-    }
+    if (!entries.length) return;
     setSubmittingMark(true);
     setError(null);
     setMarkSuccess(null);
     try {
       await apiPost(
         `/api/v1/attendance/sessions/${selectedSessionId}/coach-mark`,
-        { entries },
+        { entries, confirm_swimmers: confirmSwimmers },
         { auth: true }
       );
       const [refreshed, refreshedBookings] = await Promise.all([
@@ -897,7 +909,7 @@ export default function AdminAttendancePage() {
       setAttendanceList(refreshed);
       setBookings(refreshedBookings);
       setDrafts(new Map());
-      setMarkSuccess(`Saved ${entries.length} change${entries.length === 1 ? "" : "s"}.`);
+      setMarkSuccess(confirmSwimmers ? `Confirmed ${entries.length} swimmers for rewards.` : `Saved ${entries.length} attendance changes.`);
     } catch (err) {
       console.error("Failed to save attendance", err);
       const msg = err instanceof Error ? err.message : "Unknown error";
@@ -1199,18 +1211,6 @@ export default function AdminAttendancePage() {
           </select>
         </div>
 
-        {selectedSessionId && (
-          <>
-            <GuestSessionAdminCard
-              key={`guest-${selectedSessionId}`}
-              sessionId={selectedSessionId}
-            />
-            <SessionSwimmerRoster
-              key={`roster-${selectedSessionId}-${rosterRefreshVersion}`}
-              sessionId={selectedSessionId}
-            />
-          </>
-        )}
         {!loadingRoster && selectedSessionId ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:hidden">
             <ReconciliationStat label="Confirmed bookings" value={confirmedBookings.length} />
@@ -1219,7 +1219,7 @@ export default function AdminAttendancePage() {
               value={attendanceList.length}
             />
             <ReconciliationStat
-              label={sessionStarted ? "No-shows" : "Pending arrivals"}
+              label={isCohortSession && (selectedSession?.cohort_fee_mode === "paid_extra" || selectedSession?.cohort_attendance_mode === "individual") ? "Booked no-shows" : sessionStarted ? "No-shows" : "Pending arrivals"}
               value={unmatchedBookings.length}
               tone={unmatchedBookings.length === 0 ? "ok" : sessionStarted ? "warn" : "neutral"}
             />
@@ -1238,21 +1238,42 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
-        {/* Print-only header */}
-        {!loadingRoster && selectedSessionId && sessionStarted && (
-          <RecordSessionWalkIn
+        {selectedSessionId && selectedSession && !loadingRoster && (
+          <SessionParticipantManager
             key={selectedSessionId}
-            defaultFee={
-              isCohortSession && selectedSession?.cohort_fee_mode !== "paid_extra"
-                ? 0
-                : (selectedSession?.pool_fee ?? 0)
-            }
-            defaultGuestFee={selectedSession?.guest_fee ?? selectedSession?.pool_fee ?? 0}
-            disabled={submittingMark}
-            eligibleMembers={isClubSession ? clubRosterMembers.map((member) => ({
-              id: member.member_id, first_name: member.name, last_name: "", email: member.email,
+            sessionId={selectedSessionId}
+            isAcademy={isCohortSession}
+            sessionStarted={sessionStarted}
+            enrollments={cohortRoster}
+            memberNames={Object.fromEntries(roster.map((row) => [row.member_id, row.name]))}
+            defaultMemberFee={isCohortSession ? (selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0) : (selectedSession.pool_fee ?? 0)}
+            academyStandardFee={selectedSession.pool_fee}
+            defaultGuestFee={selectedSession.guest_fee ?? selectedSession.pool_fee ?? 0}
+            guestAdmissionEnabled={Boolean(selectedSession.allows_guests || (selectedSession.guest_booking_mode && selectedSession.guest_booking_mode !== "disabled"))}
+            eligibleClubMembers={isClubSession ? clubRosterMembers.map((member) => ({
+              id: member.member_id, first_name: member.name, last_name: "",
+              email: member.email, fee_amount_kobo: member.fee_amount_kobo,
             })) : undefined}
-            onRecord={handleMarkWalkIn}
+            disabled={submittingMark}
+            routineSessions={Object.fromEntries(sessions.map((session) => [session.id, {
+              title: session.title || "Academy class", starts_at: session.starts_at,
+            }]))}
+            onReviewAcademySession={(sessionId) => {
+              setSessionQuery("");
+              setSessionTypeFilter("all");
+              setSelectedSessionId(sessionId);
+            }}
+            onRecordAcademy={() => {
+              setRosterRefreshVersion((version) => version + 1);
+              void Promise.all([
+                apiGet<Attendance[]>(`/api/v1/attendance/sessions/${selectedSessionId}/attendance`, { auth: true }),
+                apiGet<SessionBookingResponse[]>(`/api/v1/sessions/${selectedSessionId}/bookings`, { auth: true }),
+              ]).then(([currentAttendance, currentBookings]) => {
+                setAttendanceList(currentAttendance);
+                setBookings(currentBookings);
+              }).catch(() => setError("Participant recorded. Refresh the page to see updated attendance."));
+            }}
+            onRecordMember={handleMarkWalkIn}
             onRecordGuest={handleRecordGuestWalkIn}
           />
         )}
@@ -1309,6 +1330,11 @@ export default function AdminAttendancePage() {
                 <option value="not_booked">Not booked</option>
               </select>
             </div>
+            {sessionStarted && confirmableSwimmers.length > 0 && (
+              <Button disabled={submittingMark || pendingChangeCount > 0} onClick={() => handleSaveRoster(true)}>
+                Confirm {confirmableSwimmers.length} listed Present/Late swimmers for Bubbles
+              </Button>
+            )}
             {filteredRoster.length === 0 && roster.length > 0 ? (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
                 No roster members match these filters.
@@ -1328,6 +1354,7 @@ export default function AdminAttendancePage() {
                 unmatchedBookingCount={unmatchedBookings.length}
                 onDraftStatus={handleDraftStatus}
                 onMarkWalkIn={handleMarkWalkIn}
+                academyAllocationOnly={isCohortSession && (selectedSession?.cohort_fee_mode === "paid_extra" || selectedSession?.cohort_attendance_mode === "individual")}
                 onGeneratePayLink={handleGeneratePayLink}
                 onBookingCorrected={(corrected) =>
                   setBookings((existing) =>
@@ -1340,7 +1367,7 @@ export default function AdminAttendancePage() {
                 }}
                 onRefundPoolFee={handleRefundPoolFee}
                 onBulkMarkPresent={handleBulkMarkPresent}
-                onSaveRoster={handleSaveRoster}
+                onSaveRoster={() => handleSaveRoster()}
                 submitting={submittingMark}
                 successMessage={markSuccess}
                 pendingChangeCount={pendingChangeCount}
@@ -1349,6 +1376,14 @@ export default function AdminAttendancePage() {
           </div>
         ) : null}
 
+        {selectedSessionId && !loadingRoster && (
+          <SessionSwimmerRoster
+            key={`guest-roster-${selectedSessionId}-${rosterRefreshVersion}`}
+            sessionId={selectedSessionId}
+            guestsOnly
+          />
+        )}
+        
         {loadingRoster && <LoadingPage text="Loading attendance..." />}
       </div>
 
@@ -1363,6 +1398,28 @@ export default function AdminAttendancePage() {
             if (recordingOfflinePayment) return;
             setOfflinePaymentModal(null);
             setOfflinePaymentError(null);
+          }}
+          onSubmitEvidence={async (input) => {
+            if (!offlinePaymentModal || !selectedSessionId) return;
+            setRecordingOfflinePayment(true);
+            setOfflinePaymentError(null);
+            try {
+              const payment = await apiPost<PaymentResponse>(
+                `/api/v1/payments/admin/bookings/${offlinePaymentModal.bookingId}/evidence`,
+                input,
+                { auth: true }
+              );
+              setOfflinePaymentModal(null);
+              setMarkSuccess(
+                `Receipt ${payment.reference} submitted for review. Payment is not yet verified.`
+              );
+            } catch (err) {
+              setOfflinePaymentError(
+                err instanceof Error ? err.message : "Could not submit receipt"
+              );
+            } finally {
+              setRecordingOfflinePayment(false);
+            }
           }}
           onSubmit={handleRecordOfflinePayment}
         />
@@ -1535,6 +1592,7 @@ function UnifiedRoster({
   unmatchedBookingCount,
   onDraftStatus,
   onMarkWalkIn,
+  academyAllocationOnly,
   onGeneratePayLink,
   onRecordOfflinePayment,
   onBookingCorrected,
@@ -1554,6 +1612,7 @@ function UnifiedRoster({
   unmatchedBookingCount: number;
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
+  academyAllocationOnly: boolean;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
   onRecordOfflinePayment: (bookingId: string, memberName: string, amountNaira: number) => void;
   onBookingCorrected: (booking: SessionBookingResponse) => void;
@@ -1633,6 +1692,7 @@ function UnifiedRoster({
                 sessionPoolFeeNaira={sessionPoolFeeNaira}
                 onDraftStatus={onDraftStatus}
                 onMarkWalkIn={onMarkWalkIn}
+                academyAllocationOnly={academyAllocationOnly}
                 onGeneratePayLink={onGeneratePayLink}
                 onRecordOfflinePayment={onRecordOfflinePayment}
                 allowMissingFeeCorrection={
@@ -1672,6 +1732,7 @@ function RosterTableRow({
   sessionPoolFeeNaira,
   onDraftStatus,
   onMarkWalkIn,
+  academyAllocationOnly,
   onGeneratePayLink,
   onRecordOfflinePayment,
   onBookingCorrected,
@@ -1684,6 +1745,7 @@ function RosterTableRow({
   sessionPoolFeeNaira: number | null;
   onDraftStatus: (memberId: string, status: DraftStatus) => void;
   onMarkWalkIn: (memberId: string) => void;
+  academyAllocationOnly: boolean;
   onGeneratePayLink: (bookingId: string, memberName: string) => void;
   onRecordOfflinePayment: (bookingId: string, memberName: string, amountNaira: number) => void;
   onBookingCorrected: (booking: SessionBookingResponse) => void;
@@ -1715,6 +1777,10 @@ function RosterTableRow({
     !row.booking.payment_intent_id &&
     !row.booking.wallet_transaction_id;
 
+  const walkInFeeNaira = row.quotedFeeAmountKobo != null
+    ? row.quotedFeeAmountKobo / 100
+    : sessionPoolFeeNaira;
+
   // Pool-fee refund — the make-up / rain-out case. Offer it when a PAID,
   // confirmed, fee-bearing booking belongs to someone who didn't attend
   // (absent/excused) and hasn't already been refunded. The refund routes the
@@ -1734,6 +1800,8 @@ function RosterTableRow({
   //   - no booking, cohort / Club source → red "Not booked"
   //   - walk-in row (legacy attendance without booking) → violet
   //     "Walk-in (unpaid)"
+  const isCohortStudent = row.source === "cohort";
+
   const bookingCell = (() => {
     if (row.booking) {
       const amountNaira = row.booking.fee_amount_kobo / 100;
@@ -1751,6 +1819,19 @@ function RosterTableRow({
         secondary: channel,
       };
     }
+    if (isCohortStudent) {
+      return academyAllocationOnly
+        ? {
+            cls: "bg-slate-100 text-slate-700 border border-slate-200",
+            primary: "No class allocation",
+            secondary: "Allocate a class before recording attendance",
+          }
+        : {
+            cls: "bg-purple-50 text-purple-700 border border-purple-200",
+            primary: "Included in tuition",
+            secondary: null,
+          };
+    }
     if (row.source === "walkin") {
       return {
         cls: "bg-violet-100 text-violet-800",
@@ -1765,16 +1846,20 @@ function RosterTableRow({
     };
   })();
 
-  // Add a booking for an unbooked cohort / Club attendee or a legacy walk-in whose
+  // Add a booking for an unbooked Club attendee or a legacy walk-in whose
   // attendance predates the booking/payment workflow. Once the booking exists,
   // its fee can be settled online or recorded as paid off-platform.
+  // Enrolled cohort students already have attendance included in tuition.
   const canCreateWalkInBooking =
-    !row.booking && (row.source === "cohort" || row.source === "club" || row.source === "walkin");
+    !academyAllocationOnly && !row.booking && (row.source === "club" || row.source === "walkin");
 
   // Disable the Set dropdown when there's no booking AND no attendance —
   // the workflow is "use Mark walk-in to bring them onto the roster
-  // properly". Walk-in rows (have attendance) stay editable.
-  const setDisabled = disabled || (!row.booking && !row.attendance);
+  // properly". Enrolled cohort students and walk-in rows stay editable.
+  const setDisabled =
+    disabled ||
+    (academyAllocationOnly && !row.booking) ||
+    (!isCohortStudent && !row.booking && !row.attendance);
 
   const groupBadge =
     row.source === "cohort" ? (
@@ -1795,6 +1880,7 @@ function RosterTableRow({
   const memberFlagSelfExcused = isSelfExcused(row.booking?.notes);
 
   const statusLabel = (() => {
+    if (academyAllocationOnly && row.source === "cohort" && !row.attendance && !row.booking) return "Not scheduled";
     if (row.effectiveStatus === "awaiting") return "Awaiting";
     return row.effectiveStatus.charAt(0).toUpperCase() + row.effectiveStatus.slice(1);
   })();
@@ -1841,15 +1927,15 @@ function RosterTableRow({
               onClick={() => onMarkWalkIn(row.member_id)}
               className="mt-1 inline-flex w-fit rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 print:hidden"
               title={
-                sessionPoolFeeNaira !== null && sessionPoolFeeNaira > 0
-                  ? `Create a fee-bearing booking for ₦${sessionPoolFeeNaira.toLocaleString("en-NG")}`
+                walkInFeeNaira !== null && walkInFeeNaira > 0
+                  ? `Create a fee-bearing booking for ₦${walkInFeeNaira.toLocaleString("en-NG")}`
                   : "Create a booking + mark present"
               }
             >
               {row.attendance ? "+ Create booking" : "+ Mark walk-in"}
-              {sessionPoolFeeNaira !== null && sessionPoolFeeNaira > 0 ? (
+              {walkInFeeNaira !== null && walkInFeeNaira > 0 ? (
                 <span className="ml-1 opacity-70">
-                  (₦{sessionPoolFeeNaira.toLocaleString("en-NG")})
+                  (₦{walkInFeeNaira.toLocaleString("en-NG")})
                 </span>
               ) : null}
             </button>
@@ -1916,7 +2002,7 @@ function RosterTableRow({
       </td>
       <td className="px-4 py-3">
         <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${academyAllocationOnly && statusLabel === "Not scheduled" ? "bg-slate-100 text-slate-600" : statusBadgeClass(
             row.effectiveStatus === "awaiting" ? "absent" : row.effectiveStatus
           )}`}
         >

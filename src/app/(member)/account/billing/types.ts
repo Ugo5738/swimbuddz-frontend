@@ -51,6 +51,7 @@ export type PaymentRecord = {
   amount: number;
   currency: string;
   purpose?: string; // Direct field on payment, e.g. "club_bundle", "club", "community"
+  session_booking_id?: string | null;
   payment_method?: string | null; // paystack or manual_transfer
   proof_of_payment_url?: string | null;
   admin_review_note?: string | null;

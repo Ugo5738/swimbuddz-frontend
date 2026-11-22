@@ -82,7 +82,7 @@ export type StudentProgress = {
   updated_at: string;
 };
 
-export type MilestoneEventType = "claimed" | "approved" | "rejected" | "status_changed";
+export type MilestoneEventType = "claimed" | "approved" | "rejected" | "override" | "status_changed";
 
 export type MilestoneReviewEvent = {
   id: string;
@@ -327,6 +327,7 @@ export type CoachSession = {
   capacity: number;
   cohort_id: string | null;
   cohort_fee_mode?: "included" | "paid_extra";
+  cohort_attendance_mode?: "automatic" | "individual";
   week_number: number | null;
   lesson_title: string | null;
   created_at: string;
@@ -414,10 +415,11 @@ export async function getSessionBookedMemberIds(
 export async function coachMarkSessionAttendance(
   sessionId: string,
   entries: CoachAttendanceMarkEntry[],
+  confirmSwimmers = false,
 ): Promise<CoachAttendanceMarkResponse> {
   return apiPost<CoachAttendanceMarkResponse>(
     `/api/v1/attendance/sessions/${sessionId}/coach-mark`,
-    { entries },
+    { entries, confirm_swimmers: confirmSwimmers },
     { auth: true },
   );
 }
