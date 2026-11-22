@@ -21,9 +21,9 @@ export function QuickActions({ leaderboardSlug, showAcademy }: QuickActionsProps
   const actions: Action[] = [
     {
       key: "book",
-      label: "Book",
+      label: "Find a Swim",
       icon: Calendar,
-      href: "/sessions",
+      href: "/account/find-a-swim",
       color: "bg-cyan-100 text-cyan-600",
     },
     {

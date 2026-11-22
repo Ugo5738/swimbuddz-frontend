@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemberLayout } from "@/components/layout/MemberLayout";
 import MemberDashboardPage from "../page";
 
-const mocks = vi.hoisted(() => ({ apiGet: vi.fn(), listSessions: vi.fn() }));
+const mocks = vi.hoisted(() => ({ apiGet: vi.fn(), listSessions: vi.fn(), focus: vi.fn() }));
 vi.mock("@/lib/api", () => ({ apiGet: mocks.apiGet }));
 vi.mock("@/lib/auth", () => ({ supabase: { auth: {
   getUser: vi.fn().mockResolvedValue({ data: { user: {} } }), signOut: vi.fn(),
@@ -23,7 +23,9 @@ vi.mock("@/components/dashboard/GreetingHero", () => ({
   GreetingHero: ({ firstName }: { firstName: string }) => <h2>Hello {firstName}</h2>,
 }));
 vi.mock("@/components/dashboard/SwimCalendar", () => ({ SwimCalendar: () => null }));
-vi.mock("@/components/dashboard/NextSessionCard", () => ({ NextSessionCard: () => null }));
+vi.mock("@/components/dashboard/NextSwimDashboardFocus", () => ({
+  NextSwimDashboardFocus: () => { mocks.focus(); return <div data-testid="next-swim-focus"/>; },
+}));
 vi.mock("@/components/dashboard/YTDStatsOverview", () => ({ YTDStatsOverview: () => null }));
 vi.mock("@/components/dashboard/MyPodCard", () => ({ MyPodCard: () => null }));
 vi.mock("@/components/dashboard/QuickActions", () => ({ QuickActions: () => null }));
@@ -42,7 +44,7 @@ describe("member dashboard request budget", () => {
     expect(mocks.apiGet.mock.calls.filter(([path]) => path === "/api/v1/members/me")).toHaveLength(1);
   });
 
-  it("waits for attendance and skips discovery when an upcoming booking exists", async () => {
+  it("does not start obsolete session discovery while attendance is pending or loaded", async () => {
     let resolveAttendance!: (value: unknown) => void;
     const attendance = new Promise((resolve) => { resolveAttendance = resolve; });
     mocks.apiGet.mockImplementation((path: string) => {
@@ -59,16 +61,19 @@ describe("member dashboard request budget", () => {
     await waitFor(() => expect(mocks.apiGet).toHaveBeenCalledWith(
       "/api/v1/attendance/me", expect.anything()));
     expect(mocks.listSessions).not.toHaveBeenCalled();
+    expect(screen.getByTestId("next-swim-focus")).toBeInTheDocument();
   });
 
-  it("still discovers sessions after attendance fails", async () => {
+  it("does not depend on session discovery for the dashboard when attendance fails", async () => {
     mocks.apiGet.mockImplementation((path: string) => {
       if (path === "/api/v1/attendance/me") return Promise.reject(new Error("offline"));
       return Promise.resolve(path === "/api/v1/members/me"
         ? { id: "member-1", first_name: "Amara" } : []);
     });
     render(<MemberLayout><MemberDashboardPage /></MemberLayout>);
-    await waitFor(() => expect(mocks.listSessions).toHaveBeenCalledTimes(1));
+    await screen.findByRole("heading", { name: "Hello Amara" });
+    expect(mocks.listSessions).not.toHaveBeenCalled();
+    expect(screen.getByTestId("next-swim-focus")).toBeInTheDocument();
   });
 
   it("retries a failed shared profile request without showing false onboarding", async () => {
