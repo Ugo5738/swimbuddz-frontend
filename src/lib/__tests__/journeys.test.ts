@@ -27,6 +27,14 @@ describe("modular user journeys", () => {
     expect(classifyJourneyDestination("https://other.example")).toBeNull();
   });
 
+  it("does not hijack a selected session with a pending programme request", () => {
+    expect(resolvePostAuthJourney({
+      destination: "/sessions/session-1",
+      requestedTiers: ["academy"],
+    })).toBeNull();
+    expect(resolvePostAuthJourney({ destination: "/account/profile", requestedTiers: ["club"] })).toBeNull();
+  });
+
   it("does not override existing members' onboarding/billing rules", () => {
     expect(resolvePostAuthJourney({ communityActive: true })).toBeNull();
     expect(resolvePostAuthJourney({ academyActive: true })).toBeNull();
