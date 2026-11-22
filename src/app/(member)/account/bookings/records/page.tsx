@@ -79,6 +79,7 @@ export default function MySwimsPage() {
   const sections = useMemo(() => categorizeActivities(activities), [activities]);
 
   const cancelClub = async (item: SwimActivity) => {
+    if (!item.bookingId || !item.club) return;
     if (!window.confirm("Cancel your attendance for this Club swim? This frees your seat and does not refund your quarterly payment.")) return;
     setBusy(item.bookingId);
     setActionError("");
