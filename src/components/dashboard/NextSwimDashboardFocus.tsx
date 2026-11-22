@@ -60,16 +60,17 @@ function primaryAction(activity: SwimActivityWithClub): { text: string; href: st
  */
 export function NextSwimDashboardFocus() {
   const projection = usePersonalSwims();
+  const next = (projection.data?.upcoming.find(row =>
+    ["confirmed", "assigned", "scheduled_for_pod", "scheduled_for_club"].includes(row.status)
+  ) as SwimActivityWithClub | undefined) ?? null;
   const recommendation = useQuery({
     queryKey: ["member", "next-swim-recommendation"],
     queryFn: () => apiGet<Recommendation>("/api/v1/sessions/me/next-swim", { auth: true }),
     staleTime: 60_000,
-    enabled: !projection.isLoading && (projection.data?.upcoming.length ?? 0) === 0,
+    // Pending payment alone must not suppress otherwise valid recommendations.
+    enabled: !projection.isLoading && !next,
   });
 
-  const next = projection.data?.upcoming.find(row =>
-    ["confirmed", "assigned", "scheduled_for_pod", "scheduled_for_club"].includes(row.status)
-  ) as SwimActivityWithClub | undefined ?? null;
   const suggested = next ? null : recommendation.data?.primary;
   const action = next ? primaryAction(next) : suggested?.access?.bookable === true
     ? { text: "Book my next swim", href: `/sessions/${encodeURIComponent(suggested.id)}/book?source=next-swim` }
