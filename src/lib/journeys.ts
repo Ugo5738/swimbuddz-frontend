@@ -117,7 +117,12 @@ export interface PostAuthJourneyContext {
 
 export function resolvePostAuthJourney(context: PostAuthJourneyContext): string | null {
   const destination = safeReturnPath(context.destination);
-  if (destination && classifyJourneyDestination(destination)) return destination;
+  if (destination) {
+    // Standalone commerce/programme destinations resume immediately.
+    // Other explicit destinations must remain with the existing onboarding
+    // resolver. A stale programme request must not hijack session deep links.
+    return classifyJourneyDestination(destination) ? destination : null;
+  }
 
   // A selected offering's enrollment/readiness continues independently of
   // the annual Community membership and without a new account.
