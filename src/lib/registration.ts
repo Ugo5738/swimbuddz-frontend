@@ -201,7 +201,11 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
 
     const nextJourneyPath = resolvePostAuthJourney({
       destination: returnTo,
-      requestedTiers,
+      // 'payment_pending' is included in getRequestedTiers for onboarding
+      // context, but it is NOT a new programme request; it must reach billing.
+      requestedTiers: requestedTiers.filter(
+        (tier) => getTierStatus(member, tier as MembershipTier)?.status === "requested"
+      ),
       communityActive,
       clubActive: getTierStatus(member, "club")?.status === "active",
       academyActive,
@@ -259,7 +263,7 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
     // emergency contacts and learning goals are collected after checkout,
     // before the student's first supervised swim. Only fall back to cohort
     // selection when there is no explicit non-Academy destination.
-    if (wantsAcademy && !academyActive) {
+    if (getTierStatus(member, "academy")?.status === "requested" && !academyActive) {
       if (returnTo && isAcademyDestination(returnTo)) return returnTo;
       if (!returnTo) return "/upgrade/academy/cohort";
     }
