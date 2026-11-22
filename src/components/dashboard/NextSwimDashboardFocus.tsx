@@ -88,7 +88,10 @@ export function NextSwimDashboardFocus() {
           {statusLabels[next.status] ?? next.status.replaceAll("_", " ")}
         </span>}
       </div>
-      {projection.isLoading ? <p role="status" className="mt-3 text-sm text-slate-700">Loading your swimming schedule…</p> :
+      {projection.isLoading || (recommendation.isLoading && !next) ?
+        <p role="status" className="mt-3 text-sm text-slate-700">
+          {projection.isLoading ? "Loading your swimming schedule…" : "Finding your next eligible swim…"}
+        </p> :
         <div className="mt-3 space-y-3">
           <h2 className="text-xl font-bold text-slate-950">
             {next?.title || suggested?.title || "Ready to get back in the water?"}
@@ -106,6 +109,12 @@ export function NextSwimDashboardFocus() {
           {projection.data?.errors.length ? <p role="alert" className="text-sm text-amber-900">
             Some schedule information couldn't load. Verify the details before booking.
           </p> : null}
+          {recommendation.isError && !next &&
+            <p role="alert" className="text-sm text-amber-900">
+              Couldn't check personalized recommendations. You can still browse available sessions.
+              <button type="button" className="ml-2 font-semibold underline"
+                onClick={() => void recommendation.refetch()}>Retry</button>
+            </p>}
           <div className="flex flex-wrap items-center gap-3">
             <Link href={action.href} className="inline-flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-800">
               {action.text} <ArrowRight className="h-4 w-4" aria-hidden="true"/>
