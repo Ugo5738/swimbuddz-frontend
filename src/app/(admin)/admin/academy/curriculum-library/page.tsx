@@ -162,6 +162,9 @@ export default function CurriculumLibraryPage() {
           Back to Academy
         </Link>
         <h1 className="text-2xl font-bold text-slate-900">Curriculum Library</h1>
+        <Link href="/admin/academy/requirements" className="inline-flex rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100">
+          Manage programme and cohort requirements
+        </Link>
         <p className="max-w-3xl text-sm text-slate-600">
           Create reusable Academy content and publish fixed versions. This is the first
           authoring release. Publishing here does not yet assign content to cohorts,
