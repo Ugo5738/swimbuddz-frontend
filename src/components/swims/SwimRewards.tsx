@@ -35,7 +35,7 @@ function nextReward(data: SwimProgress) {
   if (data.bubbles_credited > data.bubbles_earned) {
     return "Your next qualifying swim counts toward a Bubble already credited before an attendance correction.";
   }
-  return "Your next confirmed swim earns 1 Bubble.";
+  return "After your next eligible swim ends, your attendance earns 1 Bubble automatically.";
 }
 
 export function SwimRewardCard({
@@ -148,7 +148,7 @@ export function SwimRewardCard({
             <div>
               <h3 className="font-medium">Bubbles rewards</h3>
               <p className="text-sm text-slate-300">
-                Earn 1 Bubble per confirmed swim day, up to {data.weekly_limit} days each Monday–Sunday in Lagos.
+                Earn 1 Bubble per eligible swim day after the session ends, up to {data.weekly_limit} days each Monday–Sunday in Lagos. Attendance exceptions may reverse rewards.
                 Each Bubble is worth ₦100 in your wallet.
               </p>
               <Link href="/account/wallet/rewards/history"
