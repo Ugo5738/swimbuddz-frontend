@@ -1,4 +1,5 @@
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
+import { resolvePostAuthJourney } from "@/lib/journeys";
 import { apiGet, apiPost } from "./api";
 import { isAcademyDestination, isStandaloneReturnPath, safeReturnPath } from "./returnPath";
 import { getCurrentAccessToken, supabase } from "./auth";
@@ -198,6 +199,29 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
     const wantsAcademy = requestedTiers.includes("academy") || isAcademyDestination(returnTo);
     const wantsClub = requestedTiers.includes("club");
 
+    const nextJourneyPath = resolvePostAuthJourney({
+      destination: returnTo,
+      // 'payment_pending' is included in getRequestedTiers for onboarding
+      // context, but it is NOT a new programme request; it must reach billing.
+      requestedTiers: requestedTiers.filter(
+        (tier) => getTierStatus(member, tier as MembershipTier)?.status === "requested"
+      ),
+      communityActive,
+      clubActive: getTierStatus(member, "club")?.status === "active",
+      academyActive,
+      // Newly registered shoppers have no swimming-specific profile yet.
+      // Do not substitute this for the payment/eligibility checks below.
+      isFreshRegistration: Boolean(
+        !member.profile_photo_media_id &&
+        !profile?.phone &&
+        !profile?.swim_level &&
+        !membership?.community_paid_until &&
+        !membership?.club_paid_until &&
+        !membership?.academy_paid_until
+      ),
+    });
+    if (nextJourneyPath) return nextJourneyPath;
+
     const clubContext = wantsClub || hasTierContext(member, "club");
     const academyContext = wantsAcademy || hasTierContext(member, "academy");
 
@@ -239,7 +263,7 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
     // emergency contacts and learning goals are collected after checkout,
     // before the student's first supervised swim. Only fall back to cohort
     // selection when there is no explicit non-Academy destination.
-    if (wantsAcademy && !academyActive) {
+    if (getTierStatus(member, "academy")?.status === "requested" && !academyActive) {
       if (returnTo && isAcademyDestination(returnTo)) return returnTo;
       if (!returnTo) return "/upgrade/academy/cohort";
     }
