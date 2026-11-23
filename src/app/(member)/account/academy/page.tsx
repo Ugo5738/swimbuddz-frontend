@@ -271,6 +271,12 @@ export default function StudentAcademyPage() {
     <div className="space-y-8">
       <header className="space-y-2">
         <h1 className="text-3xl font-bold text-slate-900">My Academy</h1>
+        <Link
+          href="/account/academy/passport"
+          className="inline-flex rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-800 hover:bg-cyan-100"
+        >
+          My Swimming Competencies
+        </Link>
         <p className="text-slate-600">
           Track your progress and enroll in new programs.
         </p>
