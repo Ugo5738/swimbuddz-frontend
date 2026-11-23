@@ -1,10 +1,11 @@
 "use client";
 
+import { SwimRewards } from "@/components/swims/SwimRewards";
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { GreetingHero } from "@/components/dashboard/GreetingHero";
 import { MyPodCard } from "@/components/dashboard/MyPodCard";
-import { NextSessionCard } from "@/components/dashboard/NextSessionCard";
+import { NextSwimDashboardFocus } from "@/components/dashboard/NextSwimDashboardFocus";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { SwimCalendar } from "@/components/dashboard/SwimCalendar";
 import { YTDStatsOverview } from "@/components/dashboard/YTDStatsOverview";
@@ -23,7 +24,6 @@ import {
   type MemberQuarterlyReport,
   type YTDStats,
 } from "@/lib/reports";
-import { SessionsApi, type Session } from "@/lib/sessions";
 import {
   getMembershipLabel,
   getPaidMembershipTier,
@@ -60,21 +60,8 @@ type AttendanceRecord = {
 export default function MemberDashboardPage() {
   const { data: member, loading, error, refetch } = useMemberProfile();
   const [resumePaymentIntent, setResumePaymentIntent] = useState<CachedPaymentIntent | null>(null);
-  const { data: attendanceData, loading: attendanceLoading } = useApi<AttendanceRecord[]>("/api/v1/attendance/me");
+  const { data: attendanceData } = useApi<AttendanceRecord[]>("/api/v1/attendance/me");
   const allRecords = useMemo(() => attendanceData ?? [], [attendanceData]);
-  const attendanceLoaded = !attendanceLoading;
-  const upcomingBookings = useMemo(() => allRecords
-    .filter((record) => new Date(record.session_starts_at) > new Date())
-    .sort((a, b) => new Date(a.session_starts_at).getTime() - new Date(b.session_starts_at).getTime()),
-  [allRecords]);
-  const [bookedSessionSignInEligible, setBookedSessionSignInEligible] = useState(false);
-  const [nextAvailableSession, setNextAvailableSession] = useState<{
-    session_id: string;
-    session_title: string;
-    session_starts_at: string;
-    session_ends_at?: string;
-    session_location?: string;
-  } | null>(null);
   const { data: announcementData } = useApi<Announcement[]>("/api/v1/communications/announcements/");
   const announcements = useMemo(() => (announcementData ?? [])
     .filter((a) => a.status === "published" && (!a.expires_at || new Date(a.expires_at).getTime() > Date.now()))
@@ -116,59 +103,6 @@ export default function MemberDashboardPage() {
     }
     setResumePaymentIntent(cached || null);
   }, [member]);
-
-  // Fetch the next session the backend says this member can book.
-  useEffect(() => {
-    // Do not request the full session catalogue while attendance is still
-    // loading: the member may already have an upcoming reservation.
-    if (!member || !attendanceLoaded || upcomingBookings.length > 0) return;
-
-    SessionsApi.listSessions({ auth: true })
-      .then((sessions: Session[]) => {
-        const futurePublished = sessions
-          .filter(
-            (s) =>
-              s.status === "scheduled" &&
-              new Date(s.starts_at) > new Date() &&
-              s.access?.bookable === true
-          )
-          .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
-
-        if (futurePublished.length > 0) {
-          const s = futurePublished[0];
-          setNextAvailableSession({
-            session_id: s.id,
-            session_title: s.title,
-            session_starts_at: s.starts_at,
-            session_ends_at: s.ends_at,
-            session_location: s.location || undefined,
-          });
-        }
-      })
-      .catch(() => {});
-  }, [member, attendanceLoaded, upcomingBookings]);
-
-  useEffect(() => {
-    const booking = upcomingBookings[0];
-    if (!booking) {
-      setBookedSessionSignInEligible(false);
-      return;
-    }
-
-    let cancelled = false;
-    SessionsApi.getSession(String(booking.session_id), { auth: true })
-      .then((session) => {
-        if (!cancelled) {
-          setBookedSessionSignInEligible(session.access?.sign_in_eligible === true);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setBookedSessionSignInEligible(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [upcomingBookings]);
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -275,8 +209,6 @@ export default function MemberDashboardPage() {
     membershipOnlyPath && !communityActive && !onboardingReadyForPayment;
   const showAcademy = wantsAcademy || isAcademyMember;
 
-  // Show booked session first, fall back to next available session
-  const nextSession = upcomingBookings.length > 0 ? upcomingBookings[0] : nextAvailableSession;
 
   return (
     <div className="space-y-6">
@@ -425,31 +357,14 @@ export default function MemberDashboardPage() {
         profilePhotoMediaId={member?.profile_photo_media_id}
         tierLabel={tierLabel}
         tierVariant={tierVariant}
-        nextSession={
-          nextSession
-            ? {
-                title: nextSession.session_title,
-                starts_at: nextSession.session_starts_at,
-                location: nextSession.session_location,
-              }
-            : null
-        }
         streakCurrent={ytdStats?.streak_current}
         streakLongest={ytdStats?.streak_longest}
       />
 
-      {/* Next swim is the primary action; progress follows rather than obscuring it. */}
-      {/* ── Section 4: Next Session ── */}
-      <NextSessionCard
-        session={nextSession}
-        isBooked={upcomingBookings.length > 0}
-        attendanceStatus={
-          // Only meaningful when the next session came from an existing
-          // attendance record (upcomingBookings path). Otherwise undefined.
-          upcomingBookings.length > 0 ? upcomingBookings[0]?.status : null
-        }
-        signInEligible={upcomingBookings.length > 0 ? bookedSessionSignInEligible : false}
-      />
+      {/* A single personal schedule projection drives the next action on this page and My Swims. */}
+      <NextSwimDashboardFocus />
+
+      <SwimRewards compact />
 
       {/* Key activity metrics are secondary to the next booking. */}
       {ytdStats && <YTDStatsOverview stats={ytdStats} year={currentYear} />}

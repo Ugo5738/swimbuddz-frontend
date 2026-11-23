@@ -16,6 +16,7 @@ type Projection = { scenario: string; projected_ending_minor: number | null; lat
 const BASE = "/api/v1/admin/finance/treasury";
 const naira = (minor: number) => formatNaira(minor / 100);
 const actions = [
+  { href: "/admin/finance/guide", label: "How to use Finance", icon: FileText, description: "Setup, roles, approvals and everyday workflows" },
   { href: "/admin/finance/treasury", label: "Bank Accounts", icon: Landmark, description: "Verified statements and bank ledger links" },
   { href: "/admin/finance/treasury#requests", label: "Transfers", icon: ArrowLeftRight, description: "Treasury allocations and payment preparation" },
   { href: "/admin/finance/treasury#requests", label: "Expenses", icon: Receipt, description: "Expense documentation and programme allocation" },

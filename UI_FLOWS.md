@@ -158,6 +158,12 @@ time under the backend connection-canary runbook.
 
 ---
 
+### Swim rewards
+
+- The member dashboard shows reward days this week, the next earning opportunity and a link to the reward section in My Swims.
+- My Swims shows lifetime confirmed swims since the rewards launch, awarded value, current streak, weekly limit and progress toward swim badges. The reward history link opens the existing wallet history.
+- After a session starts, the coach or admin checks which swimmers actually attended, records exceptions and explicitly confirms Present/Late swimmers for rewards. The credit appears after the Attendance worker processes the confirmation.
+
 ## 4. Admin → Manage Sessions & Attendance
 
 ### Included Academy classes and paid extras
@@ -271,6 +277,16 @@ time under the backend connection-canary runbook.
 3. On `/announcements`:
    - Sees list of announcements in reverse chronological order.
    - Clicks one to view full details on `/announcements/[id]`.
+
+---
+
+### 23 November 2026 — Store purchase and transfer UX simplification
+
+- Product details keep both purchase paths required by ADR-017: **Add to Cart** accumulates multiple items; **Buy Now** checks out only the selected variant and quantity, preserving the saved cart. The header cart and a post-add toast link to the cart; there is no permanent secondary checkout action strip on product pages.
+- Variant choices remain explicit and accessible. Quantity and purchase actions get their own responsive space; invalid product options are explained directly beside the selection.
+- Store checkout presents **one** payment-method chooser beside the order total and primary action. Bubbles options appear only for online payments, while manual transfers continue to receipt submission. The manual-transfer action says **Continue to bank transfer**, not that payment is already complete.
+- Transfer receipt submission is a **pending verification** state, not a successful settlement. The transfer status page shows contextual links to Store orders / shopping, Academy / billing, and the homepage, without granting entitlements early.
+- Academy installment payment remains server-priced and oldest-first. Billing can pay consecutive unpaid installments together; enrollment details can pay a larger amount up to the outstanding balance. Make early payment visible without changing those limits.
 
 ---
 

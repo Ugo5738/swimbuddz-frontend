@@ -94,6 +94,7 @@ type Attendance = {
   role: string;
   notes: string | null;
   member_id: string | null;
+  swim_verified_on?: string | null;
   participant_id?: string | null;
   ride_share_option?: string;
   needs_ride?: boolean;
@@ -869,21 +870,12 @@ export default function AdminAttendancePage() {
 
   const handleSaveRoster = async () => {
     if (!selectedSessionId) return;
-    // Build entries from drafts whose target differs from current effective.
     const entries: CoachMarkEntry[] = [];
-    for (const r of roster) {
-      const target = drafts.get(r.member_id);
-      if (!target || target === r.effectiveStatus) continue;
-      entries.push({
-        member_id: r.member_id,
-        status: target,
-        notes: null,
-      });
+    for (const row of roster) {
+      const target = drafts.get(row.member_id);
+      if (target && target !== row.effectiveStatus) entries.push({ member_id: row.member_id, status: target, notes: null });
     }
-    if (entries.length === 0) {
-      setMarkSuccess("No changes to save.");
-      return;
-    }
+    if (!entries.length) return;
     setSubmittingMark(true);
     setError(null);
     setMarkSuccess(null);
@@ -906,7 +898,7 @@ export default function AdminAttendancePage() {
       setAttendanceList(refreshed);
       setBookings(refreshedBookings);
       setDrafts(new Map());
-      setMarkSuccess(`Saved ${entries.length} change${entries.length === 1 ? "" : "s"}.`);
+      setMarkSuccess(`Saved ${entries.length} attendance changes. Swim rewards update automatically after sessions end.`);
     } catch (err) {
       console.error("Failed to save attendance", err);
       const msg = err instanceof Error ? err.message : "Unknown error";
@@ -1359,7 +1351,7 @@ export default function AdminAttendancePage() {
                 }}
                 onRefundPoolFee={handleRefundPoolFee}
                 onBulkMarkPresent={handleBulkMarkPresent}
-                onSaveRoster={handleSaveRoster}
+                onSaveRoster={() => handleSaveRoster()}
                 submitting={submittingMark}
                 successMessage={markSuccess}
                 pendingChangeCount={pendingChangeCount}

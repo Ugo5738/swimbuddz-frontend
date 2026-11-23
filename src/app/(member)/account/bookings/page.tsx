@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SwimRewards } from "@/components/swims/SwimRewards";
 import { SwimModal } from "@/components/swims/SwimModal";
 import { SessionDetailContent } from "@/components/swims/SessionDetailContent";
 import { Suspense, useMemo, useState } from "react";
@@ -15,6 +16,7 @@ type Tab = "list" | "calendar" | "history";
 function label(status: string) {
   const labels: Record<string, string> = {
     confirmed: "Confirmed", assigned: "Assigned",
+    scheduled_for_pod: "Scheduled for your pod", scheduled_for_club: "Scheduled for your Club",
     pending_payment: "Payment pending", pending: "Awaiting confirmation",
     cancelled: "Cancelled", session_cancelled: "Cancelled",
     present: "Attended", checked_in: "Attended", late: "Attended (late)",
@@ -63,10 +65,14 @@ function ActivityRow({ item, onChanged, onDetails }: { item: SwimActivity; onCha
         <p className="mt-1 text-sm text-slate-600">{formatTime(item.date)} · {item.location || "Location to be confirmed"}</p>
       </div>
       <Status status={item.status}/>
-      {item.sessionId
-        ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="text-sm font-semibold text-cyan-700 hover:underline" aria-label={`View ${item.title} details`}>Details →</button>
-        : <Link href={href} className="text-sm font-semibold text-cyan-700 hover:underline">Details →</Link>}
+      {item.scheduledClub && item.canBook && item.sessionId
+        ? <Link href={`/sessions/${item.sessionId}/book`}
+            className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-800">Book this swim</Link>
+        : item.sessionId
+          ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="text-sm font-semibold text-cyan-700 hover:underline" aria-label={`View ${item.title} details`}>Details →</button>
+          : <Link href={href} className="text-sm font-semibold text-cyan-700 hover:underline">Details →</Link>}
     </div>
+    {item.scheduledClub && <p className="mt-2 text-xs text-slate-600">On your Club schedule · A spot is not yet reserved</p>}
     {item.pool && <div className="mt-3 border-t border-slate-100 pt-3"><PoolVisitActions booking={item.pool} onChanged={() => void onChanged()}/></div>}
   </article>;
 }
@@ -101,7 +107,9 @@ function PageContent() {
   const data = projection.data;
   const upcoming = useMemo(() => (data?.upcoming ?? []).slice()
     .sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime()), [data]);
-  const next = upcoming.find(item => ["assigned", "confirmed"].includes(item.status));
+  const next = upcoming.find(item => [
+    "assigned", "confirmed", "scheduled_for_pod", "scheduled_for_club",
+  ].includes(item.status));
   const locations = useMemo(() =>
     Array.from(new Set((data?.activities ?? []).map(i => i.location).filter((i): i is string => !!i))).sort(),
     [data]);
@@ -135,7 +143,9 @@ function PageContent() {
         </p>}
       {next && <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-cyan-800">Your next swim</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-cyan-800">
+            {next.scheduledClub ? "Next on your Club schedule" : "Your next swim"}
+          </span>
           <Status status={next.status}/>
         </div>
         <h2 className="mt-3 text-xl font-bold text-slate-950">{next.title}</h2>
@@ -144,11 +154,15 @@ function PageContent() {
             timeZone: "Africa/Lagos", weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit",
           }) : "Date to be confirmed"} · {next.location || "Location to be confirmed"}
         </p>
+        {next.scheduledClub && <p className="mt-2 text-sm text-slate-700">You have not booked this session yet.</p>}
         {next.sessionId
           ? <button type="button" onClick={() => setSelectedSessionId(next.sessionId!)}
               className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View details</button>
           : <Link href="/account/pool-access" className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View visit</Link>}
       </section>}
+    </>}
+    <SwimRewards />
+    {data && <>
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3" role="tablist" aria-label="My Swims views">
         {([{ id: "list", name: "List" }, { id: "calendar", name: "Calendar" }, { id: "history", name: "History" }] as const)
           .map(option => <button role="tab" key={option.id} type="button"
@@ -168,7 +182,7 @@ function PageContent() {
             <select aria-label="Booking or attendance status" value={status} onChange={e => setStatus(e.target.value)}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
               <option value="all">All statuses</option>
-              {["assigned", "confirmed", "pending_payment", "pending", "present", "late", "excused", "no_show", "cancelled"].map(s =>
+              {["assigned", "scheduled_for_pod", "scheduled_for_club", "confirmed", "pending_payment", "pending", "present", "late", "excused", "no_show", "cancelled"].map(s =>
                 <option key={s} value={s}>{label(s)}</option>)}
             </select>
             <select aria-label="Location" value={location} onChange={e => setLocation(e.target.value)}
@@ -182,7 +196,9 @@ function PageContent() {
           </div>
           {tab === "list" ? <section className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-950">Upcoming swims</h2>
-            {displayed.length === 0 ? <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-600">No upcoming commitments match these filters.</p> :
+            {displayed.length === 0 ? <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-600">{type !== "all" || status !== "all" || location !== "all"
+              ? "No scheduled swims match these filters."
+              : "No upcoming swims are on your schedule yet. Explore eligible sessions or plan your next swim."}</p> :
               group(displayed, item => item.date).map(([day, rows]) =>
                 <div className="space-y-2" key={day}>
                   <h3 className="text-sm font-semibold text-slate-600">{day === "unconfirmed" ? "Date to be confirmed" : formatGroup(day)}</h3>

@@ -415,10 +415,11 @@ export async function getSessionBookedMemberIds(
 export async function coachMarkSessionAttendance(
   sessionId: string,
   entries: CoachAttendanceMarkEntry[],
+  confirmSwimmers = false,
 ): Promise<CoachAttendanceMarkResponse> {
   return apiPost<CoachAttendanceMarkResponse>(
     `/api/v1/attendance/sessions/${sessionId}/coach-mark`,
-    { entries },
+    { entries, confirm_swimmers: confirmSwimmers },
     { auth: true },
   );
 }

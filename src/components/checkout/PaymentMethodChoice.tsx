@@ -39,8 +39,8 @@ export function PaymentMethodChoice({
       </div>
       {value === "manual_transfer" && (
         <p className="text-sm text-amber-800">
-          Continue for the exact amount, bank details and receipt submission. Access is confirmed
-          only after Admin verifies payment. Bubbles cannot be combined with bank transfer.
+          Bank details and receipt upload are on the next screen. Your order remains
+          pending until the transfer is verified. Bubbles cannot be combined with bank transfer.
         </p>
       )}
     </fieldset>

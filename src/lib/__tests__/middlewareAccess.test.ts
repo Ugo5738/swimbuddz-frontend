@@ -79,6 +79,20 @@ describe("requiresMemberAccess", () => {
   });
 });
 
+describe("store-only account access", () => {
+  it("allows unpaid registered customers to view order history but not Club training", () => {
+    const shopper: MiddlewareMember = {
+      membership: { tier_statuses: {
+        community: { status: "approved_unpaid" },
+        club: { status: "inactive" },
+        academy: { status: "inactive" },
+      } },
+    };
+    expect(decide("/account/orders", shopper)).toEqual({ kind: "allow" });
+    expect(decide("/club/training", shopper).kind).toBe("redirect");
+  });
+});
+
 describe("evaluateMemberAccess — admin bypass", () => {
   it("legacy role==='admin' is allowed everywhere", () => {
     expect(decide("/academy", { role: "admin" })).toEqual({ kind: "allow" });

@@ -105,9 +105,12 @@ export function PaymentChoicePanel({
         <button
           type="button"
           onClick={() => setCustomOpen(true)}
-          className="block w-full text-center text-xs text-slate-400 hover:text-slate-600 hover:underline transition-colors"
+          className="block w-full rounded-xl border border-cyan-200 bg-white px-4 py-3 text-left transition-colors hover:border-cyan-500 hover:bg-cyan-50"
         >
-          Pay a different amount
+          <span className="block text-sm font-semibold text-cyan-800">Pay more or settle your balance</span>
+          <span className="mt-1 block text-xs text-slate-600">
+            Pay future installments early, up to {formatNaira(maxKobo / KOBO_PER_NAIRA, { showDecimal: false })}.
+          </span>
         </button>
       )}
 

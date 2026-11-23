@@ -85,6 +85,18 @@ export default function AdminAcademyPage() {
             {transitioningStatuses ? "..." : "⚡ Update Cohort Statuses"}
           </button>
           <button
+            onClick={() => router.push("/admin/academy/curriculum-library")}
+            className="flex-shrink-0 rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs md:text-sm font-medium text-cyan-800 hover:bg-cyan-50 whitespace-nowrap"
+          >
+            Curriculum Library
+          </button>
+          <button
+            onClick={() => router.push("/admin/academy/requirements")}
+            className="flex-shrink-0 rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs md:text-sm font-medium text-cyan-800 hover:bg-cyan-50 whitespace-nowrap"
+          >
+            Programme Requirements
+          </button>
+          <button
             onClick={() => router.push("/admin/academy/programs/new")}
             className="flex-shrink-0 rounded-lg bg-cyan-600 px-3 py-2 text-xs md:text-sm font-medium text-white hover:bg-cyan-700 whitespace-nowrap"
           >

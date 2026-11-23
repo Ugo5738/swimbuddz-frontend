@@ -198,7 +198,7 @@ export default function CoachCohortAttendancePage() {
       const result = await coachMarkSessionAttendance(selectedSessionId, entries);
       setSaveMessage({
         type: "success",
-        text: `Saved: ${result.upserted} updated, ${result.deleted} reverted to present.`,
+        text: `Saved ${result.upserted} attendance records. Swim rewards follow attendance automatically.`,
       });
       // Update server-side baseline so the dirty indicator clears.
       setRows((prev) =>
@@ -375,7 +375,7 @@ export default function CoachCohortAttendancePage() {
 
           <div className="mt-6 flex items-center justify-end gap-3">
             <Button
-              onClick={handleSave}
+              onClick={() => handleSave()}
               disabled={saving || rows.length === 0}
               variant="primary"
             >

@@ -193,6 +193,20 @@ describe("getPostAuthRedirectPath", () => {
     };
   }
 
+  it("starts a fresh store-only account with exploration rather than requiring community payment", async () => {
+    mockedApiGet.mockResolvedValue(buildMember({
+      profile_photo_media_id: null,
+      profile: { phone: null, swim_level: null },
+      membership: { tier_statuses: { community: { status: "approved_unpaid" } } },
+    }));
+    expect(await getPostAuthRedirectPath()).toBe("/explore");
+  });
+
+  it("preserves standalone store checkout before swimming onboarding", async () => {
+    expect(await getPostAuthRedirectPath("/store/checkout")).toBe("/store/checkout");
+    expect(mockedApiGet).not.toHaveBeenCalled();
+  });
+
   it("keeps a first-time Academy prospect's selected cohort through onboarding", async () => {
     mockedApiGet.mockResolvedValue(buildMember({ profile_photo_media_id: null, membership: { tier_statuses: { community: { status: "inactive" } } } }));
     expect(await getPostAuthRedirectPath("/account/academy/cohorts/chosen")).toBe("/account/academy/cohorts/chosen");
