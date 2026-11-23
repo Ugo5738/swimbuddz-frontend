@@ -659,7 +659,7 @@ export default function StoreCheckoutPage() {
                       ? "Continue to bank transfer"
                       : effectiveBubbles > 0
                         ? `Pay ₦${paystackAmount.toLocaleString()} + ${effectiveBubbles} 🫧`
-                        : `Pay ₦${paystackAmount.toLocaleString()}`
+                        : `Pay ₦${paystackAmount.toLocaleString()}`}
                 </span>
               )}
             </Button>
