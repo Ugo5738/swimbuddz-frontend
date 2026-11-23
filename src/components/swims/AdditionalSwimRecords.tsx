@@ -108,6 +108,7 @@ export function AdditionalSwimRecords({ view, representedSessionIds, primaryHasS
     : [];
 
   const cancelClub = async (activity: SwimActivity) => {
+    if (!activity.bookingId || !activity.club) return;
     if (!window.confirm("Cancel your attendance for this Club swim? This frees your seat and does not refund your quarterly payment.")) return;
     setBusy(activity.bookingId);
     setActionError("");

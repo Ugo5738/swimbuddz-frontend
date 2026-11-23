@@ -175,7 +175,7 @@ export default function CoachCohortAttendancePage() {
     setSaveMessage(null);
   }
 
-  async function handleSave(confirmSwimmers = false) {
+  async function handleSave() {
     if (!selectedSessionId) return;
     // Send EVERY student's status so an explicit attendance row is written for
     // each — coach pay accrues only from explicit Present/Late rows, so we must
@@ -195,10 +195,10 @@ export default function CoachCohortAttendancePage() {
     setSaving(true);
     setSaveMessage(null);
     try {
-      const result = await coachMarkSessionAttendance(selectedSessionId, entries, confirmSwimmers);
+      const result = await coachMarkSessionAttendance(selectedSessionId, entries);
       setSaveMessage({
         type: "success",
-        text: confirmSwimmers ? "Swimmers confirmed. Eligible credits will appear in their wallets." : `Saved ${result.upserted} attendance records.`,
+        text: `Saved ${result.upserted} attendance records. Swim rewards follow attendance automatically.`,
       });
       // Update server-side baseline so the dirty indicator clears.
       setRows((prev) =>
@@ -374,10 +374,6 @@ export default function CoachCohortAttendancePage() {
           )}
 
           <div className="mt-6 flex items-center justify-end gap-3">
-            {selectedSession && selectedSession.status !== "cancelled" && new Date(selectedSession.starts_at).getTime() <= Date.now() && (
-              <Button disabled={saving || !rows.some((r) => r.canMark && (r.status === "present" || r.status === "late"))}
-                onClick={() => handleSave(true)}>Confirm Present/Late swimmers for Bubbles</Button>
-            )}
             <Button
               onClick={() => handleSave()}
               disabled={saving || rows.length === 0}

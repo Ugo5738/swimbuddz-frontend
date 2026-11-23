@@ -38,6 +38,19 @@ describe("personal past swims", () => {
     expect(rows[0].attendanceStatus).toBe("late");
   });
 
+  it("never treats an unbooked Club schedule as attendance or personal history", () => {
+    const rows = buildPersonalSwimHistory({
+      activities: [{
+        key: "club-scheduled:one", kind: "club", bookingId: "one",
+        sessionId: "one", title: "Club practice",
+        date: "2026-02-14T09:00:00Z", location: "VI",
+        status: "scheduled_for_pod", scheduledClub: true,
+      }],
+      sessions: [], attendance: [], now,
+    });
+    expect(rows).toEqual([]);
+  });
+
   it("does not mistake generic completed sessions for personal history", () => {
     expect(buildPersonalSwimHistory({ activities: [], attendance: [], sessions: [
       { id: "other", title: "Unattended completed session", starts_at: "2026-02-01T09:00:00Z" },

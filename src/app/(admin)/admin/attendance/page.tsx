@@ -868,23 +868,12 @@ export default function AdminAttendancePage() {
     }
   };
 
-  const confirmableSwimmers = filteredRoster.filter((row) =>
-    ["present", "late"].includes(row.effectiveStatus) && !row.attendance?.swim_verified_on &&
-    (!row.attendance || row.attendance.role === "swimmer")
-  );
-  const handleSaveRoster = async (confirmSwimmers = false) => {
+  const handleSaveRoster = async () => {
     if (!selectedSessionId) return;
     const entries: CoachMarkEntry[] = [];
-    if (confirmSwimmers) {
-      if (pendingChangeCount) return;
-      for (const row of confirmableSwimmers) {
-        entries.push({ member_id: row.member_id, status: row.effectiveStatus as DraftStatus, notes: null });
-      }
-    } else {
-      for (const row of roster) {
-        const target = drafts.get(row.member_id);
-        if (target && target !== row.effectiveStatus) entries.push({ member_id: row.member_id, status: target, notes: null });
-      }
+    for (const row of roster) {
+      const target = drafts.get(row.member_id);
+      if (target && target !== row.effectiveStatus) entries.push({ member_id: row.member_id, status: target, notes: null });
     }
     if (!entries.length) return;
     setSubmittingMark(true);
@@ -893,7 +882,7 @@ export default function AdminAttendancePage() {
     try {
       await apiPost(
         `/api/v1/attendance/sessions/${selectedSessionId}/coach-mark`,
-        { entries, confirm_swimmers: confirmSwimmers },
+        { entries },
         { auth: true }
       );
       const [refreshed, refreshedBookings] = await Promise.all([
@@ -909,7 +898,7 @@ export default function AdminAttendancePage() {
       setAttendanceList(refreshed);
       setBookings(refreshedBookings);
       setDrafts(new Map());
-      setMarkSuccess(confirmSwimmers ? `Confirmed ${entries.length} swimmers for rewards.` : `Saved ${entries.length} attendance changes.`);
+      setMarkSuccess(`Saved ${entries.length} attendance changes. Swim rewards update automatically after sessions end.`);
     } catch (err) {
       console.error("Failed to save attendance", err);
       const msg = err instanceof Error ? err.message : "Unknown error";
@@ -1330,11 +1319,6 @@ export default function AdminAttendancePage() {
                 <option value="not_booked">Not booked</option>
               </select>
             </div>
-            {sessionStarted && confirmableSwimmers.length > 0 && (
-              <Button disabled={submittingMark || pendingChangeCount > 0} onClick={() => handleSaveRoster(true)}>
-                Confirm {confirmableSwimmers.length} listed Present/Late swimmers for Bubbles
-              </Button>
-            )}
             {filteredRoster.length === 0 && roster.length > 0 ? (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
                 No roster members match these filters.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSwimActivities, categorizeActivities, classifySession, isActiveAcademyEnrollment } from "../my-swims";
+import { buildSwimActivities, categorizeActivities, classifySession, isActiveAcademyEnrollment, isMyScheduledClubSession } from "../my-swims";
 
 describe("member swim activity aggregation", () => {
   it("includes active Academy cohort classes without pretending they were booked", () => {
@@ -78,6 +78,92 @@ describe("member swim activity aggregation", () => {
     const sections = categorizeActivities(result, new Date("2027-01-01T00:00:00Z"));
     expect(sections.upcoming).toHaveLength(0);
     expect(sections.attention).toHaveLength(1);
+  });
+
+  describe("upcoming home Club schedule", () => {
+    const future = "2027-05-01T09:00:00Z";
+    const today = new Date("2027-01-01T00:00:00Z");
+    const pod = { id: "pod-home", club_id: "club-home", status: "active" };
+    const home = {
+      id: "practice-1", title: "Dolphin practice", session_type: "club",
+      starts_at: future, status: "scheduled", club_id: "club-home",
+      pod_id: "pod-home", access: { access_source: "club_enrollment" },
+    };
+
+    it("shows a home pod practice without inventing a reservation", () => {
+      const rows = buildSwimActivities([], [home], [], [], [], [], pod, today);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        sessionId: "practice-1", status: "scheduled_for_pod",
+        scheduledClub: true, kind: "club",
+      });
+      expect(rows[0].club).toBeUndefined();
+      expect(rows[0].bookingId).toBeUndefined();
+      expect(rows[0].canBook).toBe(false); // no authoritatively granted booking action
+      expect(categorizeActivities(rows, today).upcoming).toHaveLength(1);
+    });
+
+    it("only enables the booking CTA when the backend grants bookable access", () => {
+      const available = { ...home, access: { ...home.access, bookable: true } };
+      const unavailable = { ...home, id: "sold-out", access: { ...home.access, bookable: false } };
+      const rows = buildSwimActivities([], [available, unavailable], [], [], [], [], pod, today);
+      expect(rows.map(row => [row.sessionId, row.canBook])).toEqual([
+        ["practice-1", true], ["sold-out", false],
+      ]);
+    });
+
+    it("does not show another pod or Club location", () => {
+      const rows = buildSwimActivities([], [
+        home,
+        { ...home, id: "other-pod", pod_id: "other-pod" },
+        { ...home, id: "other-club", club_id: "club-other" },
+      ], [], [], [], [], pod, today);
+      expect(rows.map(r => r.sessionId)).toEqual(["practice-1"]);
+    });
+
+    it("includes a general session at the member's enrolled Club", () => {
+      const general = { ...home, pod_id: null };
+      const rows = buildSwimActivities([], [general], [], [], [], [], pod, today);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].status).toBe("scheduled_for_club");
+    });
+
+    it("refuses visiting and community drop-in sessions on My Swims", () => {
+      const sources = ["club_visit", "community_dropin", "none"];
+      const rows = buildSwimActivities([], sources.map((source, i) => ({
+        ...home, id: `visit-${i}`, access: { access_source: source },
+      })), [], [], [], [], pod, today);
+      expect(rows).toEqual([]);
+    });
+
+    it("requires a known Club home for legacy and post-Academy grants", () => {
+      const old = { ...home, pod_id: null, access: { access_source: "legacy_club_entitlement" } };
+      const bridge = { ...home, pod_id: null, access: { access_source: "post_academy_bridge" } };
+      expect(isMyScheduledClubSession(old, null)).toBe(false);
+      expect(isMyScheduledClubSession(bridge, null)).toBe(false);
+      expect(isMyScheduledClubSession(old, pod)).toBe(true);
+    });
+
+    it("keeps confirmed and cancelled reservations authoritative without duplicate schedules", () => {
+      for (const status of ["confirmed", "cancelled"]) {
+        const rows = buildSwimActivities([
+          { id: "booking-1", session_id: "practice-1", status },
+        ], [home], [], [], [], [], pod, today);
+        expect(rows).toHaveLength(1);
+        expect(rows[0].status).toBe(status);
+        expect(rows[0].scheduledClub).toBeUndefined();
+        expect(categorizeActivities(rows, today).upcoming).toHaveLength(status === "confirmed" ? 1 : 0);
+      }
+    });
+
+    it("does not convert old or cancelled Club sessions to new scheduled swims", () => {
+      const rows = buildSwimActivities([], [
+        { ...home, id: "past", starts_at: "2026-05-01T09:00:00Z" },
+        { ...home, id: "cancelled", status: "cancelled" },
+        { ...home, id: "draft", status: "draft" },
+      ], [], [], [], [], pod, today);
+      expect(rows).toEqual([]);
+    });
   });
 
   it("does not misclassify an Academy session as a Club booking", () => {
