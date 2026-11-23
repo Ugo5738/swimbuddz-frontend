@@ -119,11 +119,20 @@ describe("MemberLayout desktop navigation", () => {
     );
   });
 
-  it("offers a direct next swim action and My Swims destination", async () => {
+  it("streamlines top-level swim navigation and surfaces Rewards under Wallet & Payments", async () => {
     window.history.replaceState({}, "", "/account");
     render(<MemberLayout><div>Content</div></MemberLayout>);
-    expect(await screen.findByRole("link", { name: "Book My Next Swim" })).toHaveAttribute("href", "/account/book-next-swim");
-    expect(screen.getByRole("link", { name: "My Swims" })).toHaveAttribute("href", "/account/bookings");
+    expect(await screen.findByRole("link", { name: "My Swims" })).toHaveAttribute("href", "/account/bookings");
+    expect(screen.getByRole("link", { name: "Find a Swim" })).toHaveAttribute("href", "/account/find-a-swim");
+    expect(screen.queryByRole("link", { name: "Book My Next Swim" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Rewards" })[0]).toHaveAttribute(
+      "href",
+      "/account/wallet/rewards"
+    );
+    expect(screen.getByRole("link", { name: "SwimBuddz Calendar" })).toHaveAttribute(
+      "href",
+      "/account/calendar"
+    );
   });
 
   it("restores a previously collapsed sidebar", async () => {

@@ -1,9 +1,13 @@
 "use client";
 
-import { SwimRewards } from "@/components/swims/SwimRewards";
+import {
+  getNextSwimRewardCue,
+  SwimRewards,
+  type SwimProgress,
+} from "@/components/swims/SwimRewards";
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
-import { GreetingHero } from "@/components/dashboard/GreetingHero";
+import { GreetingHero, type ProgrammePill } from "@/components/dashboard/GreetingHero";
 import { MyPodCard } from "@/components/dashboard/MyPodCard";
 import { NextSwimDashboardFocus } from "@/components/dashboard/NextSwimDashboardFocus";
 import { QuickActions } from "@/components/dashboard/QuickActions";
@@ -28,6 +32,7 @@ import {
   getMembershipLabel,
   getPaidMembershipTier,
   getRequestedTiers,
+  getTierStatus,
   hasTierContext,
   isTierPaid,
 } from "@/lib/tiers";
@@ -70,6 +75,7 @@ export default function MemberDashboardPage() {
     .slice(0, 2), [announcementData]);
   const [ytdStats, setYtdStats] = useState<YTDStats | null>(null);
   const [myPod, setMyPod] = useState<PodSummary | null>(null);
+  const [swimProgress, setSwimProgress] = useState<SwimProgress | null>(null);
 
   const currentYear = new Date().getFullYear();
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
@@ -210,9 +216,40 @@ export default function MemberDashboardPage() {
   const showAcademy = wantsAcademy || isAcademyMember;
 
 
+  const clubStatus = getTierStatus(member, "club");
+  const academyStatus = getTierStatus(member, "academy");
+  const programmePills: ProgrammePill[] = [];
+  if (isClubMember) {
+    programmePills.push({ key: "club", label: "Club Member", variant: "success" });
+  } else if (wantsClub || clubStatus?.status === "requested") {
+    programmePills.push({
+      key: "club-req",
+      label: "Club: Requested →",
+      variant: "warning",
+      href: "/upgrade/club/readiness",
+    });
+  }
+  if (isAcademyMember) {
+    programmePills.push({
+      key: "academy",
+      label: "Academy",
+      variant: "info",
+      href: "/account/academy",
+    });
+  } else if (wantsAcademy || academyStatus?.status === "requested") {
+    programmePills.push({
+      key: "academy-req",
+      label: "Academy: Requested →",
+      variant: "warning",
+      href: needsAcademyReadiness ? "/account/onboarding?step=academy" : "/account/academy",
+    });
+  }
+
+  const rewardCue = getNextSwimRewardCue(swimProgress);
+
   return (
-    <div className="space-y-6">
-      {/* ── Section 1: Conditional Onboarding Banners ── */}
+    <div className="space-y-5">
+      {/* ── Section 1: Conditional Onboarding & Payment Recovery Banners ── */}
       {needsOnboarding && (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-500 p-6 text-white shadow-lg">
           <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
@@ -351,28 +388,18 @@ export default function MemberDashboardPage() {
         </Card>
       )}
 
-      {/* ── Section 2: Personalized Greeting ── */}
+      {/* ── Section 2: Compact Personalized Greeting with Independent Programme Pills (ADR-001) ── */}
       <GreetingHero
         firstName={firstName}
         profilePhotoMediaId={member?.profile_photo_media_id}
         tierLabel={tierLabel}
         tierVariant={tierVariant}
+        programmePills={programmePills}
         streakCurrent={ytdStats?.streak_current}
         streakLongest={ytdStats?.streak_longest}
       />
 
-      {/* A single personal schedule projection drives the next action on this page and My Swims. */}
-      <NextSwimDashboardFocus />
-
-      <SwimRewards compact />
-
-      {/* Key activity metrics are secondary to the next booking. */}
-      {ytdStats && <YTDStatsOverview stats={ytdStats} year={currentYear} />}
-
-      {/* ── Section 4b: My Pod (Club members only — see docs/club/POD_OPERATIONS.md) ── */}
-      {isClubMember && <MyPodCard pod={myPod} showJoinCta={!myPod} />}
-
-      {/* ── Section 5: Conditional Action Banners ── */}
+      {/* ── Section 3: Conditional Action Banners (surface pending steps before passive stats) ── */}
       {showCommunityActivationBanner && (
         <Card className="p-5 border-amber-200 bg-amber-50">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -418,68 +445,92 @@ export default function MemberDashboardPage() {
         </Card>
       )}
 
-      {/* ── Section 6: Quick Actions ── */}
+      {/* ── Section 4: Hero Bento — Next Swim (65%) + Unified Wallet & Rewards (35%) ── */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-8">
+          <NextSwimDashboardFocus rewardCue={rewardCue} />
+        </div>
+        <div className="lg:col-span-4">
+          <SwimRewards variant="dashboard" onProgressLoaded={setSwimProgress} />
+        </div>
+      </div>
+
+      {/* ── Section 5: Quick Actions promoted right below the hero ── */}
       <QuickActions leaderboardSlug={leaderboardSlug} showAcademy={showAcademy} />
 
-      {/* Community engagement must be discoverable without scrolling past reports and heatmaps. */}
-      <section aria-labelledby="community-highlights-heading" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 id="community-highlights-heading" className="text-base font-semibold text-slate-900">Your SwimBuddz community</h2>
-          <Link href="/community/events" className="text-sm font-medium text-cyan-700 hover:underline">Explore community</Link>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Link href={`/account/reports/${leaderboardSlug}/leaderboard`} className="group block">
-            <Card className="flex h-full items-start gap-3 border-amber-200 bg-amber-50/70 p-4 transition hover:border-amber-400 hover:shadow-sm">
-              <span className="rounded-xl bg-amber-100 p-2.5"><Trophy className="h-5 w-5 text-amber-700" /></span>
-              <div className="flex-1">
-                <h3 className="font-semibold text-slate-900">Community leaderboard</h3>
-                <p className="mt-1 text-sm text-slate-600">Explore this quarter's swimmers, milestones and volunteering.</p>
-                <p className="mt-2 text-sm font-medium text-amber-800 group-hover:underline">View rankings →</p>
-              </div>
-            </Card>
-          </Link>
-          <Link href="/community/events" className="group block">
-            <Card className="flex h-full items-start gap-3 p-4 transition hover:border-cyan-300 hover:shadow-sm">
-              <span className="rounded-xl bg-cyan-100 p-2.5"><Calendar className="h-5 w-5 text-cyan-700" /></span>
-              <div className="flex-1">
-                <h3 className="font-semibold text-slate-900">Events & experiences</h3>
-                <p className="mt-1 text-sm text-slate-600">Discover upcoming swims, activities and ways to connect.</p>
-                <p className="mt-2 text-sm font-medium text-cyan-700 group-hover:underline">See what's on →</p>
-              </div>
-            </Card>
-          </Link>
-        </div>
-      </section>
+      {/* ── Section 6: Updates & Community (left) + Compact Swim Summary (right) ── */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className={`${ytdStats ? "lg:col-span-7" : "lg:col-span-12"} space-y-4`}>
+          {/* Latest updates */}
+          <section aria-labelledby="member-updates-heading" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 id="member-updates-heading" className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                <Megaphone className="h-5 w-5 text-cyan-700" /> Latest updates
+              </h2>
+              <Link href="/account/notifications?filter=announcements" className="text-sm font-medium text-cyan-700 hover:underline">All announcements →</Link>
+            </div>
+            {announcements.length ? (
+              <Card className="divide-y divide-slate-100 overflow-hidden">
+                {announcements.map((a) => (
+                  <Link key={a.id} href={`/announcements/${a.id}`} className={`flex items-start gap-3 p-4 transition hover:bg-slate-50 ${a.is_pinned ? "bg-amber-50/60" : ""}`}>
+                    <Bell className={`mt-1 h-4 w-4 shrink-0 ${a.is_pinned ? "text-amber-600" : "text-slate-400"}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900">{a.title}</p>
+                        {a.is_pinned && <span className="text-xs font-semibold text-amber-800">Pinned</span>}
+                      </div>
+                      {a.summary && <p className="mt-1 line-clamp-2 text-sm text-slate-600">{a.summary}</p>}
+                      <p className="mt-1 text-xs text-slate-500">{formatAnnouncementCategory(a.category)}</p>
+                    </div>
+                    <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+                  </Link>
+                ))}
+              </Card>
+            ) : (
+              <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">No new announcements at the moment.</p>
+            )}
+          </section>
 
-      {/* Announcements are a compact feed; urgent pinned items stay visually distinct. */}
-      <section aria-labelledby="member-updates-heading" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 id="member-updates-heading" className="flex items-center gap-2 text-base font-semibold text-slate-900">
-            <Megaphone className="h-5 w-5 text-cyan-700" /> Latest updates
-          </h2>
-          <Link href="/account/notifications?filter=announcements" className="text-sm font-medium text-cyan-700 hover:underline">All announcements →</Link>
-        </div>
-        {announcements.length ? (
-          <Card className="divide-y divide-slate-100 overflow-hidden">
-            {announcements.map((a) => (
-              <Link key={a.id} href={`/announcements/${a.id}`} className={`flex items-start gap-3 p-4 transition hover:bg-slate-50 ${a.is_pinned ? "bg-amber-50/60" : ""}`}>
-                <Bell className={`mt-1 h-4 w-4 shrink-0 ${a.is_pinned ? "text-amber-600" : "text-slate-400"}`} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900">{a.title}</p>
-                    {a.is_pinned && <span className="text-xs font-semibold text-amber-800">Pinned</span>}
+          {/* My Pod (Club members) */}
+          {isClubMember && <MyPodCard pod={myPod} showJoinCta={!myPod} />}
+
+          {/* Community highlights */}
+          <section aria-labelledby="community-highlights-heading" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 id="community-highlights-heading" className="text-base font-semibold text-slate-900">Your SwimBuddz community</h2>
+              <Link href="/community/events" className="text-sm font-medium text-cyan-700 hover:underline">Explore community</Link>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Link href={`/account/reports/${leaderboardSlug}/leaderboard`} className="group block">
+                <Card className="flex h-full items-start gap-3 border-amber-200 bg-amber-50/70 p-4 transition hover:border-amber-400 hover:shadow-sm">
+                  <span className="rounded-xl bg-amber-100 p-2.5"><Trophy className="h-5 w-5 text-amber-700" /></span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-900">Community leaderboard</h3>
+                    <p className="mt-1 text-sm text-slate-600">Explore this quarter's swimmers, milestones and volunteering.</p>
+                    <p className="mt-2 text-sm font-medium text-amber-800 group-hover:underline">View rankings →</p>
                   </div>
-                  {a.summary && <p className="mt-1 line-clamp-2 text-sm text-slate-600">{a.summary}</p>}
-                  <p className="mt-1 text-xs text-slate-500">{formatAnnouncementCategory(a.category)}</p>
-                </div>
-                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+                </Card>
               </Link>
-            ))}
-          </Card>
-        ) : (
-          <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">No new announcements at the moment.</p>
+              <Link href="/community/events" className="group block">
+                <Card className="flex h-full items-start gap-3 p-4 transition hover:border-cyan-300 hover:shadow-sm">
+                  <span className="rounded-xl bg-cyan-100 p-2.5"><Calendar className="h-5 w-5 text-cyan-700" /></span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-900">Events & experiences</h3>
+                    <p className="mt-1 text-sm text-slate-600">Discover upcoming swims, activities and ways to connect.</p>
+                    <p className="mt-2 text-sm font-medium text-cyan-700 group-hover:underline">See what's on →</p>
+                  </div>
+                </Card>
+              </Link>
+            </div>
+          </section>
+        </div>
+
+        {ytdStats && (
+          <div className="lg:col-span-5">
+            <YTDStatsOverview stats={ytdStats} year={currentYear} />
+          </div>
         )}
-      </section>
+      </div>
 
       {/* Rich reporting remains available, but no longer blocks the primary experience. */}
       <details className="group rounded-xl border border-slate-200 bg-white p-4">

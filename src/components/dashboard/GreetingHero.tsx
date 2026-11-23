@@ -4,12 +4,21 @@ import { Badge } from "@/components/ui/Badge";
 import { useMediaUrl } from "@/hooks/useMediaUrl";
 import { LOCATION_LABELS } from "@/lib/sessions";
 import Image from "next/image";
+import Link from "next/link";
+
+export type ProgrammePill = {
+  key: string;
+  label: string;
+  variant?: "info" | "success" | "warning" | "default";
+  href?: string;
+};
 
 type GreetingHeroProps = {
   firstName: string;
   profilePhotoMediaId?: string | null;
   tierLabel: string;
   tierVariant?: "info" | "success" | "warning" | "default";
+  programmePills?: ProgrammePill[];
   nextSession?: {
     title: string;
     starts_at: string;
@@ -77,26 +86,30 @@ function getSubtitle(props: GreetingHeroProps): string {
 }
 
 export function GreetingHero(props: GreetingHeroProps) {
-  const { firstName, profilePhotoMediaId, tierLabel, tierVariant = "info" } = props;
+  const { firstName, profilePhotoMediaId, tierLabel, tierVariant = "info", programmePills } = props;
   const [photoUrl] = useMediaUrl(profilePhotoMediaId);
   const subtitle = getSubtitle(props);
+  const pills: ProgrammePill[] =
+    programmePills && programmePills.length > 0
+      ? programmePills
+      : [{ key: "tier", label: tierLabel, variant: tierVariant }];
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3.5">
       {/* Avatar */}
       <div className="flex-shrink-0">
         {photoUrl ? (
-          <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-cyan-200">
+          <div className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-cyan-200">
             <Image
               src={photoUrl}
               alt={firstName}
               fill
-              sizes="56px"
+              sizes="48px"
               className="object-cover"
             />
           </div>
         ) : (
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 text-xl font-bold text-white ring-2 ring-cyan-200">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 text-lg font-bold text-white ring-2 ring-cyan-200">
             {firstName.charAt(0).toUpperCase()}
           </div>
         )}
@@ -108,9 +121,19 @@ export function GreetingHero(props: GreetingHeroProps) {
           <h1 className="text-xl font-bold text-slate-900 md:text-2xl">
             {getTimeGreeting()}, {firstName}
           </h1>
-          <Badge variant={tierVariant} className="text-[10px]">
-            {tierLabel}
-          </Badge>
+          {pills.map((pill) =>
+            pill.href ? (
+              <Link key={pill.key} href={pill.href} className="hover:opacity-85 transition">
+                <Badge variant={pill.variant ?? "default"} className="text-xs">
+                  {pill.label}
+                </Badge>
+              </Link>
+            ) : (
+              <Badge key={pill.key} variant={pill.variant ?? "default"} className="text-xs">
+                {pill.label}
+              </Badge>
+            )
+          )}
         </div>
         <p className="mt-0.5 text-sm text-slate-500 truncate">{subtitle}</p>
       </div>

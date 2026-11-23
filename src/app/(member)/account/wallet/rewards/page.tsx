@@ -1,5 +1,6 @@
 "use client";
 
+import { SwimRewards } from "@/components/swims/SwimRewards";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
@@ -42,11 +43,13 @@ type RewardHistoryEntry = {
   bubbles_awarded: number;
   description?: string | null;
   created_at: string;
+  is_reversal?: boolean;
 };
 
 type RewardHistoryResponse = {
   history: RewardHistoryEntry[];
   total: number;
+  total_bubbles_awarded?: number;
 };
 
 type AmbassadorStatus = {
@@ -76,6 +79,10 @@ function groupRulesByCategory(rules: RewardRule[]) {
     groups[rule.category].push(rule);
   }
   return groups;
+}
+
+function formatBubbleDelta(amount: number): string {
+  return amount < 0 ? `${amount} 🫧` : `+${amount} 🫧`;
 }
 
 // ============================================================================
@@ -108,7 +115,11 @@ export default function RewardsDashboardPage() {
       if (results[1].status === "fulfilled") {
         const hist = results[1].value;
         setRecentHistory(hist.history);
-        setTotalBubblesEarned(hist.history.reduce((sum, h) => sum + h.bubbles_awarded, 0));
+        setTotalBubblesEarned(
+          typeof hist.total_bubbles_awarded === "number"
+            ? hist.total_bubbles_awarded
+            : hist.history.reduce((sum, h) => sum + h.bubbles_awarded, 0)
+        );
       }
       if (results[2].status === "fulfilled") {
         setAmbassador(results[2].value);
@@ -131,50 +142,70 @@ export default function RewardsDashboardPage() {
   const groupedRules = groupRulesByCategory(rules);
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-5 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link href="/account/wallet">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold text-slate-900">Rewards</h1>
-      </div>
-
-      {/* Hero Section */}
-      <Card className="p-5 md:p-6 bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
-        <div className="flex items-center gap-4">
-          <div className="rounded-full bg-emerald-200 p-3">
-            <Award className="h-6 w-6 text-emerald-700" />
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link href="/account/wallet">
+            <Button variant="ghost" size="sm" aria-label="Back to wallet">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
           <div>
-            <p className="text-sm font-medium text-emerald-600">Total Rewards Earned</p>
-            <p className="text-3xl font-bold text-emerald-900">
-              {totalBubblesEarned.toLocaleString()} 🫧
+            <h1 className="text-2xl font-bold text-slate-900">Rewards</h1>
+            <p className="text-xs text-slate-500">
+              Your all-time swimming milestones, weekly Swim Bubbles, and reward history.
             </p>
-            <p className="text-xs text-emerald-700 mt-0.5">Keep swimming, keep earning!</p>
           </div>
         </div>
-      </Card>
+        <Link
+          href="/account/wallet/rewards/history"
+          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:border-cyan-300 hover:text-cyan-800"
+        >
+          Full reward history <ChevronRight className="h-4 w-4" />
+        </Link>
+      </div>
 
-      {/* Ambassador Badge */}
-      {ambassador && (
-        <AmbassadorBadge
-          isAmbassador={ambassador.is_ambassador}
-          ambassadorSince={ambassador.ambassador_since}
-          referralCount={ambassador.successful_referrals}
-          size="sm"
-        />
-      )}
+      {/* Swim Bubbles Programme (since 22 Nov 2026) + All-Time Swimming Milestones */}
+      <SwimRewards variant="hub" />
+
+      {/* Lifetime Rewards Across All Sources (server-computed full total, net of reversals) */}
+      <Card className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/70 border-emerald-200">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="rounded-full bg-emerald-200 p-3">
+              <Award className="h-6 w-6 text-emerald-700" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-emerald-700">
+                All-Time Rewards Earned (All Sources)
+              </p>
+              <p className="text-3xl font-bold tabular-nums text-emerald-950">
+                {totalBubblesEarned.toLocaleString()} 🫧
+              </p>
+              <p className="text-xs text-emerald-800 mt-0.5">
+                Includes swim rewards, referrals, community volunteering, and academy milestones.
+              </p>
+            </div>
+          </div>
+          {ambassador && (
+            <AmbassadorBadge
+              isAmbassador={ambassador.is_ambassador}
+              ambassadorSince={ambassador.ambassador_since}
+              referralCount={ambassador.successful_referrals}
+              size="sm"
+            />
+          )}
+        </div>
+      </Card>
 
       {/* Recent Rewards */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Rewards</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Recent Reward Activity</h2>
           <Link
             href="/account/wallet/rewards/history"
-            className="text-sm text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
+            className="text-sm text-cyan-700 hover:text-cyan-800 font-medium flex items-center gap-1"
           >
             View all <ChevronRight className="h-4 w-4" />
           </Link>
@@ -187,34 +218,49 @@ export default function RewardsDashboardPage() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {recentHistory.map((entry) => (
-              <Card key={entry.id} className="p-3 md:p-4">
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
-                      {entry.display_name || entry.rule_name}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {new Date(entry.created_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
+            {recentHistory.map((entry) => {
+              const isReversal = Boolean(entry.is_reversal || entry.bubbles_awarded < 0);
+              return (
+                <Card key={entry.id} className="p-3.5 md:p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {entry.display_name || entry.rule_name}
+                      </p>
+                      {entry.description && (
+                        <p className="text-xs text-slate-600 mt-0.5 truncate">
+                          {entry.description}
+                        </p>
+                      )}
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {new Date(entry.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center rounded-lg px-2.5 py-1 text-sm font-bold tabular-nums shrink-0 ${
+                        isReversal
+                          ? "bg-rose-100 text-rose-700"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}
+                    >
+                      {formatBubbleDelta(entry.bubbles_awarded)}
+                    </span>
                   </div>
-                  <span className="inline-flex items-center rounded-lg bg-emerald-100 px-2.5 py-1 text-sm font-bold text-emerald-700 shrink-0">
-                    +{entry.bubbles_awarded} 🫧
-                  </span>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* How to Earn Section */}
-      <details className="rounded-xl border border-slate-200 bg-white p-4">
+      {/* Ways to Earn Section */}
+      <details open className="rounded-2xl border border-slate-200 bg-white p-5">
         <summary className="cursor-pointer list-none text-lg font-semibold text-slate-900">
-          How to Earn Bubbles
+          Ways to Earn Bubbles
         </summary>
         <div className="mt-4 space-y-4">
           {CATEGORY_ORDER.map((cat) => {
@@ -230,7 +276,7 @@ export default function RewardsDashboardPage() {
                 <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
                   <span>{label.icon}</span> {label.label}
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                   {catRules.map((rule) => (
                     <RewardRuleCard
                       key={rule.id}

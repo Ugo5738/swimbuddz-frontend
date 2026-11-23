@@ -61,9 +61,13 @@ export function RewardRuleCard({
                 {isMaxed ? "completed" : `lifetime max ${maxPerMemberLifetime}`}
               </span>
             )}
-            {requiresAdminConfirmation && (
+            {requiresAdminConfirmation ? (
               <span className="text-xs bg-white/60 text-slate-600 px-2 py-0.5 rounded-full">
-                verified by admin
+                Admin confirmed
+              </span>
+            ) : (
+              <span className="text-xs bg-emerald-100/80 text-emerald-800 px-2 py-0.5 rounded-full font-medium">
+                Automatic
               </span>
             )}
           </div>
