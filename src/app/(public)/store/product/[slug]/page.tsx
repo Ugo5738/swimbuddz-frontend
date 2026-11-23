@@ -117,7 +117,7 @@ interface RelatedProduct {
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { addItem, itemCount, cart } = useStoreCart();
+  const { addItem, cart } = useStoreCart();
   const slug = params.slug as string;
 
   /* ---- state ---- */
@@ -129,7 +129,6 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
-  const [justAdded, setJustAdded] = useState(false);
   const [sizeChartAcked, setSizeChartAcked] = useState(false);
   // Use the actual server-owned Store discount, not unrelated programme rates.
   const memberDiscount = Number(cart?.member_discount_percent ?? 0);
@@ -263,7 +262,6 @@ export default function ProductDetailPage() {
     setAdding(true);
     try {
       await addItem(selectedVariant.id, quantity);
-      setJustAdded(true);
       toast.success(`${product?.name} added to cart`, {
         action: {
           label: "View Cart",
@@ -648,6 +646,7 @@ export default function ProductDetailPage() {
                                 onClick={() => handleOptionChange(optionName, value)}
                                 disabled={!isAvailable}
                                 title={value}
+                                aria-pressed={isSelected}
                                 className={`relative flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
                                   isSelected
                                     ? "border-cyan-500 ring-2 ring-cyan-200 shadow-sm"
@@ -767,9 +766,15 @@ export default function ProductDetailPage() {
             </div>
           )}
 
+          {!allOptionsSelected && (
+            <p role="status" className="mb-3 text-sm text-amber-700">
+              Choose {missingOptions.join(" and ")} above to continue.
+            </p>
+          )}
+
           {/* Quantity + Add to Cart / Buy Now */}
           <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="flex flex-col items-stretch gap-3">
               <div className="flex items-center justify-between sm:justify-start border-2 border-slate-200 rounded-xl overflow-hidden self-start">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -794,7 +799,7 @@ export default function ProductDetailPage() {
                 </button>
               </div>
 
-              <div className="flex flex-1 items-center gap-2">
+              <div className="hidden lg:grid grid-cols-2 gap-3">
                 <button
                   onClick={handleAddToCart}
                   disabled={
@@ -804,7 +809,7 @@ export default function ProductDetailPage() {
                     !allOptionsSelected ||
                     !selectedVariant
                   }
-                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-900 text-white rounded-xl font-semibold text-sm hover:bg-slate-800 active:bg-slate-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="flex items-center justify-center gap-2 min-h-12 px-4 py-3 bg-cyan-600 text-white rounded-xl font-semibold text-sm hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                 >
                   {adding ? (
                     <span className="flex items-center gap-2">
@@ -831,8 +836,6 @@ export default function ProductDetailPage() {
                     </span>
                   ) : !activeVariants.length ? (
                     <>Temporarily unavailable</>
-                  ) : !allOptionsSelected ? (
-                    <>Select {missingOptions.join(" & ")}</>
                   ) : (
                     <>
                       <ShoppingCart className="w-4 h-4" />
@@ -850,7 +853,7 @@ export default function ProductDetailPage() {
                     !allOptionsSelected ||
                     !selectedVariant
                   }
-                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-cyan-600 text-white rounded-xl font-semibold text-sm hover:bg-cyan-700 active:bg-cyan-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="flex items-center justify-center gap-2 min-h-12 px-4 py-3 border border-cyan-500 bg-white text-cyan-700 rounded-xl font-semibold text-sm hover:bg-cyan-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {buyingNow ? (
                     <span className="flex items-center gap-2">
@@ -883,43 +886,10 @@ export default function ProductDetailPage() {
                 </button>
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                Buy Now purchases only this item. To buy several products together, use Add to Cart and checkout your cart.
+                Buy Now checks out only this product. Your other cart items stay saved.
               </p>
             </div>
 
-            {/* Cart feedback & quick-action bar */}
-            {(justAdded || itemCount > 0) && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 bg-cyan-50/80 border border-cyan-200/80 rounded-xl">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse" />
-                  <span className="text-xs sm:text-sm font-semibold text-cyan-900">
-                    {itemCount} {itemCount === 1 ? "item" : "items"} in your cart
-                  </span>
-                </div>
-                <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap self-end sm:self-auto">
-                  <Link
-                    href="/store"
-                    className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-cyan-800 hover:text-cyan-900 transition-colors"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    Keep Shopping
-                  </Link>
-                  <span className="text-slate-300">|</span>
-                  <Link
-                    href="/store/cart"
-                    className="text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 underline"
-                  >
-                    View Cart
-                  </Link>
-                  <Link
-                    href="/store/checkout"
-                    className="text-xs sm:text-sm font-semibold text-cyan-800 hover:text-cyan-900 bg-white px-3 py-1.5 rounded-lg border border-cyan-300 shadow-2xs hover:bg-cyan-50 transition-colors"
-                  >
-                    Checkout →
-                  </Link>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Trust indicators */}
@@ -1078,7 +1048,7 @@ export default function ProductDetailPage() {
         <button
           onClick={handleAddToCart}
           disabled={adding || buyingNow || !inStock || !allOptionsSelected || !selectedVariant}
-          className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-900 rounded-lg font-medium text-xs hover:bg-slate-200 transition-colors disabled:opacity-50 whitespace-nowrap"
+          className="flex items-center gap-1.5 px-3 py-2 bg-cyan-600 text-white rounded-lg font-semibold text-xs hover:bg-cyan-700 transition-colors disabled:opacity-50 whitespace-nowrap"
         >
           <ShoppingCart className="w-3.5 h-3.5" />
           {adding ? "..." : "Add"}
@@ -1086,7 +1056,7 @@ export default function ProductDetailPage() {
         <button
           onClick={handleBuyNow}
           disabled={adding || buyingNow || !inStock || !allOptionsSelected || !selectedVariant}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-600 text-white rounded-lg font-semibold text-xs hover:bg-cyan-700 transition-colors disabled:opacity-50 whitespace-nowrap shadow-sm"
+          className="flex items-center gap-1.5 px-3.5 py-2 border border-cyan-600 bg-white text-cyan-700 rounded-lg font-semibold text-xs hover:bg-cyan-50 transition-colors disabled:opacity-50 whitespace-nowrap"
         >
           {buyingNow ? "..." : isPreorder ? "Pre-order" : "Buy Now"}
         </button>

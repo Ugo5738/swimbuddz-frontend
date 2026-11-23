@@ -527,62 +527,6 @@ export default function StoreCheckoutPage() {
             />
           </Card>
 
-          {/* Payment Method */}
-          {afterCredit > 0 && (
-            <Card className="p-6 space-y-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Payment</h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {paystackAmount > 0
-                    ? paymentMethod === "manual_transfer"
-                      ? "Bank transfer · Admin verification required"
-                      : "Card payment via Paystack"
-                    : "Fully covered by Bubbles"}
-                </p>
-              </div>
-
-              {/* Card payment info */}
-              <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
-                <div className="flex-shrink-0 rounded-lg p-2 bg-slate-100">
-                  <CreditCard className="w-5 h-5 text-slate-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900">
-                    {paystackAmount > 0
-                      ? `₦${paystackAmount.toLocaleString()} via ${paymentMethod === "manual_transfer" ? "bank transfer" : "Paystack"}`
-                      : "No card payment needed"}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {paystackAmount > 0
-                      ? paymentMethod === "manual_transfer"
-                        ? "Submit your transfer details for review"
-                        : "Card, bank transfer, or USSD"
-                      : "Bubbles cover the full amount"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Bubbles slider */}
-              {paymentMethod === "manual_transfer" ? null : walletBalance !== null &&
-                maxBubbles > 0 ? (
-                <BubblesSlider
-                  amountDueNgn={afterCredit}
-                  walletBalance={maxBubbles}
-                  bubblesToApply={effectiveBubbles}
-                  onChange={setBubblesToApply}
-                />
-              ) : walletBalance === null ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-sm text-slate-500">
-                    <Link href="/account/wallet" className="text-cyan-600 font-medium underline">
-                      Set up your wallet
-                    </Link>{" "}
-                    to pay with Bubbles and save
-                  </p>
-                </div>
-              ) : null}
-            </Card>
-          )}
         </div>
 
         {/* Order Summary */}
@@ -658,12 +602,24 @@ export default function StoreCheckoutPage() {
               </div>
             </div>
 
-            {/* Pay Button */}
-            <PaymentMethodChoice
-              value={paymentMethod}
-              onChange={setPaymentMethod}
-              disabled={processing}
-            />
+            {/* The payment method belongs next to the total and action, not in a second card. */}
+            {afterCredit > 0 && (
+              <div className="mt-5 border-t border-slate-200 pt-4 space-y-3">
+                <PaymentMethodChoice
+                  value={paymentMethod}
+                  onChange={setPaymentMethod}
+                  disabled={processing}
+                />
+                {paymentMethod !== "manual_transfer" && walletBalance !== null && maxBubbles > 0 && (
+                  <BubblesSlider
+                    amountDueNgn={afterCredit}
+                    walletBalance={maxBubbles}
+                    bubblesToApply={effectiveBubbles}
+                    onChange={setBubblesToApply}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Size Chart Acknowledgment */}
             {requiresSizeChartAck && (
@@ -699,9 +655,11 @@ export default function StoreCheckoutPage() {
                   )}
                   {paystackAmount <= 0
                     ? `Pay with ${effectiveBubbles} Bubbles`
-                    : effectiveBubbles > 0
-                      ? `Pay ₦${paystackAmount.toLocaleString()} + ${effectiveBubbles} 🫧`
-                      : `Pay ₦${paystackAmount.toLocaleString()}`}
+                    : paymentMethod === "manual_transfer"
+                      ? "Continue to bank transfer"
+                      : effectiveBubbles > 0
+                        ? `Pay ₦${paystackAmount.toLocaleString()} + ${effectiveBubbles} 🫧`
+                        : `Pay ₦${paystackAmount.toLocaleString()}`}
                 </span>
               )}
             </Button>

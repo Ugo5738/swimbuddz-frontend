@@ -23,28 +23,28 @@ describe("PaymentChoicePanel", () => {
     expect(onPayWithCard).toHaveBeenCalledWith(5_000_000);
   });
 
-  it("hides the 'Pay a different amount' link when maxPayableKobo is missing", () => {
+  it("hides the 'Pay more or settle your balance' link when maxPayableKobo is missing", () => {
     render(<PaymentChoicePanel {...baseProps} />);
     expect(
-      screen.queryByRole("button", { name: /Pay a different amount/ }),
+      screen.queryByRole("button", { name: /Pay more or settle your balance/ }),
     ).not.toBeInTheDocument();
   });
 
-  it("hides the 'Pay a different amount' link when maxPayableKobo equals next installment", () => {
+  it("hides the 'Pay more or settle your balance' link when maxPayableKobo equals next installment", () => {
     render(
       <PaymentChoicePanel {...baseProps} maxPayableKobo={5_000_000} />,
     );
     expect(
-      screen.queryByRole("button", { name: /Pay a different amount/ }),
+      screen.queryByRole("button", { name: /Pay more or settle your balance/ }),
     ).not.toBeInTheDocument();
   });
 
-  it("shows the 'Pay a different amount' link when there's a future installment to roll into", () => {
+  it("shows the 'Pay more or settle your balance' link when there's a future installment to roll into", () => {
     render(
       <PaymentChoicePanel {...baseProps} maxPayableKobo={15_000_000} />,
     );
     expect(
-      screen.getByRole("button", { name: /Pay a different amount/ }),
+      screen.getByRole("button", { name: /Pay more or settle your balance/ }),
     ).toBeInTheDocument();
   });
 
@@ -59,7 +59,7 @@ describe("PaymentChoicePanel", () => {
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Pay a different amount/ }),
+      screen.getByRole("button", { name: /Pay more or settle your balance/ }),
     );
 
     const input = screen.getByDisplayValue("50000") as HTMLInputElement;
@@ -82,7 +82,7 @@ describe("PaymentChoicePanel", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: /Pay a different amount/ }),
+      screen.getByRole("button", { name: /Pay more or settle your balance/ }),
     );
     const input = screen.getByDisplayValue("50000") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "200000" } }); // exceeds 150k max
@@ -102,7 +102,7 @@ describe("PaymentChoicePanel", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: /Pay a different amount/ }),
+      screen.getByRole("button", { name: /Pay more or settle your balance/ }),
     );
     const input = screen.getByDisplayValue("50000") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "87500" } });
