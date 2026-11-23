@@ -280,6 +280,16 @@ time under the backend connection-canary runbook.
 
 ---
 
+### 23 November 2026 — Store purchase and transfer UX simplification
+
+- Product details keep both purchase paths required by ADR-017: **Add to Cart** accumulates multiple items; **Buy Now** checks out only the selected variant and quantity, preserving the saved cart. The header cart and a post-add toast link to the cart; there is no permanent secondary checkout action strip on product pages.
+- Variant choices remain explicit and accessible. Quantity and purchase actions get their own responsive space; invalid product options are explained directly beside the selection.
+- Store checkout presents **one** payment-method chooser beside the order total and primary action. Bubbles options appear only for online payments, while manual transfers continue to receipt submission. The manual-transfer action says **Continue to bank transfer**, not that payment is already complete.
+- Transfer receipt submission is a **pending verification** state, not a successful settlement. The transfer status page shows contextual links to Store orders / shopping, Academy / billing, and the homepage, without granting entitlements early.
+- Academy installment payment remains server-priced and oldest-first. Billing can pay consecutive unpaid installments together; enrollment details can pay a larger amount up to the outstanding balance. Make early payment visible without changing those limits.
+
+---
+
 ## 7. Member → Browse & Purchase Store Items
 
 ### Flow: Store → Product → Cart → Checkout
