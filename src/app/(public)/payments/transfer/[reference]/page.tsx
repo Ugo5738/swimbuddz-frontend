@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { apiPost, apiUpload } from "@/lib/api";
 import { BANK_TRANSFER_ACCOUNT } from "@/lib/bank-transfer";
 import { FileUpload } from "@/components/ui/FileUpload";
@@ -183,6 +184,36 @@ export default function TransferPage() {
             </>
           )}
         </Card>
+      )}
+      {payment && (
+        <nav aria-label="After payment navigation" className="flex flex-wrap gap-3">
+          {payment.purpose.toLowerCase().includes("store") ? (
+            <>
+              <Link href="/account/orders" className="inline-flex items-center justify-center rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-700">
+                View my orders
+              </Link>
+              <Link href="/store" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                Continue shopping
+              </Link>
+            </>
+          ) : payment.purpose.toLowerCase().includes("academy") ? (
+            <>
+              <Link href="/account/academy" className="inline-flex items-center justify-center rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-700">
+                Back to My Academy
+              </Link>
+              <Link href="/account/billing" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                View billing
+              </Link>
+            </>
+          ) : (
+            <Link href="/account/billing" className="inline-flex items-center justify-center rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-700">
+              View my payments
+            </Link>
+          )}
+          <Link href="/" className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-cyan-700">
+            Go to homepage
+          </Link>
+        </nav>
       )}
     </main>
   );
