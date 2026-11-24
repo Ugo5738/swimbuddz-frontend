@@ -27,7 +27,17 @@ export default function ExplorePage() {
           </Link>
         ))}
       </div>
-      <p className="mt-8 text-sm text-slate-600">Already know where you're going? <Link href="/account" className="font-semibold text-cyan-700 underline">Open your account</Link>.</p>
+      <p className="mt-8 text-sm text-slate-600">
+        Already know where you&apos;re going?{" "}
+        <Link href="/account" className="font-semibold text-cyan-700 underline">
+          Open your account
+        </Link>{" "}
+        or{" "}
+        <Link href="/account/orders" className="font-semibold text-cyan-700 underline">
+          view your store orders
+        </Link>
+        .
+      </p>
     </main>
   );
 }

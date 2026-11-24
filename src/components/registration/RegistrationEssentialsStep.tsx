@@ -14,6 +14,7 @@ interface RegistrationEssentialsStepProps {
   mode?: "registration" | "onboarding";
   includeSwimLevel?: boolean;
   includeAcquisitionSource?: boolean;
+  acquisitionSourceRequired?: boolean;
   /** Unrelated to account identity: collected at coaching or checkout time. */
   includeContactDetails?: boolean;
   formData: {
@@ -37,6 +38,7 @@ export function RegistrationEssentialsStep({
   mode = "registration",
   includeSwimLevel = true,
   includeAcquisitionSource = true,
+  acquisitionSourceRequired = true,
   includeContactDetails = true,
   formData,
   onUpdate,
@@ -249,12 +251,20 @@ export function RegistrationEssentialsStep({
 
       {includeAcquisitionSource ? (
         <Select
-          label="How did you hear about SwimBuddz?"
+          label={
+            acquisitionSourceRequired
+              ? "How did you hear about SwimBuddz?"
+              : "How did you hear about SwimBuddz? (optional)"
+          }
           name="acquisitionSource"
           value={formData.acquisitionSource || ""}
           onChange={(e) => onUpdate("acquisitionSource", e.target.value)}
-          required
-          hint="This helps us understand where our community is coming from."
+          required={acquisitionSourceRequired}
+          hint={
+            acquisitionSourceRequired
+              ? "This helps us understand where our community is coming from."
+              : "Optional — helps us understand where our community and shoppers find us."
+          }
         >
           <option value="">Select an option</option>
           {acquisitionSourceOptions.map((opt) => (

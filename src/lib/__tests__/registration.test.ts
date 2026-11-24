@@ -693,4 +693,68 @@ describe("getPostAuthRedirectPath", () => {
     expect(await getPostAuthRedirectPath("/sessions/session-1")).toBe("/sessions/session-1");
     expect(await getPostAuthRedirectPath()).toBe("/coach/dashboard");
   });
+
+  it("keeps active Academy learners on /account/academy even if Club was requested", async () => {
+    mockedApiGet.mockResolvedValue(
+      buildMember({
+        membership: {
+          primary_tier: "academy",
+          active_tiers: ["academy", "community"],
+          requested_tiers: ["club"],
+          community_paid_until: "2025-12-31",
+          club_paid_until: null,
+          academy_paid_until: "2025-12-31",
+          paid_tier: "academy",
+          paid_tiers: ["academy", "community"],
+          tier_statuses: {
+            community: { status: "active" },
+            club: { status: "requested" },
+            academy: { status: "active" },
+          },
+          academy_skill_assessment: { canFloat: true },
+          academy_goals: "Learn freestyle",
+          academy_preferred_coach_gender: "any",
+          academy_lesson_preference: "group",
+        },
+      })
+    );
+
+    expect(await getPostAuthRedirectPath()).toBe("/account/academy");
+  });
+
+  it("routes fresh accounts with pending Academy or Club obligations to billing instead of /explore", async () => {
+    mockedApiGet.mockResolvedValueOnce(
+      buildMember({
+        profile_photo_media_id: null,
+        profile: { phone: null, swim_level: null },
+        membership: {
+          community_paid_until: null,
+          club_paid_until: null,
+          academy_paid_until: null,
+          tier_statuses: {
+            community: { status: "approved_unpaid" },
+            academy: { status: "payment_pending" },
+          },
+        },
+      })
+    );
+    expect(await getPostAuthRedirectPath()).toBe("/account/billing?required=academy");
+
+    mockedApiGet.mockResolvedValueOnce(
+      buildMember({
+        profile_photo_media_id: null,
+        profile: { phone: null, swim_level: null },
+        membership: {
+          community_paid_until: null,
+          club_paid_until: null,
+          academy_paid_until: null,
+          tier_statuses: {
+            community: { status: "approved_unpaid" },
+            club: { status: "approved_unpaid" },
+          },
+        },
+      })
+    );
+    expect(await getPostAuthRedirectPath()).toBe("/account/billing?required=club");
+  });
 });

@@ -38,6 +38,7 @@ describe("modular user journeys", () => {
   it("does not override existing members' onboarding/billing rules", () => {
     expect(resolvePostAuthJourney({ communityActive: true })).toBeNull();
     expect(resolvePostAuthJourney({ academyActive: true })).toBeNull();
+    expect(resolvePostAuthJourney({ academyActive: true, requestedTiers: ["club"] })).toBeNull();
     expect(resolvePostAuthJourney({ isFreshRegistration: false })).toBeNull();
   });
 });
