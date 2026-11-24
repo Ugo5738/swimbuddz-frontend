@@ -800,3 +800,8 @@ HTTP; an application admin or procurement grant does not imply Finance Owner
 access. Finance denial/unavailability fails the protected action, preserving
 independent approval, without preventing products from loading. This corrects a
 Store startup import failure and introduces no checkout or price changes.
+
+
+### Reviewed purchased stock and Fatima collection (24 November 2026)
+
+The owner-approved operator reconciliation converts the purchased product families to Stocked and leaves five units per purchased variant after Fatima’s confirmed collection. Her existing pickup order completes as Picked Up through the normal admin status API; original preorder snapshots and payment remain intact. This scoped data correction adds no new UI or global completion shortcut. Unknown acquisition costs remain visibly unvalued.
