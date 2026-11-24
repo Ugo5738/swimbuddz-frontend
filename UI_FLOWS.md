@@ -6,6 +6,14 @@ The implementation of pages should follow these flows closely.
 **Last Updated:** November 2026
 **Total Routes:** 103 pages across Community, Club, Academy, Store, Events, and Admin domains
 
+## November 24, 2026 — Independent Account Registration, Modular Journeys & Store-First Access (`ADR-021`)
+
+- **Decoupled signup (`/register`):** Regular account registration is a 2-step identity flow (**Create Account** → **Confirm & Finish**) requiring only First Name, Last Name, Email, Password (`>= 8` chars), and terms confirmation, plus an optional *"How did you hear about SwimBuddz?"* dropdown for flywheel attribution. Contact details, address, and swimming level are deferred to programme onboarding or Store checkout (coach signups via `/register?coach=true` still validate contact details).
+- **Authenticated pass-through:** Visiting `/register?goal=...` or `/register?next=...` while already signed in redirects straight to the target journey (`/upgrade/club/readiness`, `/upgrade/academy/cohort`, `/checkout?purpose=community`, `/store/*`, etc.) rather than showing the signup form again.
+- **Discovery hub (`/explore`) & Store-only accounts:** Fresh identity-only accounts with no explicit destination or pending programme obligation land on `/explore` (linking Academy, Club, Community, Store, Pools, `/account`, and `/account/orders`). Store customers can sign up via `StoreHeader` (`Join` preserves `?next=<store path>`) and track purchases on `/account/orders` without paying for swimming membership. Accounts with `approved_unpaid` / `payment_pending` programme obligations continue to `/account/billing?required=<tier>`, and active Academy learners stay on `/account/academy` even if Club was requested.
+
+---
+
 ## November 23, 2026 — Member Dashboard redesign, simplified navigation & unified Rewards Hub (`ADR-020`)
 
 - **Sidebar navigation cleanup:** Top-level swim links are consolidated to **Dashboard**, **My Swims**, **Find a Swim**, and **Explore Pools**. `Book My Next Swim` is folded into the Dashboard and My Swims primary booking CTA (preserving `/account/book-next-swim` for deep links), **SwimBuddz Calendar** lives under **Community**, and **Rewards** is surfaced directly under **Wallet & Payments**.
@@ -56,32 +64,26 @@ time under the backend connection-canary runbook.
 
 3. On `/register`:
 
-   - Step 1: choose a starting path—Annual SwimBuddz Membership, Club
-     practice, or an Academy programme. This records intent; it does not grant
-     programme access.
-   - Step 2: create the account with essential identity/contact details.
-   - Step 3: review the selected path and accept the community rules.
-   - Club and Academy remain independent programmes. Neither is presented as a
-     higher membership rank, and selecting Academy never implies Club access.
+   - Step 1: create the account with core identity details (first name, last name, email, password) and an optional acquisition source. Programme intent from `?goal=academy|club|community` or explicit `?next=` return links is preserved automatically without forcing programme selection upfront.
+   - Step 2: review the summary and accept the community rules and privacy policy.
+   - Already-authenticated users visiting `/register?goal=...` or `/register?next=...` are forwarded straight to their destination.
+   - Club and Academy remain independent programmes (`ADR-001`). Neither is presented as a higher membership rank, and selecting Academy never implies Club access.
 
 4. When user submits final step:
 
    - Frontend:
-     - Calls backend `POST /api/v1/pending-registrations` with full profile data.
+     - Calls backend `POST /api/v1/pending-registrations/` with identity fields, optional attribution, `return_to`, and any explicit `requested_membership_tiers` (omitted profile fields sent as `undefined`, never empty strings).
      - Creates Supabase user (sign-up).
    - On success:
      - Displays “Check your email” screen.
 
 5. User clicks confirmation link in email:
 
-   - Supabase verifies email and redirects to `/auth/callback`.
+   - Supabase verifies email and redirects to `/confirm`.
    - App calls `POST /api/v1/pending-registrations/complete`.
-   - Redirects to the shared account onboarding flow, preserving the selected
-     path or cohort deep link.
+   - Post-auth routing (`resolvePostAuthJourney` + `getPostAuthRedirectPath`) resumes standalone destinations (`/store/*`, `/pool-access/*`, etc.), explicit programme goals (`/upgrade/academy/cohort`, `/upgrade/club/readiness`, `/checkout?purpose=community`), pending billing obligations, or lands truly fresh identity-only accounts on `/explore`.
 
-6. In account onboarding, the member completes the shared profile, safety
-   contacts, logistics, and swimming background once. Product-specific steps
-   then continue in Club readiness or Academy cohort selection.
+6. When joining a swimming programme, the member completes shared swimming onboarding once (profile photo, contact/location, safety contacts, logistics, and swimming background). Store-only customers can shop and view `/account/orders` without swimming onboarding or annual membership.
 
 ---
 

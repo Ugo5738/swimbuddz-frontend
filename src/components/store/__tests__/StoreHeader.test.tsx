@@ -43,7 +43,7 @@ describe("StoreHeader navigation", () => {
     expect(screen.queryByTitle("Back to SwimBuddz Home")).not.toBeInTheDocument();
   });
 
-  it("retains the current store page in login redirect query parameter", () => {
+  it("retains the current store page in login redirect and register next query parameters", () => {
     mocks.pathname = "/store/cart";
     render(<StoreHeader />);
 
@@ -51,6 +51,12 @@ describe("StoreHeader navigation", () => {
     expect(loginLink).toHaveAttribute(
       "href",
       "/login?redirect=%2Fstore%2Fcart"
+    );
+
+    const joinLink = screen.getByRole("link", { name: "Join" });
+    expect(joinLink).toHaveAttribute(
+      "href",
+      "/register?next=%2Fstore%2Fcart"
     );
   });
 });

@@ -194,10 +194,20 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
     const availability = member.availability;
 
     const communityActive = getTierStatus(member, "community")?.status === "active";
+    const clubActive = getTierStatus(member, "club")?.status === "active";
     const academyActive = getTierStatus(member, "academy")?.status === "active";
+    const communityStatus = getTierStatus(member, "community")?.status;
+    const clubStatus = getTierStatus(member, "club")?.status;
+    const academyStatus = getTierStatus(member, "academy")?.status;
     const requestedTiers = getRequestedTiers(member);
     const wantsAcademy = requestedTiers.includes("academy") || isAcademyDestination(returnTo);
     const wantsClub = requestedTiers.includes("club");
+    const hasPendingObligation = Boolean(
+      membership?.payment_pending ||
+        ["approved_unpaid", "payment_pending", "expired"].includes(academyStatus || "") ||
+        ["approved_unpaid", "payment_pending", "expired"].includes(clubStatus || "") ||
+        ["payment_pending", "expired"].includes(communityStatus || "")
+    );
 
     const nextJourneyPath = resolvePostAuthJourney({
       destination: returnTo,
@@ -207,11 +217,13 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
         (tier) => getTierStatus(member, tier as MembershipTier)?.status === "requested"
       ),
       communityActive,
-      clubActive: getTierStatus(member, "club")?.status === "active",
+      clubActive,
       academyActive,
       // Newly registered shoppers have no swimming-specific profile yet.
-      // Do not substitute this for the payment/eligibility checks below.
+      // Exclude accounts with pending/unpaid programme obligations so they
+      // reach billing instead of looping back to /explore.
       isFreshRegistration: Boolean(
+        !hasPendingObligation &&
         !member.profile_photo_media_id &&
         !profile?.phone &&
         !profile?.swim_level &&
@@ -263,9 +275,24 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
     // emergency contacts and learning goals are collected after checkout,
     // before the student's first supervised swim. Only fall back to cohort
     // selection when there is no explicit non-Academy destination.
-    if (getTierStatus(member, "academy")?.status === "requested" && !academyActive) {
+    if (academyStatus === "requested" && !academyActive) {
       if (returnTo && isAcademyDestination(returnTo)) return returnTo;
       if (!returnTo) return "/upgrade/academy/cohort";
+    }
+    if (
+      !returnTo &&
+      !academyActive &&
+      ["approved_unpaid", "payment_pending"].includes(academyStatus || "")
+    ) {
+      return "/account/billing?required=academy";
+    }
+    if (
+      !returnTo &&
+      !clubActive &&
+      !academyActive &&
+      ["approved_unpaid", "payment_pending"].includes(clubStatus || "")
+    ) {
+      return "/account/billing?required=club";
     }
 
     const onboardingComplete =
@@ -282,8 +309,6 @@ export async function getPostAuthRedirectPath(destination?: string | null): Prom
 
     if (academyActive) return "/account/academy";
 
-    const academyStatus = getTierStatus(member, "academy")?.status;
-    const clubStatus = getTierStatus(member, "club")?.status;
     if (academyStatus === "requested") return "/upgrade/academy/cohort";
     if (["approved_unpaid", "payment_pending", "expired"].includes(academyStatus || "")) {
       return "/account/billing?required=academy";
