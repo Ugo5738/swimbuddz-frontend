@@ -149,7 +149,7 @@ export function StoreHeader() {
                   Login
                 </Link>
                 <Link
-                  href="/register"
+                  href={`/register?next=${encodeURIComponent(pathname || "/store")}`}
                   className="hidden sm:inline-flex rounded-full bg-gradient-to-r from-cyan-600 to-cyan-500 px-4 py-1.5 text-sm text-white font-semibold hover:from-cyan-500 hover:to-cyan-400 transition-all hover:shadow-md hover:shadow-cyan-500/20"
                 >
                   Join

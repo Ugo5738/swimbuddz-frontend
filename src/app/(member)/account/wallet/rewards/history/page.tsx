@@ -23,9 +23,10 @@ export default function RewardHistoryPage() {
           category: string;
           bubbles_awarded: number;
           description?: string | null;
+          is_reversal?: boolean;
         }[];
         total: number;
-      }>("/api/v1/wallet/rewards/history?limit=10000", { auth: true });
+      }>("/api/v1/wallet/rewards/history?limit=200", { auth: true });
       if (res.history.length === 0) {
         toast("No rewards to export");
         return;

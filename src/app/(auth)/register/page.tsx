@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPatch } from "@/lib/api";
+import { supabase } from "@/lib/auth";
 import {
   requestedProgrammesForPath,
   startPathFromGoal,
@@ -14,16 +15,15 @@ import {
 } from "@/lib/memberPaths";
 import { isAcademyDestination, safeReturnPath } from "@/lib/returnPath";
 import { destinationForGoal } from "@/lib/journeys";
-import { createPendingRegistration } from "@/lib/registration";
+import { createPendingRegistration, getPostAuthRedirectPath } from "@/lib/registration";
 import clsx from "clsx";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
-// The essentials step pulls in heavy, browser-only deps (country-state-city's
-// full country/state dataset + react-phone-number-input and its CSS). Code-split
-// it so those load only when the user actually reaches this step — the wizard
-// opens on the tier step, so they're not needed for the initial /register paint.
+// The essentials step pulls in browser-only deps (country-state-city +
+// react-phone-number-input for coach contact fields). Code-split it with
+// ssr: false so those browser-only modules stay out of the SSR bundle.
 const RegistrationEssentialsStep = dynamic(
   () =>
     import("@/components/registration/RegistrationEssentialsStep").then(
@@ -204,6 +204,42 @@ function RegisterContent() {
   const [currentTier, setCurrentTier] = useState<Tier | null>(null);
   const [currentTiers, setCurrentTiers] = useState<Tier[]>([]);
 
+  // Public marketing pages (/club, /community, /academy, /store) link to
+  // /register?goal=... or /register?next=.... If the visitor is already signed
+  // in (for example arriving via /explore), send them directly to their target
+  // journey instead of trapping them on the signup form.
+  useEffect(() => {
+    if (isUpgrade || isCoachRegistration) return;
+    let cancelled = false;
+    const redirectIfAuthenticated = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (cancelled || !session) return;
+        const adminRoles = session.user?.app_metadata?.roles as string[] | undefined;
+        if (Array.isArray(adminRoles) && adminRoles.includes("admin")) {
+          router.replace(safeNext ?? "/admin/dashboard");
+          return;
+        }
+        if (safeNext) {
+          router.replace(safeNext);
+          return;
+        }
+        const nextPath = await getPostAuthRedirectPath();
+        if (!cancelled) {
+          router.replace(nextPath);
+        }
+      } catch {
+        // Keep the signup form available if session check fails.
+      }
+    };
+    void redirectIfAuthenticated();
+    return () => {
+      cancelled = true;
+    };
+  }, [isCoachRegistration, isUpgrade, router, safeNext]);
+
   // Public Club, Academy and Membership CTAs all land on this form. Preserve
   // that intent in the selected path and, later, in requested_programmes on
   // the member record so email verification cannot drop it.
@@ -291,7 +327,7 @@ function RegisterContent() {
       { key: "essentials", title: "Create Account", required: true },
       { key: "confirm", title: "Confirm & Finish", required: true },
     ];
-  }, [isUpgrade, isCoachRegistration, formData.membershipTier]);
+  }, [isUpgrade, isCoachRegistration]);
 
   // Clamp the current step if the visible steps shrink (e.g. switching from academy to community)
   useEffect(() => {
@@ -326,14 +362,11 @@ function RegisterContent() {
 
       case "essentials":
         return Boolean(
-          formData.firstName &&
-          formData.lastName &&
-          formData.email &&
+          formData.firstName.trim() &&
+          formData.lastName.trim() &&
+          formData.email.trim() &&
           formData.password &&
           formData.password.length >= 8 &&
-          formData.phone &&
-          formData.state &&
-          formData.city &&
           (isCoachRegistration
             ? Boolean(formData.phone && formData.state && formData.city && formData.country)
             : true)
@@ -439,17 +472,20 @@ function RegisterContent() {
         ? requestedProgrammesForPath(formData.membershipTier)
         : [];
 
+      const hasContactDetails = Boolean(
+        formData.phone.trim() || formData.city.trim() || formData.state.trim()
+      );
       const registrationPayload = {
         return_to: safeNext ?? undefined,
-        email: formData.email,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
+        email: formData.email.trim(),
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
         password: formData.password,
-        phone: formData.phone,
-        city: formData.city,
-        state: formData.state,
-        country: formData.country,
-        swim_level: formData.swimLevel,
+        phone: formData.phone.trim() || undefined,
+        city: formData.city.trim() || undefined,
+        state: formData.state.trim() || undefined,
+        country: hasContactDetails ? formData.country || undefined : undefined,
+        swim_level: formData.swimLevel || undefined,
         // Typed acquisition channel (powers flywheel funnel attribution).
         acquisition_source: formData.acquisitionSource || undefined,
         // Keep legacy discovery_source populated for back-compat with profile page.
@@ -496,7 +532,8 @@ function RegisterContent() {
       case "essentials":
         return (
           <RegistrationEssentialsStep
-            includeAcquisitionSource={false}
+            includeAcquisitionSource={!isCoachRegistration}
+            acquisitionSourceRequired={false}
             includeSwimLevel={false}
             includeContactDetails={isCoachRegistration}
             formData={{

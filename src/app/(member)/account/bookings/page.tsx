@@ -126,10 +126,21 @@ function PageContent() {
   const pendingPlans = (data?.plans ?? []).filter(p => !p.linked_event_id);
   return <main className="mx-auto max-w-6xl space-y-5 px-4 py-8">
     <header className="flex flex-wrap items-center justify-between gap-4">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-950">My Swims</h1>
-      <Link href="/account/find-a-swim" className="rounded-xl bg-cyan-700 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-800">
-        + Find a Swim
-      </Link>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-950">My Swims</h1>
+        <p className="mt-1 text-sm text-slate-600">Your upcoming schedule, bookings, and past swims.</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <Link
+          href="/account/calendar"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-cyan-300 hover:text-cyan-800"
+        >
+          SwimBuddz Calendar
+        </Link>
+        <Link href="/account/find-a-swim" className="rounded-xl bg-cyan-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-cyan-800">
+          + Find a Swim
+        </Link>
+      </div>
     </header>
     {projection.isLoading && <p role="status" className="rounded-xl border border-slate-200 p-4">Loading your swims…</p>}
     {projection.isError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
@@ -161,7 +172,7 @@ function PageContent() {
           : <Link href="/account/pool-access" className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View visit</Link>}
       </section>}
     </>}
-    <SwimRewards />
+    <SwimRewards variant="strip" />
     {data && <>
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3" role="tablist" aria-label="My Swims views">
         {([{ id: "list", name: "List" }, { id: "calendar", name: "Calendar" }, { id: "history", name: "History" }] as const)

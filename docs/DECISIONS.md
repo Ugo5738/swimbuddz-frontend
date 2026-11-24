@@ -162,6 +162,7 @@
   - **Reviewed Bubble settlement reallocation (16 Nov 2026):** A bank-free session payment settled entirely with Bubbles may be reversed only after an operator validates the original debit, refund, booking and wallet audit. Preserve the original paid receipt, prices and wallet transaction; add a linked refund and a new debit for the correct swim, reopen the original booking debt, and prohibit replay of its reversed settlement. A private admin review marker plus exact zero-cash/full-Bubbles proof allows a replacement checkout; member-supplied metadata alone never does. Post missing and correcting journals idempotently without inventing cash or changing posted entries. The Amara repair is a scoped maintenance transaction, not a general refund endpoint.
   - **Store service isolation and Finance authorization (19 Nov 2026):** Store procurement approvals remain Finance Owner-only with independent approval. The Store container must start without importing Ledger service code or models. It checks the authenticated caller through Ledger’s existing `/admin/finance/users/me` HTTP endpoint, forwarding that caller’s bearer token; missing authority or an unavailable Finance service denies the protected action without blocking public catalogue startup. Application admin and procurement grants never substitute for Finance Owner authority. Regression checks import Store with Ledger packages unavailable.
   - **Ledger startup isolation (20 Nov 2026):** The isolated Ledger image must start without Academy, Members, Payments or Store packages. Keep Finance Intelligence role-gated and use read-only aggregate queries against its existing shared database projection. Test startup with other service packages unavailable.
+  - **Reviewed stocked catalogue and Fatima handover reconciliation (24 Nov 2026):** The owner requested Stocked sourcing for the eight products with thirteen previously purchased colour/size variants and confirmed five units remaining per purchased variant after Fatima collected both items. Record this as an audited, scoped inventory-count correction: establish five units for each purchased variant, temporarily include the two collected units, and reserve those units against Fatima’s verified paid order before its normal Picked Up transition consumes them. Preserve original preorder order-line snapshots, all prices, bank receipts and payment journals; do not reinterpret old completed orders or restock again on retries. Unpurchased variants retain their counts. Acquisition costs remain unknown/unvalued until supported procurement evidence and independent valuation approval; retail prices are never acquisition costs. This reviewed repair replaces the unmerged draft preorder bypass; no global preorder fulfilment bypass is deployed.
   - **Member Financial Obligations Aggregator:** `/account/billing` aggregates obligations across Annual Membership, Club, Academy installments, and unpaid session/guest balances into a single trust-first overview, preserving loading states so active enrollments are never misreported as empty.
 - **Canonical Docs & Code:**
   - `docs/design/LEDGER_SERVICE_DESIGN.md`
@@ -256,6 +257,10 @@
   - **Approved Members/Chat canary scope (17 Nov 2026):** The owner explicitly superseded the media-worker-only configuration limit after a passive six-minute sample attributed about 86% of received pooler TCP payload to Members, Chat and Communications, and a bounded read-only probe showed connection reuse reduced receive traffic for identical reads. Prepare independent default-off Members API and Chat API switches, each hard-capped at one retained connection per process with zero overflow; tag their application names and retain disabled prepared statements/pre-ping. This authorizes the reviewable canary PR, not enabling or deploying it automatically. Existing media-worker settings and every other service stay unchanged. Measure equivalent windows and provider egress before any wider rollout.
   - **Members-only production activation (19 Nov 2026):** The owner explicitly approved activating the prepared Members API canary, persisting its production deployment flag and recreating only that API. Keep the existing application image, one retained connection per process and zero overflow; leave Chat, media and every other service unchanged. Record a rollback point and compare actual connections, response errors/latency and scheduled workloads. Initial socket/request checks do not prove a full-day egress reduction; require a complete provider-usage day before evaluating the next role. No schema, financial-record or billing-plan change is authorized by this activation.
   - **Chat-only production activation (22 Nov 2026):** After the Members canary remained healthy across complete provider-usage days, the owner explicitly approved enabling the existing Chat API reuse switch, persisting its production deployment flag and recreating only Chat with its current application image. Keep one retained connection per process with zero overflow; Members stays unchanged and media reuse stays off. Preserve chat authorization, role reconciliation and moderation configuration. Save rollback metadata, compare matched traffic/request windows and check errors before retaining the test. Daily pooler egress remained above the remaining free-tier budget before this step; short socket/traffic checks cannot establish sustainable provider-billed savings. No schema, financial-record or billing-plan changes are part of this activation.
+  - **Background worker & reporting egress controls (23 Nov 2026):** After Members and Chat pooling alone still left Shared Pooler egress at 245–254 MB/day against ~124 MB/day remaining budget, 24-hour container logs, 3.5-day container network totals, passive TCP captures, and `pg_stat_statements` attributed ~75–85% of pooler traffic to two October background changes (the Oct 18 hourly 44-member cross-service quarterly reporting rebuild and the Oct 20 every-5-minute unbounded Academy attendance history rescan) plus unpooled idle polling workers. With owner approval, this supersedes the 16 Nov cadence freeze while preserving all ADR-004, ADR-012, and ADR-019 invariants:
+    - *Reporting:* Refresh current-quarter member and community reports twice daily (`02:10` and `19:10 UTC`, `run_at_startup=False`) instead of hourly; cache cohort sessions across students within a batch; skip the duplicate `/internal/wallet/member-summary` call when `/internal/wallet/reporting-summary` already supplies wallet totals; and skip/scope `Club` and `Pod` table queries on per-member `/internal/members/reporting-summary` requests.
+    - *Attendance:* Split `reconcile_academy_defaults` into a bounded 48-hour lookback every 15 minutes (`task_reconcile_recent_academy_defaults`, fetching cohort sessions first and skipping cohorts with no eligible started included class before student/clearance/DB lookups) plus a full active-cohort historical safety repair once daily (`02:15 UTC`) and at startup. Schedule ADR-019 `task_sync_swim_rewards` every 10 minutes + startup instead of every 1 minute.
+    - *Idle & reconciliation workers:* Deduplicate `reconcile_pending_membership_payment_state` via `payment_metadata["pending_tier_projection_set_at"]` so unchanged pending payments do not `PATCH` Members every run; skip volunteer grant refreshes on closed/review media vaults and run `task_sync_session_vaults` every 4 hours (`task_reconcile_vault_bandwidth` and `task_backfill_vault_video_previews` hourly); relax empty-queue/fallback sweeps (`operational_email_outbox` 5m, pending notifications/payments/session retries/event reminders 10–30m); and run cross-service chat/projection reconciliation safety nets every 6 hours + startup instead of hourly. No schema migration, financial-record mutation, or wider DB pool rollout is included.
 - **Canonical Docs & Code:**
   - `swimbuddz-backend/docs/design/MEDIA_VAULT.md`
   - `swimbuddz-backend/docs/operations/MEDIA_VAULT_BANDWIDTH_RECONCILIATION.md`
@@ -358,6 +363,68 @@
   - `swimbuddz-frontend/src/components/swims/SwimRewards.tsx`
   - `swimbuddz-frontend/src/lib/my-swims.ts`
 
+---
+
+## ADR-020: Member Dashboard Redesign, Simplified Navigation & Unified Rewards Hub
+- **Status:** Settled & Enforced (23 November 2026)
+- **Context & Why:**
+  - Feature accretion stacked 10+ full-width banners on `/account`, duplicated the member's greeting across the top bar and `GreetingHero`, buried Quick Actions below passive analytics, and exposed five overlapping top-level swim links (`Book My Next Swim`, `Find a Swim`, `My Swims`, `SwimBuddz Calendar`, `Explore Pools`).
+  - Meanwhile, the full `SwimRewards` panel on `/account/bookings` pushed actual upcoming swims off-screen, derived swim counts and `"First swim"` badges solely from post–22 Nov `wallet_verified_swims` rows (contradicting existing members' recorded `Year to Date` attendance), left `/account/wallet/rewards` disconnected with a 10-row sum bug and a stale `requires_admin_confirmation = true` flag on `verified_swim_day`, and formatted swim reward reversals with raw session UUIDs outside Reward History.
+- **Decision & Non-Negotiable Invariants:**
+  - **All-Time Swimming Milestones vs. Post-22 Nov Swim Bubbles:** Swimming milestone counts (`all_time_swims`, `all_time_active_weeks`, `all_time_best_streak`, `all_time_current_streak`) and swim badges (`First swim`, `10 swims`, `50 swims`, `100 swims`) count **all-time attended swimmer sessions** (`PRESENT`/`LATE` on started/completed non-cancelled sessions from `attendance_service`), matching Dashboard attendance totals. Financial **Swim Bubbles** (`week_days`, `weekly_limit`, `bubbles_earned`, `bubbles_credited`, `reward_value_naira`) remain strictly scoped to the `ADR-019` programme starting **22 November 2026** (no financial backfill). The lock-holding `reconcile_swim` settlement path must never perform cross-service HTTP calls; all-time milestone enrichment runs strictly on the read-only `GET /api/v1/wallet/rewards/swims` path with graceful fallback.
+  - **Rewards Placement Across Surfaces:**
+    - **Dashboard (`/account`):** Compact weekly reward progress (`0 of 3 days`) is unified with live wallet balance inside one **Wallet & Rewards** hero card, paired with an inline `+1 🫧` cue on the Next Swim card when eligible.
+    - **My Swims (`/account/bookings`):** Renders a slim, collapsible 1-row swim rewards strip so **Upcoming / Calendar / History** remain immediately visible above the fold.
+    - **Wallet → Rewards (`/account/wallet/rewards`):** Serves as the single full rewards hub displaying All-Time Swimming Milestones, Weekly Swim Bubbles Programme, accurate server-computed lifetime `total_bubbles_awarded` (across full history, net of swim reversals), automatic rule metadata (`verified_swim_day.requires_admin_confirmation = false`), and plain-English Reward History including swim reward reversals (never exposing raw session UUIDs).
+  - **Simplified Sidebar & Action-First Dashboard IA:**
+    - Fold `Book My Next Swim` out of the top-level sidebar into the Dashboard and My Swims primary booking CTA (preserving `/account/book-next-swim` for deep links). Keep top-level swim links focused on **Dashboard**, **My Swims**, **Find a Swim**, and **Explore Pools**, keep **SwimBuddz Calendar** accessible without competing as a 5th top-level swim link, and surface **Rewards** directly under **Wallet & Payments**.
+    - Replace duplicate top-bar + `GreetingHero` greetings with a single clean header showing independent programme pills (`ADR-001`) and live Wallet balance.
+    - Use an action-first 2-column desktop bento layout (Next Swim + Wallet & Rewards hero → Quick Actions → Updates & Community + compact 2026 Swim Summary without the ambiguous YTD `"Bubbles"` tile and linking `Sessions` to `/account/bookings?view=history`).
+- **Canonical Docs & Code:**
+  - `swimbuddz-backend/services/attendance_service/routers/internal.py`
+  - `swimbuddz-backend/services/attendance_service/services/swim_rewards.py`
+  - `swimbuddz-backend/services/wallet_service/services/swim_rewards.py`
+  - `swimbuddz-backend/services/wallet_service/routers/rewards_member.py`
+  - `swimbuddz-frontend/src/components/layout/MemberLayout.tsx`
+  - `swimbuddz-frontend/src/app/(member)/account/page.tsx`
+  - `swimbuddz-frontend/src/app/(member)/account/bookings/page.tsx`
+  - `swimbuddz-frontend/src/app/(member)/account/wallet/rewards/page.tsx`
+  - `swimbuddz-frontend/src/components/swims/SwimRewards.tsx`
+
+---
+
+## ADR-021: Independent Account Registration, Modular User Journeys & Store-First Access
+- **Status:** Settled & Enforced (24 November 2026)
+- **Context & Why:**
+  - Requiring every new registrant to pick a swimming programme (`Community` / `Club` / `Academy`), enter full contact/address details, and declare a swimming level at `/register` created unnecessary friction for Store-only shoppers, Pool Access visitors, and browsers who simply want an account first.
+  - Conversely, hiding contact fields while leaving them in `isStepValid()` or bouncing already-authenticated users from `/explore` → `/club` / `/community` / `/academy` back into `/register` broke signup and trapped logged-in users in registration loops. Similarly, overly broad post-auth heuristics risked sending returning unpaid programme applicants (`approved_unpaid` / `payment_pending`) back to `/explore` or hijacking active Academy students away from `/account/academy`.
+- **Decision & Non-Negotiable Invariants:**
+  - **Identity-Only General Account Registration (`/register`):**
+    - Regular (non-coach, non-upgrade) account creation is decoupled from swimming programme selection and requires only core identity credentials (`firstName`, `lastName`, `email`, `password >= 8 chars`) plus terms confirmation. Phone, location, and swimming level are collected later at programme onboarding or Store delivery checkout.
+    - Coach signup (`?coach=true`) still collects and validates contact details (`phone`, `country`, `state`, `city`).
+    - *"How did you hear about SwimBuddz?"* (`acquisition_source`) stays available on regular signup as an **optional** non-blocking field so flywheel attribution is preserved without slowing down checkout signups.
+    - Omitted optional fields must be sent as `undefined` (never `""` or a default `"Nigeria"` country) when calling `POST /api/v1/pending-registrations/`.
+  - **Authenticated Pass-Through on `/register` & Store Header Preservation:**
+    - When an already-authenticated user visits `/register` (excluding `?upgrade=true` and `?coach=true`), the page immediately forwards them to `safeReturnPath(next) ?? destinationForGoal(goal)` (or `getPostAuthRedirectPath()` / `/admin/dashboard` for admins) so marketing CTAs reached from `/explore` (`/club` → `/register?goal=club`, `/community` → `/register?goal=community`, `/academy` → `/register?goal=academy`) never trap signed-in users on the signup form.
+    - `StoreHeader` preserves the current store path on both **Login** (`/login?redirect=...`) and **Join** (`/register?next=...`).
+  - **Modular Post-Auth Routing (`src/lib/journeys.ts` + `src/lib/registration.ts`):**
+    - Explicit standalone storefront/offering destinations resume immediately (`ADR-017`); stale programme requests never hijack explicit session or profile deep links.
+    - Active Academy learners (`academyActive`) keep precedence over secondary `club: requested` status so they still land on `/account/academy` on plain login.
+    - Accounts with pending/unpaid programme obligations (`payment_pending`, `approved_unpaid`, `expired` on Academy/Club, or `payment_pending`/`expired` on Community) are never classified as `isFreshRegistration` and route directly to `/account/billing?required=<tier>` rather than `/explore`.
+    - Truly fresh identity-only accounts with no destination, no requested programme, and no pending obligation land on `/explore` (which surfaces Academy, Club, Community, Store, Pools, `/account`, and `/account/orders`).
+  - **Store-Only Order Access (`middlewareAccess.ts`):**
+    - `/account/orders` is included in `paywallAllowedPrefixes` so registered Store customers can track orders without purchasing an annual swimming membership, while swimming programme routes (`/club/*`, `/academy/*`, `/sessions/*`) remain gated by server-backed tier entitlements (`ADR-001`).
+- **Canonical Docs & Code:**
+  - `swimbuddz-frontend/src/app/(auth)/register/page.tsx`
+  - `swimbuddz-frontend/src/app/(auth)/register/__tests__/RegisterPage.test.tsx`
+  - `swimbuddz-frontend/src/components/registration/RegistrationEssentialsStep.tsx`
+  - `swimbuddz-frontend/src/app/(public)/explore/page.tsx`
+  - `swimbuddz-frontend/src/lib/journeys.ts`
+  - `swimbuddz-frontend/src/lib/registration.ts`
+  - `swimbuddz-frontend/src/lib/middlewareAccess.ts`
+  - `swimbuddz-frontend/src/components/store/StoreHeader.tsx`
+  - `swimbuddz-frontend/UI_FLOWS.md`
+  - `swimbuddz-frontend/ROUTES_AND_PAGES.md`
 
 ---
 

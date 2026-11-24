@@ -125,11 +125,12 @@ export function resolvePostAuthJourney(context: PostAuthJourneyContext): string 
   }
 
   // A selected offering's enrollment/readiness continues independently of
-  // the annual Community membership and without a new account.
+  // the annual Community membership and without a new account. Never hijack
+  // an active Academy learner away from /account/academy for a Club request.
   if (context.requestedTiers?.includes("academy") && !context.academyActive) {
     return "/upgrade/academy/cohort";
   }
-  if (context.requestedTiers?.includes("club") && !context.clubActive) {
+  if (context.requestedTiers?.includes("club") && !context.clubActive && !context.academyActive) {
     return "/upgrade/club/readiness";
   }
 

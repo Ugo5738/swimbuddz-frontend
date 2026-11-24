@@ -34,6 +34,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/club/standards`       | `src/app/(public)/club/standards/page.tsx`       | Official Club practice, safety and conduct standards |
 | `/community`            | `src/app/(public)/community/page.tsx`            | Community landing - Social swimming information      |
 | `/calendar`             | `src/app/(public)/calendar/page.tsx`             | Public Community activity calendar                   |
+| `/explore`              | `src/app/(public)/explore/page.tsx`              | Post-signup modular discovery hub (programmes, store, pools, orders) |
 | `/guidelines-and-rules` | `src/app/(public)/guidelines-and-rules/page.tsx` | Community rules and safety guidelines                |
 | `/membership`           | `src/app/(public)/membership/page.tsx`           | Annual Membership and participation-product overview |
 | `/privacy`              | `src/app/(public)/privacy/page.tsx`              | Privacy policy                                       |
@@ -93,7 +94,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | Route               | File                                       | Purpose                                       |
 | ------------------- | ------------------------------------------ | --------------------------------------------- |
 | `/login`            | `src/app/(auth)/login/page.tsx`            | Login with Supabase Auth                      |
-| `/register`         | `src/app/(auth)/register/page.tsx`         | Multi-step registration form                  |
+| `/register`         | `src/app/(auth)/register/page.tsx`         | Identity-first account registration (`?goal=`, `?next=`, `?upgrade=true`, `?coach=true`) |
 | `/register/pending` | `src/app/(auth)/register/pending/page.tsx` | "Check your email" message after registration |
 | `/register/success` | `src/app/(auth)/register/success/page.tsx` | Registration success confirmation             |
 
