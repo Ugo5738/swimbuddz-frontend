@@ -17,11 +17,13 @@ type RewardHistoryEntry = {
   bubbles_awarded: number;
   description?: string | null;
   created_at: string;
+  is_reversal?: boolean;
 };
 
 type RewardHistoryResponse = {
   history: RewardHistoryEntry[];
   total: number;
+  total_bubbles_awarded?: number;
 };
 
 type RewardHistoryListProps = {
@@ -123,39 +125,62 @@ export function RewardHistoryList({
         </Card>
       ) : (
         <div className="space-y-2">
-          {data?.history.map((entry) => (
-            <Card key={entry.id} className="p-3 md:p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="rounded-full p-2 bg-emerald-100 shrink-0">
-                    <Award className="h-4 w-4 text-emerald-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
-                      {entry.display_name || entry.rule_name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <Badge
-                        variant="secondary"
-                        className={`text-xs ${CATEGORY_COLORS[entry.category] || ""}`}
-                      >
-                        {entry.category}
-                      </Badge>
-                      <span className="text-xs text-slate-500">{formatDate(entry.created_at)}</span>
+          {data?.history.map((entry) => {
+            const isReversal = Boolean(entry.is_reversal || entry.bubbles_awarded < 0);
+            return (
+              <Card key={entry.id} className="p-3 md:p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`rounded-full p-2 shrink-0 ${
+                        isReversal ? "bg-rose-100" : "bg-emerald-100"
+                      }`}
+                    >
+                      <Award
+                        className={`h-4 w-4 ${isReversal ? "text-rose-600" : "text-emerald-600"}`}
+                      />
                     </div>
-                    {entry.description && (
-                      <p className="text-xs text-slate-500 mt-1 truncate">{entry.description}</p>
-                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {entry.display_name || entry.rule_name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs ${
+                            isReversal
+                              ? "bg-rose-50 text-rose-700"
+                              : CATEGORY_COLORS[entry.category] || ""
+                          }`}
+                        >
+                          {isReversal ? "adjustment" : entry.category}
+                        </Badge>
+                        <span className="text-xs text-slate-500">
+                          {formatDate(entry.created_at)}
+                        </span>
+                      </div>
+                      {entry.description && (
+                        <p className="text-xs text-slate-600 mt-1 truncate">{entry.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="shrink-0 ml-3">
+                    <span
+                      className={`inline-flex items-center rounded-lg px-2.5 py-1 text-sm font-bold tabular-nums ${
+                        isReversal
+                          ? "bg-rose-100 text-rose-700"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}
+                    >
+                      {entry.bubbles_awarded < 0
+                        ? `${entry.bubbles_awarded} 🫧`
+                        : `+${entry.bubbles_awarded} 🫧`}
+                    </span>
                   </div>
                 </div>
-                <div className="shrink-0 ml-3">
-                  <span className="inline-flex items-center rounded-lg bg-emerald-100 px-2.5 py-1 text-sm font-bold text-emerald-700">
-                    +{entry.bubbles_awarded} 🫧
-                  </span>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 

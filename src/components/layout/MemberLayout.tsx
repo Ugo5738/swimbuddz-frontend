@@ -1,6 +1,5 @@
 "use client";
 
-import { apiGet } from "@/lib/api";
 import { hasAcademyReadiness as isAcademyReadinessComplete } from "@/lib/academy-readiness";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useApi } from "@/hooks/useApi";
@@ -17,11 +16,11 @@ import {
 } from "@/lib/tiers";
 import {
   Activity,
+  Award,
   BookOpen,
   Briefcase,
   Calendar,
   CalendarDays,
-  CalendarPlus,
   CheckCircle,
   ChevronDown,
   ChevronRight,
@@ -81,12 +80,19 @@ const navSections: NavSection[] = [
     title: "",
     items: [
       { href: "/account", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/account/book-next-swim", label: "Book My Next Swim", icon: CalendarPlus },
-      { href: "/account/find-a-swim", label: "Find a Swim", icon: Waves },
       { href: "/account/bookings", label: "My Swims", icon: CalendarDays },
-      { href: "/account/calendar", label: "SwimBuddz Calendar", icon: CalendarDays },
+      { href: "/account/find-a-swim", label: "Find a Swim", icon: Waves },
       { href: "/account/pools", label: "Explore Pools", icon: Waves },
       { href: "/account/onboarding", label: "Complete Setup", icon: CheckCircle },
+    ],
+  },
+  {
+    title: "Wallet & Payments",
+    icon: Wallet,
+    items: [
+      { href: "/account/wallet/rewards", label: "Rewards", icon: Award },
+      { href: "/account/wallet", label: "My Wallet", icon: Wallet },
+      { href: "/account/billing", label: "Payments & Credits", icon: CreditCard },
     ],
   },
   {
@@ -104,6 +110,7 @@ const navSections: NavSection[] = [
     icon: Users,
     items: [
       { href: "/community/events", label: "Events & Experiences", icon: CalendarDays },
+      { href: "/account/calendar", label: "SwimBuddz Calendar", icon: Calendar },
       { href: leaderboardHref, label: "Leaderboard", icon: Trophy },
       { href: "/community/challenges", label: "Challenges", icon: Trophy },
       { href: "/community/directory", label: "Members", icon: Users },
@@ -119,14 +126,6 @@ const navSections: NavSection[] = [
       { href: "/account/media-vault", label: "My Swim Videos", icon: CloudUpload },
       { href: "/account/reports", label: "Swim Reports", icon: Activity },
       { href: "https://analyzer.swimbuddz.com", label: "Stroke Lab", icon: Activity },
-    ],
-  },
-  {
-    title: "Payments",
-    icon: CreditCard,
-    items: [
-      { href: "/account/billing", label: "Payments & Credits", icon: CreditCard },
-      { href: "/account/wallet", label: "My Wallet", icon: Wallet },
     ],
   },
   {
@@ -149,27 +148,28 @@ const navSections: NavSection[] = [
 
 const MEMBER_NAV_EXPANDED_KEY = "swimbuddz-member-nav-expanded";
 
+function getTopBarTitle(pathname: string | null): string {
+  if (!pathname || pathname === "/account") return "Dashboard";
+  if (pathname.startsWith("/account/bookings")) return "My Swims";
+  if (pathname.startsWith("/account/find-a-swim")) return "Find a Swim";
+  if (pathname.startsWith("/account/wallet/rewards")) return "Rewards";
+  if (pathname.startsWith("/account/wallet")) return "My Wallet";
+  if (pathname.startsWith("/account/billing")) return "Payments & Credits";
+  if (pathname.startsWith("/account/academy")) return "My Academy";
+  if (pathname.startsWith("/account/pools")) return "Explore Pools";
+  if (pathname.startsWith("/account/calendar")) return "SwimBuddz Calendar";
+  if (pathname.startsWith("/account/reports")) return "Swim Reports";
+  if (pathname.startsWith("/account/media-vault")) return "My Swim Videos";
+  if (pathname.startsWith("/account/orders")) return "My Orders";
+  if (pathname.startsWith("/account/profile")) return "My Profile";
+  if (pathname.startsWith("/account/settings")) return "Settings";
+  if (pathname.startsWith("/account/notifications")) return "Notifications";
+  if (pathname.startsWith("/community")) return "Community";
+  return "Member Portal";
+}
+
 export function MemberLayout({ children }: MemberLayoutProps) {
   const router = useRouter();
-  const [quickBookingBusy, setQuickBookingBusy] = useState(false);
-  const openNextSwim = async () => {
-    if (quickBookingBusy) return;
-    setQuickBookingBusy(true);
-    try {
-      const result = await apiGet<{primary: { id: string; access?: {bookable?: boolean} } | null}>(
-        "/api/v1/sessions/me/next-swim", {auth: true}
-      );
-      const next = result.primary;
-      router.push(next?.id && next.access?.bookable === true
-        ? `/sessions/${encodeURIComponent(next.id)}/book?source=next-swim`
-        : "/account/book-next-swim");
-    } catch {
-      router.push("/account/book-next-swim");
-    } finally {
-      setQuickBookingBusy(false);
-      setSidebarOpen(false);
-    }
-  };
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -197,6 +197,7 @@ export function MemberLayout({ children }: MemberLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    "Wallet & Payments": true,
     Community: true,
   });
   const profile = useApi<MemberInfo>("/api/v1/members/me");
@@ -540,21 +541,14 @@ export function MemberLayout({ children }: MemberLayoutProps) {
                         <li key={item.href}>
                           <Link
                             href={item.href}
-                            onClick={(event) => {
-                              if (item.href === "/account/book-next-swim") {
-                                event.preventDefault();
-                                void openNextSwim();
-                              } else {
-                                setSidebarOpen(false);
-                              }
-                            }}
+                            onClick={() => setSidebarOpen(false)}
                             aria-current={active ? "page" : undefined}
                             title={item.label}
                             {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : item.href === "/account/book-next-swim" ? "border border-white/50 text-white font-semibold hover:bg-white/10" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
+                            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${sidebarCollapsed ? "md:justify-center md:px-2" : ""} ${active ? "bg-white text-cyan-800 shadow-sm" : "text-white/90 hover:bg-white/10 hover:text-white"}`}
                           >
                             <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-                            <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{item.href === "/account/book-next-swim" && quickBookingBusy ? "Finding next swim…" : item.label}</span>
+                            <span className={`flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>{item.label}</span>
                             {external && <ExternalLink className={`h-3.5 w-3.5 ${sidebarCollapsed ? "md:hidden" : ""}`} aria-hidden="true" />}
                           </Link>
                         </li>
@@ -655,15 +649,23 @@ export function MemberLayout({ children }: MemberLayoutProps) {
           </div>
         </header>
 
-        {/* Desktop Top Bar (optional - for notifications/search) */}
-        <header className="hidden md:flex sticky top-0 z-30 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-sm px-6 lg:px-8 py-4">
-          <div>
-            <p className="text-sm text-slate-500">Welcome back,</p>
-            <h1 className="text-lg font-semibold text-slate-900">{memberName}</h1>
-          </div>
-          <div className="flex items-center gap-4">
+        {/* Desktop Top Bar — concise page context without duplicating the dashboard greeting */}
+        <header className="hidden md:flex sticky top-0 z-30 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-sm px-6 lg:px-8 py-3">
+          <p className="text-sm font-semibold text-slate-900">{getTopBarTitle(pathname)}</p>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/account/wallet/rewards"
+              className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-100"
+            >
+              <Award className="h-3.5 w-3.5 text-cyan-700" aria-hidden="true" />
+              Rewards
+            </Link>
             <NotificationBell memberId={member?.id} hoverColor="hover:text-cyan-700" />
-            <Link href="/account/profile" className="flex items-center gap-2">
+            <Link
+              href="/account/profile"
+              className="flex items-center gap-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+              aria-label={`Profile — ${memberName}`}
+            >
               {member?.profile_photo_url ? (
                 <div className="relative h-9 w-9 overflow-hidden rounded-full ring-2 ring-cyan-100">
                   <Image

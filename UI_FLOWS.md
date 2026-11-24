@@ -3,8 +3,17 @@
 This document describes the key **user flows** in the SwimBuddz frontend.
 The implementation of pages should follow these flows closely.
 
-**Last Updated:** September 2026
+**Last Updated:** November 2026
 **Total Routes:** 103 pages across Community, Club, Academy, Store, Events, and Admin domains
+
+## November 23, 2026 — Member Dashboard redesign, simplified navigation & unified Rewards Hub (`ADR-020`)
+
+- **Sidebar navigation cleanup:** Top-level swim links are consolidated to **Dashboard**, **My Swims**, **Find a Swim**, and **Explore Pools**. `Book My Next Swim` is folded into the Dashboard and My Swims primary booking CTA (preserving `/account/book-next-swim` for deep links), **SwimBuddz Calendar** lives under **Community**, and **Rewards** is surfaced directly under **Wallet & Payments**.
+- **Action-first Dashboard (`/account`):** Removes the duplicate desktop top-bar greeting (`Welcome back, <Name>`) so `GreetingHero` owns the single greeting with independent programme pills (`ADR-001`). The hero pairs **Next Swim** (with an inline `+1 🫧` reward cue when eligible) alongside a unified **Wallet & Rewards** card (live Bubbles balance + this week's `0 of 3 days` reward progress). Quick Actions sit directly below the hero, followed by **Latest updates / My Pod / Community** alongside a compact **2026 Swim Summary** (removing the ambiguous YTD `"Bubbles"` tile and linking `Sessions` to `/account/bookings?view=history`).
+- **Rewards across the 3 surfaces:**
+  - **Dashboard (`/account`):** Compact weekly progress unified with live Wallet balance.
+  - **My Swims (`/account/bookings`):** Slim, collapsible 1-row swim rewards strip so **Upcoming / Calendar / History** stay immediately above the fold.
+  - **Wallet → Rewards (`/account/wallet/rewards`):** Single full Rewards hub separating **All-Time Swimming Milestones & Badges** (all recorded attended sessions) from the **Weekly Swim Bubbles Programme (since 22 Nov 2026)**, showing server-computed lifetime net reward totals, automatic rule badges, and plain-English swim reward reversals.
 
 **17 November resource follow-up:** backend announcement filters ignore the
 non-audience membership label `prospect`, so unread-count/list/detail/statistics

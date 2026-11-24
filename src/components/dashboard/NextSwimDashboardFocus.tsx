@@ -58,7 +58,11 @@ function primaryAction(activity: SwimActivityWithClub): { text: string; href: st
  * My Swims. An unbooked backend recommendation is consulted only when there
  * are no personal commitments. Neither data source reserves a seat.
  */
-export function NextSwimDashboardFocus() {
+export function NextSwimDashboardFocus({
+  rewardCue = null,
+}: {
+  rewardCue?: string | null;
+} = {}) {
   const projection = usePersonalSwims();
   const next = (projection.data?.upcoming.find(row =>
     ["confirmed", "assigned", "scheduled_for_pod", "scheduled_for_club"].includes(row.status)
@@ -81,52 +85,66 @@ export function NextSwimDashboardFocus() {
 
   return (
     <section aria-label="Your next swimming action"
-      className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-bold uppercase tracking-wider text-cyan-800">{heading}</p>
-        {next && <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-cyan-900">
-          {statusLabels[next.status] ?? next.status.replaceAll("_", " ")}
-        </span>}
-      </div>
-      {projection.isLoading || (recommendation.isLoading && !next) ?
-        <p role="status" className="mt-3 text-sm text-slate-700">
-          {projection.isLoading ? "Loading your swimming schedule…" : "Finding your next eligible swim…"}
-        </p> :
-        <div className="mt-3 space-y-3">
-          <h2 className="text-xl font-bold text-slate-950">
-            {next?.title || suggested?.title || "Ready to get back in the water?"}
-          </h2>
-          {next || suggested ? <p className="flex items-center gap-2 text-sm text-slate-700">
-            <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true"/>
-            {localDate(next?.date || suggested?.starts_at)} ·
-            {" "}{next?.location || suggested?.location_name || suggested?.location || "Pool to be confirmed"}
+      className="flex h-full flex-col justify-between rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-sky-50/70 p-5 shadow-sm">
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-cyan-800">{heading}</p>
+          {next && <span className="rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-semibold text-cyan-900">
+            {statusLabels[next.status] ?? next.status.replaceAll("_", " ")}
+          </span>}
+        </div>
+        {projection.isLoading || (recommendation.isLoading && !next) ?
+          <p role="status" className="mt-3 text-sm text-slate-700">
+            {projection.isLoading ? "Loading your swimming schedule…" : "Finding your next eligible swim…"}
           </p> :
-          <p className="text-sm text-slate-700">
-            Explore a suitable session or plan a swim with friends.
-          </p>}
-          {next?.scheduledClub &&
-            <p className="text-sm text-slate-700">This is on your Club schedule, but your place is not yet reserved.</p>}
-          {projection.data?.errors.length ? <p role="alert" className="text-sm text-amber-900">
-            Some schedule information couldn't load. Verify the details before booking.
-          </p> : null}
-          {recommendation.isError && !next &&
-            <p role="alert" className="text-sm text-amber-900">
-              Couldn't check personalized recommendations. You can still browse available sessions.
-              <button type="button" className="ml-2 font-semibold underline"
-                onClick={() => void recommendation.refetch()}>Retry</button>
+          <div className="mt-3 space-y-2.5">
+            <h2 className="text-xl font-bold text-slate-950">
+              {next?.title || suggested?.title || "Ready to get back in the water?"}
+            </h2>
+            {next || suggested ? <p className="flex items-center gap-2 text-sm text-slate-700">
+              <CalendarDays className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden="true"/>
+              {localDate(next?.date || suggested?.starts_at)} ·
+              {" "}{next?.location || suggested?.location_name || suggested?.location || "Pool to be confirmed"}
+            </p> :
+            <p className="text-sm text-slate-700">
+              Explore a suitable session or plan a swim with friends.
             </p>}
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href={action.href} className="inline-flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-800">
-              {action.text} <ArrowRight className="h-4 w-4" aria-hidden="true"/>
-            </Link>
-            <Link href="/account/bookings" className="text-sm font-semibold text-cyan-900 hover:underline">My Swims</Link>
-            <Link href="/account/find-a-swim" className="text-sm font-semibold text-cyan-900 hover:underline">Other swims</Link>
+            {next?.scheduledClub &&
+              <p className="text-sm text-slate-600">This is on your Club schedule, but your place is not yet reserved.</p>}
+            {projection.data?.errors.length ? <p role="alert" className="text-sm text-amber-900">
+              Some schedule information couldn't load. Verify the details before booking.
+            </p> : null}
+            {recommendation.isError && !next &&
+              <p role="alert" className="text-sm text-amber-900">
+                Couldn't check personalized recommendations. You can still browse available sessions.
+                <button type="button" className="ml-2 font-semibold underline"
+                  onClick={() => void recommendation.refetch()}>Retry</button>
+              </p>}
+          </div>}
+      </div>
+
+      {!(projection.isLoading || (recommendation.isLoading && !next)) && (
+        <div className="mt-5 space-y-2.5 border-t border-cyan-200/70 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href={action.href} className="inline-flex items-center gap-2 rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-800">
+                {action.text} <ArrowRight className="h-4 w-4" aria-hidden="true"/>
+              </Link>
+              <Link href="/account/bookings" className="text-sm font-semibold text-cyan-900 hover:underline">My Swims</Link>
+              <Link href="/account/find-a-swim" className="text-sm font-semibold text-cyan-900 hover:underline">Other swims</Link>
+            </div>
+            {rewardCue && (next || suggested) && (
+              <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-100/70 px-3 py-1 text-xs font-semibold text-cyan-900">
+                {rewardCue}
+              </span>
+            )}
           </div>
           {(projection.data?.attention.length ?? 0) > 0 &&
             <Link href="/account/bookings" className="block text-sm font-medium text-amber-900 underline">
               You have swim bookings or requests needing attention
             </Link>}
-        </div>}
+        </div>
+      )}
     </section>
   );
 }
