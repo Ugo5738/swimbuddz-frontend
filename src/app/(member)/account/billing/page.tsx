@@ -3,6 +3,7 @@
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import { apiGet } from "@/lib/api";
+import { useOptionalMemberProfile } from "@/lib/member-profile-context";
 import { isTierPaid } from "@/lib/tiers";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -44,9 +45,12 @@ export default function BillingPage() {
   const isTopupReference = providerReference?.startsWith("TOP-") ?? false;
   const isPaystackReturn = Boolean(providerReference && isMembershipPaymentReference);
 
-  const [member, setMember] = useState<Member | null>(null);
+  const sharedProfile = useOptionalMemberProfile();
+  const [fallbackMember, setFallbackMember] = useState<Member | null>(null);
+  const member: Member | null = (sharedProfile?.data as Member | null) ?? fallbackMember;
   const [pricing, setPricing] = useState<PricingConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"plans" | "history">("plans");
   const [openCohorts, setOpenCohorts] = useState<Cohort[]>([]);
   const [myEnrollments, setMyEnrollments] = useState<Enrollment[]>([]);
   const [academyLoadError, setAcademyLoadError] = useState<string | null>(null);
@@ -60,25 +64,30 @@ export default function BillingPage() {
   const [obligationError, setObligationError] = useState(false);
   const [obligationRefreshing, setObligationRefreshing] = useState(false);
 
-  // Load member, pricing, payments. Stable identity (empty deps) so children
-  // and hooks can call it without thrash.
+  const refetchShellMember = sharedProfile?.refetch;
+  const hasSharedProfile = sharedProfile !== null;
+
+  // Load pricing, payments, and membership history. Reuse MemberLayout's shared
+  // /members/me profile when available to avoid duplicate profile queries (ADR-022).
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [memberData, pricingData, paymentsData, historyData] = await Promise.all([
-        apiGet<Member>("/api/v1/members/me", { auth: true }),
+        hasSharedProfile
+          ? Promise.resolve(null)
+          : apiGet<Member>("/api/v1/members/me", { auth: true }),
         apiGet<PricingConfig>("/api/v1/payments/pricing"),
         apiGet<PaymentRecord[]>("/api/v1/payments/me", { auth: true }),
         apiGet<MembershipHistory>("/api/v1/members/me/membership-history", {
           auth: true,
         }).catch(() => null),
       ]);
-      setMember(memberData);
+      if (memberData) setFallbackMember(memberData);
       setPayments(paymentsData);
       setPricing(pricingData);
       setMembershipHistory(historyData);
 
-      // Filter for pending manual transfers (pending or pending_review status with manual_transfer method)
+      // Filter for pending manual transfers (pending, pending_review, or rejected)
       const pending = paymentsData.filter(
         (p) =>
           p.payment_method === "manual_transfer" &&
@@ -90,7 +99,12 @@ export default function BillingPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [hasSharedProfile]);
+
+  const reloadAll = useCallback(async () => {
+    refetchShellMember?.();
+    await load();
+  }, [load, refetchShellMember]);
 
   useEffect(() => {
     load();
@@ -101,7 +115,7 @@ export default function BillingPage() {
       providerReference,
       isPaystackReturn,
       isTopupReference,
-      onPaymentVerified: load,
+      onPaymentVerified: reloadAll,
     });
 
   // Keep the blocked destination across the external Paystack round-trip.
@@ -208,7 +222,7 @@ export default function BillingPage() {
   }, [returnedPayment?.status, returnedPayment?.entitlement_applied_at, refreshFinancialSources]);
 
   const refreshOverview = () => {
-    void Promise.all([fetchEnrollments(), refreshFinancialSources(), load()]);
+    void Promise.all([fetchEnrollments(), refreshFinancialSources(), reloadAll()]);
   };
 
   // Computed membership status
@@ -322,59 +336,98 @@ export default function BillingPage() {
         wallet={bubblesWallet}
         serverOverview={serverOverview}
         incomplete={!!academyLoadError || obligationError || academyRefreshing}
+        hasPendingTransfers={pendingTransfers.length > 0}
         onRefresh={refreshOverview}
+        onViewHistory={() => setActiveTab("history")}
         refreshing={obligationRefreshing || academyRefreshing}
       />
 
-      <details className="rounded-xl border border-slate-200 p-4">
-        <summary className="cursor-pointer font-semibold text-slate-900">Session fees and existing payment options</summary>
-        <div className="mt-4 space-y-4">
-          <OutstandingSessionFeesCard payments={payments} />
+      {/* Actionable unpaid sessions & pending bank transfers render directly only when non-empty */}
+      <OutstandingSessionFeesCard payments={payments} />
+      <PendingTransfersCard pendingTransfers={pendingTransfers} onReload={reloadAll} />
+
+      {/* Clean visible tabs replace the four collapsed <details> toggles (ADR-022) */}
+      <div className="space-y-4">
+        <div
+          role="tablist"
+          aria-label="Billing sections"
+          className="flex flex-wrap gap-2 border-b border-slate-200 pb-3"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "plans"}
+            onClick={() => setActiveTab("plans")}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              activeTab === "plans"
+                ? "bg-cyan-700 text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            Memberships &amp; Plans
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "history"}
+            onClick={() => setActiveTab("history")}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              activeTab === "history"
+                ? "bg-cyan-700 text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            Payment History{payments.length > 0 ? ` (${payments.length})` : ""}
+          </button>
         </div>
-      </details>
 
-      <PendingTransfersCard pendingTransfers={pendingTransfers} onReload={load} />
+        {activeTab === "plans" ? (
+          <div className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <CommunityCard
+                member={member}
+                communityActive={communityActive}
+                communityFee={communityFee}
+              />
+              <ClubCard
+                member={member}
+                clubActive={clubActive}
+                communityActive={communityActive}
+                history={membershipHistory}
+              />
+            </div>
 
-      <details className="rounded-xl border border-slate-200 p-4">
-        <summary className="cursor-pointer font-semibold text-slate-900">Memberships and renewal options</summary>
-        <div className="mt-4 space-y-4">
-      <CommunityCard
-        member={member}
-        communityActive={communityActive}
-        communityFee={communityFee}
-      />
+            {academyLoadError && (
+              <div
+                role="alert"
+                className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"
+              >
+                {academyLoadError}{" "}
+                <button
+                  type="button"
+                  className="font-semibold underline"
+                  onClick={() => void fetchEnrollments()}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
 
-      <ClubCard
-        member={member}
-        clubActive={clubActive}
-        communityActive={communityActive}
-        history={membershipHistory}
-      />
+            <AcademySection
+              loading={academyRefreshing}
+              unavailable={!!academyLoadError && myEnrollments.length === 0}
+              myEnrollments={myEnrollments}
+              openCohorts={openCohorts}
+              communityActive={communityActive}
+              member={member}
+            />
 
-      <MembershipHistoryCard history={membershipHistory} />
-        </div>
-      </details>
-      <details className="rounded-xl border border-slate-200 p-4">
-        <summary className="cursor-pointer font-semibold text-slate-900">Payment receipts and history</summary>
-        <div className="mt-4">
+            <MembershipHistoryCard history={membershipHistory} />
+          </div>
+        ) : (
           <ProductPaymentReceipts payments={payments} />
-        </div>
-      </details>
-
-      <details className="rounded-xl border border-slate-200 p-4">
-        <summary className="cursor-pointer font-semibold text-slate-900">Academy payment schedules and enrolments</summary>
-        <div className="mt-4 space-y-4">
-      {academyLoadError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">{academyLoadError} <button type="button" className="font-semibold underline" onClick={() => void fetchEnrollments()}>Retry</button></div>}
-      <AcademySection
-        loading={academyRefreshing}
-        unavailable={!!academyLoadError && myEnrollments.length === 0}
-        myEnrollments={myEnrollments}
-        openCohorts={openCohorts}
-        communityActive={communityActive}
-        member={member}
-      />
-        </div>
-      </details>
+        )}
+      </div>
     </div>
   );
 }
