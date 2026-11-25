@@ -13,6 +13,27 @@ import { toast } from "sonner";
 import type { PaymentRecord } from "../types";
 import { formatCurrency } from "../utils";
 
+const PURPOSE_LABELS: Record<string, string> = {
+  community: "Annual Membership",
+  community_annual: "Annual Membership",
+  club: "Club Plan",
+  club_bundle: "Club + Annual Membership",
+  academy_cohort: "Academy Cohort Tuition",
+  session_fee: "Session Fee",
+  session_bundle: "Session Bundle",
+  community_experience: "Community Experience",
+  store_order: "Swim Store Order",
+};
+
+function formatTransferPurpose(purpose?: string | null): string {
+  if (!purpose) return "Payment";
+  const key = purpose.toLowerCase();
+  if (PURPOSE_LABELS[key]) return PURPOSE_LABELS[key];
+  return purpose
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
 type Props = {
   pendingTransfers: PaymentRecord[];
   onReload: () => Promise<void> | void;
@@ -81,7 +102,7 @@ export function PendingTransfersCard({ pendingTransfers, onReload }: Props) {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
               <div className="min-w-0">
                 <p className="font-medium text-slate-900 text-sm">
-                  {payment.purpose?.replace(/_/g, " ").toUpperCase() || "Payment"}
+                  {formatTransferPurpose(payment.purpose)}
                 </p>
                 <p className="text-xs text-slate-500 truncate">Ref: {payment.reference}</p>
               </div>

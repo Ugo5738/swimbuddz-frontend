@@ -1,21 +1,31 @@
 import { Card } from "@/components/ui/Card";
-import type { YTDStats } from "@/lib/reports";
+import type { MemberYtdAttendanceSummary, YTDStats } from "@/lib/reports";
 import { Calendar, Clock, Flame } from "lucide-react";
 import Link from "next/link";
 import { ProgressRing } from "./ProgressRing";
 
+type SummaryInput = MemberYtdAttendanceSummary | YTDStats;
+
 type YTDStatsOverviewProps = {
-  stats: YTDStats;
+  stats: SummaryInput;
   year: number;
 };
+
+function getSessionsAttended(s: SummaryInput): number {
+  return "sessions_attended" in s ? s.sessions_attended : s.total_sessions_attended;
+}
+
+function getSessionsRecorded(s: SummaryInput): number {
+  return "sessions_recorded" in s ? s.sessions_recorded : s.total_sessions_available;
+}
 
 const tiles = [
   {
     key: "sessions",
-    label: "Sessions",
+    label: "Swims Attended",
     icon: Calendar,
     color: "bg-cyan-100 text-cyan-700",
-    getValue: (s: YTDStats) => String(s.total_sessions_attended),
+    getValue: (s: SummaryInput) => String(getSessionsAttended(s)),
     href: "/account/bookings?view=history",
   },
   {
@@ -23,7 +33,7 @@ const tiles = [
     label: "Pool Hours",
     icon: Clock,
     color: "bg-blue-100 text-blue-700",
-    getValue: (s: YTDStats) => (s.pool_hours > 0 ? `${s.pool_hours.toFixed(1)}h` : "0h"),
+    getValue: (s: SummaryInput) => (s.pool_hours > 0 ? `${s.pool_hours.toFixed(1)}h` : "0h"),
     href: "/account/attendance/history",
   },
   {
@@ -31,21 +41,25 @@ const tiles = [
     label: "Best Streak",
     icon: Flame,
     color: "bg-orange-100 text-orange-700",
-    getValue: (s: YTDStats) => `${s.streak_longest}w`,
+    getValue: (s: SummaryInput) => `${s.streak_longest}w`,
     href: "/account/attendance/history",
   },
 ] as const;
 
 export function YTDStatsOverview({ stats, year }: YTDStatsOverviewProps) {
   const attendancePct = Math.round(stats.attendance_rate * 100);
+  const recorded = getSessionsRecorded(stats);
 
   return (
     <Card className="flex h-full flex-col justify-between p-5">
       <div>
         <div className="mb-4 flex items-center justify-between gap-2">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {year} Swim Summary
-          </h2>
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              {year} Swim Summary
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500">All recorded attended swims</p>
+          </div>
           <Link
             href="/account/bookings?view=history"
             className="text-xs font-semibold text-cyan-700 hover:underline"
@@ -61,13 +75,13 @@ export function YTDStatsOverview({ stats, year }: YTDStatsOverviewProps) {
               <span className="text-2xl font-bold tabular-nums text-slate-900">
                 {attendancePct}%
               </span>
-              <span className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                Attendance
+              <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                {recorded > 0 ? `of ${recorded}` : "Attendance"}
               </span>
             </ProgressRing>
           </div>
 
-          {/* 3 Clean Swimming Metrics (Bubbles now live strictly in Wallet & Rewards) */}
+          {/* 3 Clean Swimming Metrics (Bubbles live strictly in Wallet & Rewards) */}
           <div className="w-full flex-1 space-y-2.5">
             {tiles.map((tile) => {
               const Icon = tile.icon;
@@ -96,7 +110,7 @@ export function YTDStatsOverview({ stats, year }: YTDStatsOverviewProps) {
       </div>
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-        <span className="text-slate-500">Attended sessions count toward swim badges</span>
+        <span className="text-slate-500">Counts Club, Academy &amp; community swims</span>
         <Link href="/account/reports" className="font-semibold text-cyan-700 hover:underline">
           Reports →
         </Link>

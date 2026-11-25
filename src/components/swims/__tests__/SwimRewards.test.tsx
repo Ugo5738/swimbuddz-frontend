@@ -66,8 +66,12 @@ describe("SwimRewardCard variants (ADR-020)", () => {
     expect(screen.getByText("4w")).toBeInTheDocument();
     expect(screen.getByText(/2 more swims to earn “10 swims”/i)).toBeInTheDocument();
     expect(screen.queryByText(/1 more swim to earn the “First swim”/i)).not.toBeInTheDocument();
-    // Explains the new programme clearly without ops jargon
-    expect(screen.getByText(/Daily Swim Bubbles started on/i)).toBeInTheDocument();
+    // Explains the new programme concisely without redundant paragraphs or ops jargon
+    expect(screen.getByText(/Swim Bubbles launched 22 Nov 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 Bubble \(₦100\) per eligible swim day/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/After your next eligible swim ends, you earn 1 Bubble automatically/i)
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/Attendance exceptions/i)).not.toBeInTheDocument();
   });
 

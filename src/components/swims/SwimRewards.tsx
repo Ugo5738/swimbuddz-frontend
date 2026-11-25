@@ -18,6 +18,7 @@ import {
   getAllTimeActiveWeeks,
   getAllTimeBestStreak,
   getAllTimeSwims,
+  getLiveRewardStatusMessage,
   getNextRewardMessage,
   getNextSwimRewardCue,
   NAIRA_PER_BUBBLE,
@@ -277,6 +278,7 @@ export function SwimRewardCard({
   const badgeProgressPct = nextBadge
     ? Math.min(100, Math.round((allTimeSwims / badgeTarget) * 100))
     : 100;
+  const liveStatus = getLiveRewardStatusMessage(data);
 
   return (
     <div id="swim-rewards" className="grid scroll-mt-20 gap-4 lg:grid-cols-12">
@@ -329,25 +331,24 @@ export function SwimRewardCard({
             </span>
           </div>
           <DayPills weekDays={data.week_days} weeklyLimit={data.weekly_limit} />
-          <p className="flex items-start gap-2 pt-1 text-sm text-slate-700">
-            <Gift className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" aria-hidden="true" />
-            <span>{nextRewardMessage(data)}</span>
-          </p>
+          {liveStatus && (
+            <p className="flex items-start gap-2 pt-1 text-sm text-slate-700">
+              <Gift className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" aria-hidden="true" />
+              <span>{liveStatus}</span>
+            </p>
+          )}
         </div>
 
-        {data.bubbles_earned === 0 && allTimeSwims > 0 && (
-          <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3.5 py-2.5 text-xs text-slate-700">
-            <strong className="text-slate-900">New programme:</strong> Daily Swim Bubbles started on{" "}
-            <strong>22 Nov 2026</strong>. Earlier swims count toward your all-time milestones, and
-            your next eligible swim automatically starts earning Bubbles.
-          </div>
-        )}
-
-        <p className="text-xs leading-relaxed text-slate-500">
-          Earn 1 Bubble automatically after each eligible Club, Academy, or organised community swim
-          ends (up to {data.weekly_limit} different days per Lagos week). Reversed if you’re marked
-          absent or a session is cancelled.
+        <p className="text-xs leading-relaxed text-slate-600">
+          1 Bubble (₦100) per eligible swim day, up to {data.weekly_limit} days/week (Mon–Sun
+          Lagos). Reversed if marked absent or cancelled.
         </p>
+
+        {data.bubbles_earned === 0 && allTimeSwims > 0 && (
+          <p className="text-xs text-slate-500">
+            Swim Bubbles launched 22 Nov 2026 — earlier swims still count toward your badges.
+          </p>
+        )}
       </section>
 
       {/* Right: All-Time Swimming Milestones & Badges */}

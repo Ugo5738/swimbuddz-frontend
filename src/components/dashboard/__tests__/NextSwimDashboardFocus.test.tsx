@@ -41,6 +41,8 @@ describe("Dashboard next-swim action", () => {
     expect(screen.getByText("Next on your Club schedule")).toBeInTheDocument();
     expect(screen.getByText(/your place is not yet reserved/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Book this swim/ })).toHaveAttribute("href", "/sessions/one/book");
+    expect(screen.queryByRole("link", { name: "My Swims" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Other swims" })).not.toBeInTheDocument();
     expect(mocks.apiGet).not.toHaveBeenCalled();
   });
 
