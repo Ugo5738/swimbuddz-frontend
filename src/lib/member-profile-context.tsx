@@ -42,6 +42,12 @@ export type MemberInfo = {
     community_paid_until?: string | null;
     club_paid_until?: string | null;
     academy_paid_until?: string | null;
+    post_academy_club_until?: string | null;
+    club_enrollment_until?: string | null;
+    declared_tiers?: string[] | null;
+    effective_paid_tiers?: string[] | null;
+    highest_paid_tier?: string | null;
+    pending_payment_reference?: string | null;
     paid_tier?: string | null;
     paid_tiers?: string[] | null;
     display_label?: string | null;
@@ -68,4 +74,8 @@ export function useMemberProfile(): MemberProfileState {
   const profile = useContext(MemberProfileContext);
   if (!profile) throw new Error("useMemberProfile requires MemberLayout");
   return profile;
+}
+
+export function useOptionalMemberProfile(): MemberProfileState | null {
+  return useContext(MemberProfileContext);
 }

@@ -15,8 +15,10 @@ vi.mock("@/lib/sessions", () => ({ SessionsApi: {
   listSessions: mocks.listSessions, getSession: vi.fn().mockResolvedValue({ access: {} }),
 } }));
 vi.mock("@/lib/reports", () => ({
+  fetchYTDAttendanceSummary: vi.fn().mockResolvedValue(null),
   fetchYTDStats: vi.fn().mockResolvedValue(null),
-  fetchQuarterlyReport: vi.fn().mockResolvedValue(null), quarterSlug: () => "q4-2026",
+  fetchQuarterlyReport: vi.fn().mockResolvedValue(null),
+  quarterSlug: () => "q4-2026",
 }));
 vi.mock("@/components/notifications/NotificationBell", () => ({ NotificationBell: () => null }));
 vi.mock("@/components/dashboard/GreetingHero", () => ({
