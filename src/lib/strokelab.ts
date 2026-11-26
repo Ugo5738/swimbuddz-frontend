@@ -47,12 +47,58 @@ export type TrackingGap = {
   duration_s: number;
 };
 
+export type StrokeSupport = {
+  count: number;
+  total_chunks: number;
+  consistent: boolean;
+  single_stroke_only: boolean;
+};
+
+export type StrokeAdjudication = {
+  status: "confirmed" | "contradicted" | "unclear" | string;
+  model?: string;
+  confidence?: number;
+  reason?: string;
+};
+
+export type StrokeLabComparisonAspect = {
+  aspect: string;
+  label: string;
+  status:
+    | "improved"
+    | "still_working"
+    | "maintained"
+    | "regressed"
+    | "newly_observed"
+    | string;
+  previous_severity: string | null;
+  current_severity: string | null;
+  previous_verdict: string | null;
+  current_verdict: string | null;
+  summary: string;
+};
+
+export type StrokeLabComparison = {
+  previous_job_id: string;
+  previous_completed_at: string | null;
+  comparable: boolean;
+  improved_count: number;
+  still_working_count: number;
+  maintained_count: number;
+  regressed_count: number;
+  headline: string;
+  caveat: string | null;
+  aspects: StrokeLabComparisonAspect[];
+};
+
 export type StrokeLabCoachFinding = {
   component: string;
   observation: string;
   severity: "fix" | "strength" | "info" | "unavailable";
   confidence: number;
   available: boolean;
+  instance_id?: number | null;
+  area?: string | null;
   evidence_frames: Array<{ index: number; timestamp_s: number }>;
   extra?: Record<string, unknown>;
 };

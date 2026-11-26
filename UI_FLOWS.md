@@ -524,7 +524,11 @@ existing link. Merely creating an offering does not attach it to a Club plan.
 
 Member navigation shows Make-ups only for members with Academy payment/history,
 including members who also have Club. Stroke Lab links to
-`https://analyzer.swimbuddz.com`; old `/account/strokelab` reports remain available.
+`https://analyzer.swimbuddz.com`; member `/account/strokelab/[jobId]` reports
+remain available and render the collated coach summary, longitudinal swim
+comparison against the member's previous completed freestyle clip, cross-stroke
+consistency / second-opinion verification badges, and curated water-safe TI
+drill cards (with Academy links when present).
 
 ### Flow: Admin Dashboard → Payments → Verify
 
