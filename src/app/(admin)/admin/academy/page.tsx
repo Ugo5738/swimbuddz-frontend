@@ -97,6 +97,12 @@ export default function AdminAcademyPage() {
             Programme Requirements
           </button>
           <button
+            onClick={() => router.push("/admin/academy/competencies")}
+            className="flex-shrink-0 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs md:text-sm font-medium text-emerald-800 hover:bg-emerald-50 whitespace-nowrap"
+          >
+            Competency Verification
+          </button>
+          <button
             onClick={() => router.push("/admin/academy/programs/new")}
             className="flex-shrink-0 rounded-lg bg-cyan-600 px-3 py-2 text-xs md:text-sm font-medium text-white hover:bg-cyan-700 whitespace-nowrap"
           >
