@@ -135,6 +135,11 @@ export default function AcademyCompetencyPassportPage() {
                         <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-900">
                           {drill.status}
                         </span>
+                        {drill.assigned_by_role === "strokelab_ai" && (
+                          <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-800">
+                            Stroke Lab AI
+                          </span>
+                        )}
                       </div>
                       <p className="text-slate-600">
                         {drill.sets} sets{drill.distance_m ? ` × ${drill.distance_m}m` : ""}

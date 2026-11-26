@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/Card";
 import {
   type CohortGraduationParity,
   CompetencyPassportApi,
+  GRADUATION_MODE_LABELS,
+  type GraduationModeStatus,
   PARITY_STATUS_LABELS,
   type ParityStatus,
 } from "@/lib/academy/competency-passport";
@@ -42,9 +44,24 @@ export function GraduationParityPanel({
   onJumpToPromote,
 }: Props) {
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [modeStatus, setModeStatus] = useState<GraduationModeStatus | null>(null);
   const [report, setReport] = useState<CohortGraduationParity | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    CompetencyPassportApi.adminGraduationMode()
+      .then((status) => {
+        if (active) setModeStatus(status);
+      })
+      .catch(() => {
+        if (active) setModeStatus(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [refreshKey]);
 
   useEffect(() => {
     if (!cohortId) {
@@ -90,13 +107,29 @@ export function GraduationParityPanel({
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50/70 p-4 text-sm text-cyan-950">
         <div className="space-y-1">
-          <p className="font-semibold">
-            Read-only dual-read shadow comparison (Phase 5A)
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold">
+              Read-only dual-read graduation parity
+            </p>
+            {modeStatus && (
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  modeStatus.v2_enforced_active
+                    ? "bg-emerald-100 text-emerald-900"
+                    : modeStatus.shadow_logging_active
+                      ? "bg-amber-100 text-amber-900"
+                      : "bg-slate-100 text-slate-800"
+                }`}
+              >
+                {GRADUATION_MODE_LABELS[modeStatus.mode]}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-cyan-900">
-            Legacy graduation and certificate issuance remain authoritative until
-            parity holds and an explicit Phase 5B cutover is authorized. Loading this
-            report never modifies enrollments, certificates, or rewards.
+            {modeStatus
+              ? modeStatus.description
+              : "Legacy graduation and certificate issuance remain authoritative until parity holds and an explicit Phase 5B cutover is authorized."}{" "}
+            Loading this report never modifies enrollments, certificates, or rewards.
           </p>
         </div>
         <label className="flex items-center gap-2 text-xs font-medium text-cyan-950">

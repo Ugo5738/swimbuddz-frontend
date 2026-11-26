@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   CLUB_ADVISORY_SIGNAL_LABELS,
+  GRADUATION_MODE_LABELS,
   PARITY_STATUS_LABELS,
   SOURCE_TYPE_LABELS,
   extractRubricCriteriaCodes,
@@ -59,5 +60,9 @@ describe("Academy V2 competency passport helpers & starter contracts", () => {
     expect(CLUB_ADVISORY_SIGNAL_LABELS.partial_evidence).toContain("Partial");
     expect(CLUB_ADVISORY_SIGNAL_LABELS.renewal_or_recheck_needed).toContain("Renewal");
     expect(CLUB_ADVISORY_SIGNAL_LABELS.no_v2_evidence).toContain("No Academy V2");
+
+    expect(GRADUATION_MODE_LABELS.legacy).toContain("Legacy");
+    expect(GRADUATION_MODE_LABELS.shadow_log).toContain("Shadow");
+    expect(GRADUATION_MODE_LABELS.v2_enforced).toContain("V2 Enforced");
   });
 });
