@@ -8,8 +8,11 @@ import { apiPost } from "@/lib/api";
 import { useApi } from "@/hooks/useApi";
 import { PaymentProofLink } from "@/components/admin/PaymentProofLink";
 import { AdminPaymentRecording } from "@/components/admin/AdminPaymentRecording";
+import { AdminRefundsPanel } from "@/components/admin/AdminRefundsPanel";
+import { LoadingCard } from "@/components/ui/LoadingCard";
 import { formatDistance } from "date-fns";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 interface Payment {
   id: string;
@@ -43,7 +46,10 @@ function ReceiptHints({ reference, hasReceipt }: { reference: string; hasReceipt
   );
 }
 
-export default function AdminPaymentsPage() {
+function AdminPaymentsContent() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "refunds" ? "refunds" : "reviews";
+  const [activeTab, setActiveTab] = useState<"reviews" | "refunds">(initialTab);
   const {
     data,
     loading,
@@ -114,12 +120,44 @@ export default function AdminPaymentsPage() {
         <p className="text-sm font-semibold uppercase tracking-wider text-cyan-600">
           Admin · Payments
         </p>
-        <h1 className="text-4xl font-bold text-slate-900">Payment Reviews</h1>
-        <p className="text-slate-600 mt-2">Review and approve manual bank transfer payments</p>
+        <h1 className="text-4xl font-bold text-slate-900">Payments &amp; Refunds</h1>
+        <p className="text-slate-600 mt-2">
+          Review manual bank transfer proofs and manage Paystack &amp; bank transfer refunds
+        </p>
       </div>
 
-      {(error || loadError) && <Alert variant="error">{error || loadError}</Alert>}
-      <AdminPaymentRecording />
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-slate-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab("reviews")}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            activeTab === "reviews"
+              ? "bg-cyan-600 text-white"
+              : "text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          Bank Transfer Reviews ({payments.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("refunds")}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            activeTab === "refunds"
+              ? "bg-cyan-600 text-white"
+              : "text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          Refunds &amp; Payouts
+        </button>
+      </div>
+
+      {activeTab === "refunds" ? (
+        <AdminRefundsPanel />
+      ) : (
+        <>
+          {(error || loadError) && <Alert variant="error">{error || loadError}</Alert>}
+          <AdminPaymentRecording />
 
       {loading ? (
         <Card className="p-8 text-center">
@@ -223,6 +261,16 @@ export default function AdminPaymentsPage() {
       <Button variant="secondary" onClick={fetchPendingPayments} disabled={loading}>
         🔄 Refresh
       </Button>
+        </>
+      )}
     </div>
+  );
+}
+
+export default function AdminPaymentsPage() {
+  return (
+    <Suspense fallback={<LoadingCard text="Loading payments..." />}>
+      <AdminPaymentsContent />
+    </Suspense>
   );
 }

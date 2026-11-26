@@ -15,10 +15,12 @@ export const STORE_ORDER_STATUSES = [
 const allowedTransitions: Record<string, string[]> = {
   pending_payment: ["cancelled"],
   payment_failed: ["cancelled"],
-  paid: ["processing", "cancelled"],
-  processing: ["ready_for_pickup", "shipped", "cancelled"],
-  ready_for_pickup: ["picked_up", "cancelled"],
-  shipped: ["delivered", "cancelled"],
+  // Paid orders cannot be silently cancelled via the raw status dropdown (ADR-024);
+  // admins use "Cancel & Issue Refund" or approve a cancellation case instead.
+  paid: ["processing"],
+  processing: ["ready_for_pickup", "shipped"],
+  ready_for_pickup: ["picked_up"],
+  shipped: ["delivered"],
   picked_up: [],
   delivered: [],
   cancelled: [],
