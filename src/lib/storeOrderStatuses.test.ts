@@ -21,4 +21,11 @@ describe("store admin order status transitions", () => {
     expect(allowedStoreOrderStatuses("delivered")).toEqual(["delivered"]);
     expect(allowedStoreOrderStatuses("unexpected")).toEqual(["unexpected"]);
   });
+
+  it("blocks direct raw cancellation of paid orders so refunds are never skipped (ADR-023)", () => {
+    expect(allowedStoreOrderStatuses("paid")).not.toContain("cancelled");
+    expect(allowedStoreOrderStatuses("processing")).not.toContain("cancelled");
+    expect(allowedStoreOrderStatuses("ready_for_pickup")).not.toContain("cancelled");
+    expect(allowedStoreOrderStatuses("shipped")).not.toContain("cancelled");
+  });
 });

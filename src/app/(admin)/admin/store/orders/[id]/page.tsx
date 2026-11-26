@@ -1,9 +1,20 @@
 "use client";
 
+import { AdminOrderCancelRefundModal } from "@/components/admin/store/AdminOrderCancelRefundModal";
+import { AdminOrderCasesSection } from "@/components/admin/store/AdminOrderCasesSection";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet, apiPatch } from "@/lib/api";
+import {
+  effectiveOrderTotal,
+  formatNaira,
+  fulfillmentStatusMeta,
+  paymentStatusMeta,
+  type OrderCase,
+  type OrderRefundSummary,
+  type StoreOrderDetail,
+} from "@/lib/storeOrderLifecycle";
 import {
   allowedStoreOrderStatuses,
   storeOrderStatusLabel,
@@ -15,82 +26,37 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-interface OrderItem {
-  id: string;
-  quantity: number;
-  unit_price_ngn: number;
-  line_total_ngn: number;
-  variant?: {
-    id: string;
-    name: string | null;
-    sku: string;
-    options: Record<string, string>;
-    product?: {
-      id: string;
-      name: string;
-      slug: string;
-      images?: { url: string; is_primary: boolean }[];
-    };
-  };
-}
-
-interface OrderDetail {
-  id: string;
-  order_number: string;
-  status: string;
-  fulfillment_type: string;
-  subtotal_ngn: number;
-  discount_amount_ngn: number;
-  delivery_fee_ngn: number;
-  total_ngn: number;
-  discount_code: string | null;
-  customer_notes: string | null;
-  admin_notes: string | null;
-  created_at: string;
-  updated_at: string;
-  paid_at: string | null;
-  shipped_at: string | null;
-  delivered_at: string | null;
-  items: OrderItem[];
-  customer_name: string | null;
-  customer_email: string | null;
-  customer_phone: string | null;
-  member_id?: string | null;
-  pickup_location?: {
-    id: string;
-    name: string;
-    address: string | null;
-  };
-  delivery_address?: {
-    street: string;
-    city: string;
-    state: string;
-    phone: string;
-  };
-  tracking_number?: string;
-  tracking_url?: string;
-}
-
 export default function AdminOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
 
-  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [order, setOrder] = useState<StoreOrderDetail | null>(null);
+  const [cases, setCases] = useState<OrderCase[]>([]);
+  const [refunds, setRefunds] = useState<OrderRefundSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [adminNotes, setAdminNotes] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Audited Cancel & Issue Refund modal state
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+
   const loadOrder = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiGet<OrderDetail>(`/api/v1/admin/store/orders/${orderId}`, {
-        auth: true,
-      });
+      const [data, caseBundle] = await Promise.all([
+        apiGet<StoreOrderDetail>(`/api/v1/admin/store/orders/${orderId}`, { auth: true }),
+        apiGet<{ cases: OrderCase[]; refunds: OrderRefundSummary[] }>(
+          `/api/v1/admin/store/orders/${orderId}/cases`,
+          { auth: true }
+        ).catch(() => ({ cases: [], refunds: [] })),
+      ]);
       setOrder(data);
+      setCases(caseBundle.cases);
+      setRefunds(caseBundle.refunds);
       setAdminNotes(data.admin_notes || "");
-      setTrackingNumber(data.tracking_number || "");
+      setTrackingNumber(data.tracking_number || data.delivery_notes || "");
     } catch (e) {
       console.error("Failed to load order:", e);
       toast.error("Order not found");
@@ -104,7 +70,11 @@ export default function AdminOrderDetailPage() {
     loadOrder();
   }, [loadOrder]);
 
-  const updateOrder = async (updates: Partial<OrderDetail>) => {
+  const updateOrder = async (updates: {
+    status?: string;
+    admin_notes?: string;
+    tracking_number?: string;
+  }) => {
     setSaving(true);
     try {
       await apiPatch(`/api/v1/admin/store/orders/${orderId}`, updates, {
@@ -113,7 +83,11 @@ export default function AdminOrderDetailPage() {
       toast.success("Order updated");
       loadOrder();
     } catch (e) {
-      toast.error("Order update rejected. Check payment verification and allowed status changes.");
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : "Order update rejected. Check payment verification and allowed status changes."
+      );
     } finally {
       setSaving(false);
     }
@@ -128,6 +102,18 @@ export default function AdminOrderDetailPage() {
   }
 
   const customerName = order.customer_name || order.customer_email || "Guest";
+  const payBadge = paymentStatusMeta(order.payment_status);
+  const fulBadge = fulfillmentStatusMeta(order.fulfillment_status);
+  const orderTotal = effectiveOrderTotal(order);
+  const storeCredit = Number(order.store_credit_applied_ngn || 0);
+  const bubblesNgn = (order.bubbles_applied || 0) * 100;
+  const cashPayable = Number(order.cash_payable_ngn ?? order.total_ngn ?? 0);
+  const isPaidOrder =
+    order.payment_status === "paid" ||
+    order.payment_status === "partially_refunded" ||
+    ["paid", "processing", "ready_for_pickup", "picked_up", "shipped", "delivered"].includes(
+      order.status
+    );
 
   return (
     <div className="space-y-6">
@@ -142,17 +128,25 @@ export default function AdminOrderDetailPage() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-bold text-slate-900">Order #{order.order_number}</h1>
-          <p className="text-slate-500">
-            {new Date(order.created_at).toLocaleDateString("en-NG", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${payBadge.className}`}>
+              Payment: {payBadge.label}
+            </span>
+            <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${fulBadge.className}`}>
+              Fulfillment: {fulBadge.label}
+            </span>
+            <span className="text-xs text-slate-500">
+              {new Date(order.created_at).toLocaleDateString("en-NG", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
         </div>
         <select
           value={order.status}
@@ -170,6 +164,19 @@ export default function AdminOrderDetailPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Post-Purchase Cases & Refunds */}
+          <Card className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Cancellations, Returns &amp; Refunds
+              </h2>
+              <Link href="/admin/store/cases" className="text-xs text-cyan-600 hover:underline">
+                All Store Cases →
+              </Link>
+            </div>
+            <AdminOrderCasesSection cases={cases} refunds={refunds} onUpdated={loadOrder} />
+          </Card>
+
           {/* Order Items */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Items</h2>
@@ -185,7 +192,7 @@ export default function AdminOrderDetailPage() {
                       {primaryImage ? (
                         <Image
                           src={primaryImage.url}
-                          alt={item.variant?.product?.name || "Product"}
+                          alt={item.variant?.product?.name || item.product_name || "Product"}
                           fill
                           unoptimized
                           className="object-cover"
@@ -197,8 +204,13 @@ export default function AdminOrderDetailPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900">{item.variant?.product?.name}</p>
-                      <p className="text-sm text-slate-500">SKU: {item.variant?.sku}</p>
+                      <p className="font-medium text-slate-900">
+                        {item.variant?.product?.name || item.product_name}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        SKU: {item.variant?.sku || item.sku}
+                        {item.sourcing_type && ` • ${item.sourcing_type}`}
+                      </p>
                       {item.variant?.options && Object.keys(item.variant.options).length > 0 && (
                         <p className="text-sm text-slate-500">
                           {Object.entries(item.variant.options)
@@ -207,12 +219,12 @@ export default function AdminOrderDetailPage() {
                         </p>
                       )}
                       <p className="text-sm text-slate-600 mt-1">
-                        Qty: {item.quantity} × ₦{item.unit_price_ngn.toLocaleString()}
+                        Qty: {item.quantity} × {formatNaira(item.unit_price_ngn)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-slate-900">
-                        ₦{item.line_total_ngn.toLocaleString()}
+                        {formatNaira(item.line_total_ngn)}
                       </p>
                     </div>
                   </div>
@@ -344,32 +356,51 @@ export default function AdminOrderDetailPage() {
           <Card className="p-6 sticky top-24">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
 
-            <div className="space-y-3 text-sm">
+            <div className="space-y-2.5 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-600">Subtotal</span>
-                <span className="text-slate-900">₦{order.subtotal_ngn.toLocaleString()}</span>
+                <span className="text-slate-900">{formatNaira(order.subtotal_ngn)}</span>
               </div>
 
-              {order.discount_amount_ngn > 0 && (
+              {Number(order.discount_amount_ngn) > 0 && (
                 <div className="flex justify-between text-emerald-600">
                   <span>
                     Discount
                     {order.discount_code && ` (${order.discount_code})`}
                   </span>
-                  <span>-₦{order.discount_amount_ngn.toLocaleString()}</span>
+                  <span>-{formatNaira(order.discount_amount_ngn)}</span>
                 </div>
               )}
 
-              {order.delivery_fee_ngn > 0 && (
+              {Number(order.delivery_fee_ngn) > 0 && (
                 <div className="flex justify-between">
                   <span className="text-slate-600">Delivery</span>
-                  <span className="text-slate-900">₦{order.delivery_fee_ngn.toLocaleString()}</span>
+                  <span className="text-slate-900">{formatNaira(order.delivery_fee_ngn)}</span>
                 </div>
               )}
 
-              <div className="pt-3 border-t border-slate-200 flex justify-between font-semibold">
-                <span className="text-slate-900">Total</span>
-                <span className="text-cyan-600">₦{order.total_ngn.toLocaleString()}</span>
+              <div className="pt-2.5 border-t border-slate-200 flex justify-between font-semibold">
+                <span className="text-slate-900">Order Total</span>
+                <span className="text-slate-900">{formatNaira(orderTotal)}</span>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 space-y-1 text-xs text-slate-600">
+                {storeCredit > 0 && (
+                  <div className="flex justify-between">
+                    <span>Store Credit</span>
+                    <span>{formatNaira(storeCredit)}</span>
+                  </div>
+                )}
+                {bubblesNgn > 0 && (
+                  <div className="flex justify-between">
+                    <span>Bubbles ({order.bubbles_applied} 🫧)</span>
+                    <span>{formatNaira(bubblesNgn)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-semibold text-sm text-cyan-700 pt-1">
+                  <span>Cash Paid / Due</span>
+                  <span>{formatNaira(cashPayable)}</span>
+                </div>
               </div>
             </div>
 
@@ -437,21 +468,34 @@ export default function AdminOrderDetailPage() {
                 </Button>
               )}
 
-              {!["cancelled", "refunded", "picked_up", "delivered"].includes(order.status) && (
+              {!["cancelled", "refunded"].includes(order.status) && (
                 <Button
                   variant="secondary"
                   size="sm"
                   className="w-full text-rose-600 hover:bg-rose-50"
-                  onClick={() => updateOrder({ status: "cancelled" })}
+                  onClick={() => {
+                    if (isPaidOrder) {
+                      setCancelModalOpen(true);
+                    } else {
+                      updateOrder({ status: "cancelled" });
+                    }
+                  }}
                   disabled={saving}
                 >
-                  Cancel Order
+                  {isPaidOrder ? "Cancel & Issue Refund" : "Cancel Unpaid Order"}
                 </Button>
               )}
             </div>
           </Card>
         </div>
       </div>
+
+      <AdminOrderCancelRefundModal
+        order={order}
+        isOpen={cancelModalOpen}
+        onClose={() => setCancelModalOpen(false)}
+        onSuccess={loadOrder}
+      />
     </div>
   );
 }

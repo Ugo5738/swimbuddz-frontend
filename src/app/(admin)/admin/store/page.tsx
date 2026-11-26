@@ -10,6 +10,7 @@ import {
   FolderTree,
   Layers,
   Package,
+  RotateCcw,
   ShoppingBag,
   Trash2,
   TrendingUp,
@@ -40,11 +41,12 @@ interface RecentOrder {
 export default function StoreDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [openCasesCount, setOpenCasesCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
-      const [statsData, ordersData] = await Promise.all([
+      const [statsData, ordersData, casesData] = await Promise.all([
         apiGet<DashboardStats>("/api/v1/admin/store/stats", {
           auth: true,
         }).catch(
@@ -62,10 +64,14 @@ export default function StoreDashboardPage() {
         apiGet<{ items: RecentOrder[] }>("/api/v1/admin/store/orders?page_size=5", {
           auth: true,
         }).catch(() => ({ items: [] })),
+        apiGet<{ open_count: number }>("/api/v1/admin/store/cases/open-count", {
+          auth: true,
+        }).catch(() => ({ open_count: 0 })),
       ]);
 
       setStats(statsData);
       setRecentOrders(ordersData.items);
+      setOpenCasesCount(casesData.open_count || 0);
     } catch (e) {
       console.error("Failed to load dashboard:", e);
     } finally {
@@ -183,6 +189,17 @@ export default function StoreDashboardPage() {
           <Card className="p-4 text-center hover:shadow-md transition-shadow">
             <ShoppingBag className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
             <span className="text-sm font-medium text-slate-700">Orders</span>
+          </Card>
+        </Link>
+        <Link href="/admin/store/cases">
+          <Card className="p-4 text-center hover:shadow-md transition-shadow relative">
+            {openCasesCount > 0 && (
+              <span className="absolute top-2 right-2 px-2 py-0.5 text-xs font-bold rounded-full bg-rose-500 text-white">
+                {openCasesCount}
+              </span>
+            )}
+            <RotateCcw className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
+            <span className="text-sm font-medium text-slate-700">Returns &amp; Cases</span>
           </Card>
         </Link>
         <Link href="/admin/store/inventory">
