@@ -207,6 +207,7 @@ export default function StrokeLabResultPage() {
           <CoachReviewCard
             result={result}
             coachRead={coachRead}
+            jobId={job.id}
             onJump={jumpToTimestamp}
           />
 

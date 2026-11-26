@@ -2,7 +2,9 @@
 
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CompetencyPassportApi } from "@/lib/academy/competency-passport";
 import type {
   AnalysisResultPayload,
   Observation,
@@ -15,6 +17,8 @@ import {
 import {
   AlertTriangle,
   ArrowUpRight,
+  BookmarkCheck,
+  BookmarkPlus,
   CheckCircle2,
   Lightbulb,
   Play,
@@ -23,6 +27,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const COMPARISON_STATUS_META: Record<
   string,
@@ -114,13 +120,46 @@ export function ProgressSinceLastSwimCard({
 export function CoachReviewCard({
   result,
   coachRead,
+  jobId,
   onJump,
 }: {
   result: AnalysisResultPayload;
   coachRead: PrimaryCoachRead;
+  jobId?: string;
   onJump: (seconds: number) => void;
 }) {
+  const [savingRef, setSavingRef] = useState<string | null>(null);
+  const [savedRefs, setSavedRefs] = useState<Record<string, boolean>>({});
+
   if (!result.coach_result) return null;
+
+  const saveDrillToAcademy = async (
+    academyRef: string,
+    focalPoint: string | null,
+  ) => {
+    setSavingRef(academyRef);
+    try {
+      const saved = await CompetencyPassportApi.saveStrokeLabDrill({
+        academy_ref: academyRef,
+        strokelab_job_id: jobId,
+        focal_cue_note: focalPoint ?? undefined,
+      });
+      setSavedRefs((prev) => ({ ...prev, [academyRef]: true }));
+      toast.success(
+        saved.already_assigned
+          ? `${saved.drill_title} is already in your Academy drills.`
+          : `Added "${saved.drill_title}" to your Academy practice drills.`,
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Could not save this drill to your Academy practice list right now.",
+      );
+    } finally {
+      setSavingRef(null);
+    }
+  };
 
   return (
     <Card className="mb-6">
@@ -258,6 +297,43 @@ export function CoachReviewCard({
                       <p className="mt-2 text-xs text-slate-500">
                         Water safety: {meta.safetyNote}
                       </p>
+                    ) : null}
+                    {meta.academyRef ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-2.5">
+                        {savedRefs[meta.academyRef] ? (
+                          <Link
+                            href="/account/academy/passport"
+                            className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100"
+                          >
+                            <BookmarkCheck className="h-3.5 w-3.5" />
+                            Saved in Academy Drills · View Passport
+                            <ArrowUpRight className="h-3 w-3" />
+                          </Link>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={savingRef === meta.academyRef}
+                            onClick={() =>
+                              void saveDrillToAcademy(
+                                meta.academyRef!,
+                                meta.primaryFocalPoint,
+                              )
+                            }
+                            className="h-7 gap-1.5 px-2.5 text-xs"
+                          >
+                            <BookmarkPlus className="h-3.5 w-3.5" />
+                            {savingRef === meta.academyRef
+                              ? "Saving..."
+                              : "Add to My Academy Drills"}
+                          </Button>
+                        )}
+                        <span className="text-[11px] text-slate-500">
+                          Practice suggestion only — does not award practical
+                          credentials.
+                        </span>
+                      </div>
                     ) : null}
                   </div>
                 ) : null}

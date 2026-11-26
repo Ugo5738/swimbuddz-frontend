@@ -289,6 +289,28 @@ export interface ClubAdvisoryCompetencyItem {
   revoked_at: string | null;
 }
 
+export type GraduationMode = "legacy" | "shadow_log" | "v2_enforced";
+
+export interface GraduationModeStatus {
+  mode: GraduationMode;
+  v2_enforced_active: boolean;
+  shadow_logging_active: boolean;
+  legacy_fallback_for_unfrozen_cohorts: boolean;
+  description: string;
+}
+
+export interface StrokeLabDrillSaveInput {
+  academy_ref: string;
+  strokelab_job_id?: string;
+  focal_cue_note?: string;
+  sets?: number;
+  distance_m?: number | null;
+}
+
+export interface StrokeLabDrillAssignmentResult extends StudentDrillAssignment {
+  already_assigned: boolean;
+}
+
 export interface ClubReadinessAdvisory {
   advisory_only: true;
   human_approval_required: true;
@@ -326,6 +348,11 @@ export const CompetencyPassportApi = {
 
   adminMemberPassport: (memberAuthId: string) =>
     apiGet<CompetencyPassport>(`${base}/admin/members/${encodeURIComponent(memberAuthId)}`, {
+      auth: true,
+    }),
+
+  adminGraduationMode: () =>
+    apiGet<GraduationModeStatus>(`${base}/admin/graduation-mode`, {
       auth: true,
     }),
 
@@ -411,6 +438,13 @@ export const CompetencyPassportApi = {
       { auth: true },
     ),
 
+  saveStrokeLabDrill: (input: StrokeLabDrillSaveInput) =>
+    apiPost<StrokeLabDrillAssignmentResult>(
+      `${base}/me/drills/from-strokelab`,
+      input,
+      { auth: true },
+    ),
+
   assignDrill: (input: {
     drill_version_id: string;
     enrollment_id?: string;
@@ -456,6 +490,12 @@ export const CLUB_ADVISORY_SIGNAL_LABELS: Record<ClubAdvisorySignal, string> = {
   partial_evidence: "Partial Academy V2 Evidence",
   renewal_or_recheck_needed: "Safety Credential Renewal / Recheck Needed",
   no_v2_evidence: "No Academy V2 Credentials Recorded",
+};
+
+export const GRADUATION_MODE_LABELS: Record<GraduationMode, string> = {
+  legacy: "Legacy Mode (Default Safe)",
+  shadow_log: "Shadow Telemetry Mode",
+  v2_enforced: "V2 Enforced (Frozen Cohorts)",
 };
 
 export function extractRubricCriteriaCodes(
