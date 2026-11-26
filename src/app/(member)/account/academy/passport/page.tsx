@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
   CompetencyPassportApi,
   type CompetencyPassport,
   type CompetencyStatus,
+  SOURCE_TYPE_LABELS,
+  type StudentDrillAssignment,
 } from "@/lib/academy/competency-passport";
 
 const statusDescription: Record<CompetencyStatus, string> = {
@@ -34,28 +38,44 @@ function friendlyDate(value: string) {
 
 export default function AcademyCompetencyPassportPage() {
   const [passport, setPassport] = useState<CompetencyPassport | null>(null);
+  const [drills, setDrills] = useState<StudentDrillAssignment[]>([]);
+  const [busyDrillId, setBusyDrillId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    CompetencyPassportApi.me()
-      .then((data) => {
-        if (active) setPassport(data);
-      })
-      .catch((reason: unknown) => {
-        if (!active) return;
-        setError(
-          reason instanceof Error ? reason.message : "Could not load competencies.",
-        );
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+  const loadAll = useCallback(async () => {
+    try {
+      const [passportData, drillData] = await Promise.all([
+        CompetencyPassportApi.me(),
+        CompetencyPassportApi.myDrills().catch(() => []),
+      ]);
+      setPassport(passportData);
+      setDrills(drillData);
+    } catch (reason: unknown) {
+      setError(
+        reason instanceof Error ? reason.message : "Could not load competencies.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadAll();
+  }, [loadAll]);
+
+  const markPracticed = async (assignmentId: string) => {
+    setBusyDrillId(assignmentId);
+    try {
+      await CompetencyPassportApi.markMyDrillPracticed(assignmentId);
+      toast.success("Drill marked as practiced");
+      await loadAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update drill");
+    } finally {
+      setBusyDrillId(null);
+    }
+  };
 
   const verified = useMemo(
     () => passport?.competencies.filter((item) => item.status === "verified") ?? [],
@@ -96,10 +116,55 @@ export default function AcademyCompetencyPassportPage() {
             <p className="text-sm text-slate-500">Currently verified</p>
             <p className="text-3xl font-bold text-slate-900">{verified.length}</p>
             <p className="text-xs text-slate-500">
-              Verified learning may be considered in another Academy pathway.
+              Verified learning carries across Academy pathways as prior credit.
               Club admission and graduation still have their own assessment rules.
             </p>
           </Card>
+
+          {drills.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold text-slate-900">
+                My Prescribed Practice Drills
+              </h2>
+              <ul className="space-y-2">
+                {drills.map((drill) => (
+                  <li key={drill.id} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4">
+                    <div className="space-y-1 text-xs">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900">{drill.drill_title}</p>
+                        <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-900">
+                          {drill.status}
+                        </span>
+                        {drill.assigned_by_role === "strokelab_ai" && (
+                          <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-800">
+                            Stroke Lab AI
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-600">
+                        {drill.sets} sets{drill.distance_m ? ` × ${drill.distance_m}m` : ""}
+                        {drill.milestone_title ? ` · For ${drill.milestone_title}` : ""}
+                      </p>
+                      <p className="text-cyan-900">
+                        <strong>Focal cue:</strong> {drill.focal_cue_note || drill.primary_focal_cue}
+                      </p>
+                    </div>
+                    {drill.status === "assigned" && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={busyDrillId === drill.id}
+                        onClick={() => void markPracticed(drill.id)}
+                      >
+                        Mark as practiced
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {passport?.competencies.length === 0 ? (
             <Card className="p-6">
@@ -176,7 +241,14 @@ export default function AcademyCompetencyPassportPage() {
                     <li key={item.id} className="rounded-lg border border-slate-200 bg-white p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="space-y-1">
-                          <p className="font-semibold text-slate-900">{item.title}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-slate-900">{item.title}</p>
+                            {item.source_type && (
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                                {SOURCE_TYPE_LABELS[item.source_type]}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-500">
                             Verified {friendlyDate(item.verified_at)}
                             {item.expires_at && ` · Review by ${friendlyDate(item.expires_at)}`}

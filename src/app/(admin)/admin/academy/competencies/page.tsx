@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { DiagnosticAssessmentPanel } from "@/components/academy/DiagnosticAssessmentPanel";
+import { GraduationParityPanel } from "@/components/academy/GraduationParityPanel";
 import { IssuedVerificationsPanel } from "@/components/academy/IssuedVerificationsPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -35,7 +37,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 export default function AdminAcademyCompetenciesPage() {
-  const [tab, setTab] = useState<"promote" | "verifications">("promote");
+  const [tab, setTab] = useState<"promote" | "diagnostic" | "verifications" | "parity">("promote");
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
   const [cohortId, setCohortId] = useState("");
   const [memberAuthFilter, setMemberAuthFilter] = useState("");
@@ -250,11 +252,27 @@ export default function AdminAcademyCompetenciesPage() {
         </button>
         <button
           type="button"
+          onClick={() => setTab("diagnostic")}
+          aria-pressed={tab === "diagnostic"}
+          className={`rounded-lg border px-4 py-2 text-sm font-medium ${tab === "diagnostic" ? "border-cyan-700 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+        >
+          Diagnostic clinic assessment
+        </button>
+        <button
+          type="button"
           onClick={() => setTab("verifications")}
           aria-pressed={tab === "verifications"}
           className={`rounded-lg border px-4 py-2 text-sm font-medium ${tab === "verifications" ? "border-cyan-700 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
         >
           Issued verifications & revocations ({verifications.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("parity")}
+          aria-pressed={tab === "parity"}
+          className={`rounded-lg border px-4 py-2 text-sm font-medium ${tab === "parity" ? "border-cyan-700 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+        >
+          Graduation parity (shadow)
         </button>
       </nav>
 
@@ -387,8 +405,25 @@ export default function AdminAcademyCompetenciesPage() {
             </ul>
           )}
         </div>
-      ) : (
+      ) : tab === "diagnostic" ? (
+        <DiagnosticAssessmentPanel
+          onIssued={() => {
+            refresh();
+            setTab("verifications");
+          }}
+          onError={setError}
+        />
+      ) : tab === "verifications" ? (
         <IssuedVerificationsPanel verifications={verifications} busy={busy} onRevoke={handleRevoke} />
+      ) : (
+        <GraduationParityPanel
+          cohortId={cohortId}
+          refreshKey={refreshKey}
+          onJumpToPromote={(memberAuth) => {
+            setMemberAuthFilter(memberAuth);
+            setTab("promote");
+          }}
+        />
       )}
     </main>
   );

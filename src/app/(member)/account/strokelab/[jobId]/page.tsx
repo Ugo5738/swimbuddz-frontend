@@ -7,27 +7,23 @@ import { Card } from "@/components/ui/Card";
 import { LoadingPage } from "@/components/ui/LoadingSpinner";
 import {
   type AnalysisJobDetail,
-  type Observation,
   deleteAnalysisJob,
   getAnalysisJob,
   statusLabel,
   statusTone,
 } from "@/lib/strokelab";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  CheckCircle2,
-  Eye,
-  Lightbulb,
-  Play,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { selectPrimaryCoachRead } from "@/lib/strokelab-view";
+import { ArrowLeft, Eye, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  CoachReviewCard,
+  ObservationRow,
+  ProgressSinceLastSwimCard,
+  fmtTime,
+} from "./_components/StrokeLabResultSections";
 
 // Backend lifecycle states that mean "still working" — keep polling.
 const ACTIVE_STATUSES = new Set(["pending", "processing"]);
@@ -115,8 +111,7 @@ export default function StrokeLabResultPage() {
       toast.success("Analysis deleted.");
       router.push("/account/strokelab");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Delete failed";
+      const message = err instanceof Error ? err.message : "Delete failed";
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -143,6 +138,7 @@ export default function StrokeLabResultPage() {
 
   const isActive = ACTIVE_STATUSES.has(job.status);
   const result = job.result;
+  const coachRead = selectPrimaryCoachRead(result?.coach_result);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
@@ -176,12 +172,12 @@ export default function StrokeLabResultPage() {
             <div>
               <p className="text-sm font-medium text-slate-800">
                 {job.status === "pending"
-                  ? "Queued — we&apos;re about to start."
+                  ? "Queued — we’re about to start."
                   : "Analysing — reviewing the visible freestyle technique."}
               </p>
               <p className="text-xs text-slate-500">
-                This updates automatically — no need to refresh. Most clips
-                are ready within a couple of minutes.
+                This updates automatically — no need to refresh. Most clips are
+                ready within a couple of minutes.
               </p>
             </div>
           </div>
@@ -204,71 +200,16 @@ export default function StrokeLabResultPage() {
 
       {result ? (
         <>
-          {result.coach_result ? (
-            <Card className="mb-6">
-              <h2 className="mb-2 text-lg font-semibold">Your freestyle technique review</h2>
-              <p className="mb-4 text-xs text-slate-500">
-                Automated observations based on the visible footage, not a
-                measured stroke rate or a substitute for your coach.
-              </p>
-              {result.coach_result.gate_tier === "borderline" ? (
-                <Alert variant="info" className="mb-4">
-                  The camera angle limits what Stroke Lab can verify.
-                  For more reliable feedback, record from the side.
-                </Alert>
-              ) : null}
-              {result.coach_result.results.flatMap((component) =>
-                component.findings.filter((finding) =>
-                  finding.available && ["fix", "strength", "info"].includes(finding.severity)
-                )
-              ).length === 0 ? (
-                <p className="text-sm text-slate-600">
-                  No reliable technique observations were available from this clip.
-                  Try a clearer side-on freestyle video.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {result.coach_result.results.flatMap((component) =>
-                    component.findings.filter((finding) =>
-                      finding.available && ["fix", "strength", "info"].includes(finding.severity)
-                    )
-                  ).map((finding, index) => {
-                    const evidence = finding.evidence_frames[0];
-                    const evidenceKey = evidence
-                      ? `${finding.component}:${evidence.index}` : null;
-                    const photo = evidenceKey
-                      ? result.coach_evidence_urls?.[evidenceKey] : null;
-                    return (
-                      <div key={`${finding.component}-${index}`} className="border-t border-slate-100 pt-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {finding.severity === "fix" ? "Work on this" :
-                           finding.severity === "strength" ? "What is working" : "Observation"}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-800">{finding.observation}</p>
-                        {evidence ? (
-                          <button type="button" onClick={() => jumpToTimestamp(evidence.timestamp_s)}
-                            className="mt-1 text-xs text-cyan-700 underline">
-                            View at {evidence.timestamp_s.toFixed(1)} seconds
-                          </button>
-                        ) : null}
-                        {photo ? (
-                          <Image src={photo} alt="Video frame supporting the observation"
-                            unoptimized width={320} height={180}
-                            className="mt-2 max-h-48 rounded-lg object-contain" />
-                        ) : null}
-                        {typeof finding.extra?.why_it_matters === "string" && finding.extra.why_it_matters ? (
-                          <p className="mt-2 text-sm text-slate-600">{finding.extra.why_it_matters}</p>
-                        ) : null}
-                        {typeof finding.extra?.drill === "string" && finding.extra.drill ? (
-                          <p className="mt-1 text-sm text-slate-600"><strong>Try:</strong> {finding.extra.drill}</p>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
+          {coachRead.comparison ? (
+            <ProgressSinceLastSwimCard comparison={coachRead.comparison} />
           ) : null}
+
+          <CoachReviewCard
+            result={result}
+            coachRead={coachRead}
+            jobId={job.id}
+            onJump={jumpToTimestamp}
+          />
 
           {result.summary_text ? (
             <Card className="mb-6">
@@ -302,8 +243,8 @@ export default function StrokeLabResultPage() {
                 <Eye className="h-4 w-4" /> Moments we lost you
               </h3>
               <p className="mb-3 text-xs text-slate-500">
-                Tracking dropped here — usually fully submerged or out of
-                frame. Tap to view.
+                Tracking dropped here — usually fully submerged or out of frame.
+                Tap to view.
               </p>
               <div className="flex flex-wrap gap-2">
                 {result.tracking_gaps.map((g, i) => (
@@ -355,8 +296,8 @@ export default function StrokeLabResultPage() {
 
       <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
         <p className="text-xs text-slate-400">
-          Stroke Lab is an automated technique review — share with a coach for personal
-          guidance.
+          Stroke Lab is an automated technique review — share with a coach for
+          personal guidance.
         </p>
         <Button
           variant="danger"
@@ -369,85 +310,5 @@ export default function StrokeLabResultPage() {
         </Button>
       </div>
     </div>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  unit,
-  hint,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  hint: string;
-}) {
-  return (
-    <Card className="p-4">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-3xl font-semibold text-slate-900">{value}</p>
-      <p className="text-xs text-slate-500">{unit}</p>
-      <p className="mt-2 text-[11px] text-slate-400">{hint}</p>
-    </Card>
-  );
-}
-
-function fmtTime(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${r.toString().padStart(2, "0")}`;
-}
-
-function ObservationRow({
-  obs,
-  onJump,
-}: {
-  obs: Observation;
-  onJump: (seconds: number) => void;
-}) {
-  const Icon =
-    obs.severity === "good"
-      ? CheckCircle2
-      : obs.severity === "unavailable"
-        ? AlertTriangle
-        : Lightbulb;
-  const iconColor =
-    obs.severity === "good"
-      ? "text-emerald-600"
-      : obs.severity === "unavailable"
-        ? "text-slate-400"
-        : "text-amber-600";
-
-  return (
-    <li className="border-b border-slate-50 pb-4 last:border-0 last:pb-0">
-      <div className="flex items-start gap-3">
-        <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${iconColor}`} />
-        <div className="flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-slate-800">{obs.title}</p>
-            {obs.timestamp_s != null ? (
-              <button
-                onClick={() => onJump(obs.timestamp_s as number)}
-                className="inline-flex items-center gap-1 rounded-md bg-cyan-50 px-2 py-1 text-xs font-medium text-cyan-700 hover:bg-cyan-100"
-              >
-                <Play className="h-3 w-3" /> Jump to {fmtTime(obs.timestamp_s)}
-              </button>
-            ) : null}
-          </div>
-          <p className="mt-1 text-sm text-slate-600">{obs.detail}</p>
-
-          {obs.drill ? (
-            <div className="mt-2 rounded-lg bg-slate-50 p-3">
-              <p className="text-xs font-semibold text-slate-700">
-                Drill to try: {obs.drill.title}
-              </p>
-              <p className="mt-1 text-xs text-slate-600">{obs.drill.how}</p>
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </li>
   );
 }

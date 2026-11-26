@@ -53,22 +53,25 @@ describe("SwimRewardCard variants (ADR-020)", () => {
     fireEvent.click(screen.getByRole("button", { name: /Details/i }));
     expect(screen.getByText(/All-time attended swims/i)).toBeInTheDocument();
     expect(screen.getByText(/2 more swims to earn “10 swims”/i)).toBeInTheDocument();
-    expect(screen.getByText(/Swim Bubbles \(since 22 Nov 2026\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Swim Bubbles$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/since 22 Nov 2026/i)).not.toBeInTheDocument();
   });
 
-  it("separates all-time swimming milestones from post-22 Nov Swim Bubbles on the Rewards hub", () => {
+  it("renders a clean evergreen Weekly Swim Bubbles card beside all-time milestones on the Rewards hub (ADR-025)", () => {
     render(<SwimRewardCard data={returningSwimmerZeroProgramme} variant="hub" />);
 
-    expect(screen.getByText(/Swim Bubbles Programme · Since 22 Nov 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/Weekly Swim Bubbles/i)).toBeInTheDocument();
     expect(screen.getByText(/Milestones & Badges/i)).toBeInTheDocument();
     // Returning member with 8 attended swims already has "First swim" and needs 2 more for "10 swims"
     expect(screen.getByText("8")).toBeInTheDocument();
     expect(screen.getByText("4w")).toBeInTheDocument();
     expect(screen.getByText(/2 more swims to earn “10 swims”/i)).toBeInTheDocument();
     expect(screen.queryByText(/1 more swim to earn the “First swim”/i)).not.toBeInTheDocument();
-    // Explains the new programme concisely without redundant paragraphs or ops jargon
-    expect(screen.getByText(/Swim Bubbles launched 22 Nov 2026/i)).toBeInTheDocument();
-    expect(screen.getByText(/1 Bubble \(₦100\) per eligible swim day/i)).toBeInTheDocument();
+    // Keeps a single concise rule line and drops launch-date / redundant header tags
+    expect(screen.getByText(/1 🫧 \(₦100\) per eligible swim day/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Swim Bubbles Programme/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Automatic · ₦100/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/22 Nov 2026/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/After your next eligible swim ends, you earn 1 Bubble automatically/i)
     ).not.toBeInTheDocument();
