@@ -2,20 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { MediaInput } from "@/components/ui/MediaInput";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import { formatNaira } from "@/lib/format";
 
 type LedgerOption = { id: string; code: string; name: string };
 type ExpenseOption = { code: string; name: string };
 type Role = "viewer" | "operations" | "accountant" | "admin" | "owner";
-type Bank = { id: string; code: string; bank_name: string; purpose: string; last_four: string | null; ledger_account_id: string | null; statement_balance_minor: number | null; statement_as_of: string | null; statement_verified_at: string | null };
+type RequestKind = "expense" | "funding" | "liability_settlement";
+type Bank = { id: string; code: string; bank_name: string; purpose: string; last_four: string | null; ledger_account_id: string | null; statement_balance_minor: number | null; statement_as_of: string | null; statement_verified_at: string | null; statement_evidence_media_id?: string | null };
 type BudgetUtilization = { id: string; kind: string; name: string; category: string; limit_minor: number; committed_minor: number; confirmed_minor: number; remaining_minor: number; starts_on: string; ends_on: string };
-type Budget = { id: string; kind: "expense" | "funding"; name: string; category: string; amount_minor: number; starts_on: string; ends_on: string };
+type Budget = { id: string; kind: RequestKind; name: string; category: string; amount_minor: number; starts_on: string; ends_on: string };
 type RequestItem = {
-  id: string; kind: "expense" | "funding"; status: string; amount_minor: number; budget_id: string | null; approval_note: string | null;
+  id: string; kind: RequestKind; status: string; amount_minor: number; budget_id: string | null; approval_note: string | null;
   purpose: string; category: string; source_bank_id: string; destination_bank_id: string | null;
   requested_by: string; created_at: string; approved_at: string | null;
   vendor_name: string | null; invoice_reference: string | null; evidence_reference: string | null;
+  evidence_media_id?: string | null;
   programme: string | null; cost_center_code: string | null; service_on: string | null;
   journal_entry_id: string | null; ledger_posted_at: string | null;
   bank_line_id: string | null; destination_bank_line_id: string | null;
@@ -121,22 +124,26 @@ export default function TreasuryPage() {
   const [snapshotDate, setSnapshotDate] = useState("");
   const [snapshotAmount, setSnapshotAmount] = useState("");
   const [snapshotEvidence, setSnapshotEvidence] = useState("");
+  const [snapshotMediaId, setSnapshotMediaId] = useState<string | null>(null);
   const [expenseVendor, setExpenseVendor] = useState("");
   const [expenseInvoice, setExpenseInvoice] = useState("");
   const [expenseEvidence, setExpenseEvidence] = useState("");
+  const [expenseMediaId, setExpenseMediaId] = useState<string | null>(null);
   const [expenseProgramme, setExpenseProgramme] = useState("");
   const [expenseCostCenter, setExpenseCostCenter] = useState("");
   const [serviceOn, setServiceOn] = useState("");
   const [postingExpenseCode, setPostingExpenseCode] = useState<Record<string, string>>({});
-  const [newBudgetKind, setNewBudgetKind] = useState<"expense" | "funding">("expense");
+  const [postingLiabilityCode, setPostingLiabilityCode] = useState<Record<string, string>>({});
+  const [newBudgetKind, setNewBudgetKind] = useState<RequestKind>("expense");
   const [ledgerOptions, setLedgerOptions] = useState<LedgerOption[]>([]);
   const [expenseOptions, setExpenseOptions] = useState<ExpenseOption[]>([]);
+  const [liabilityOptions, setLiabilityOptions] = useState<ExpenseOption[]>([]);
   const [matchEntries, setMatchEntries] = useState<Record<string, string>>({});
   const [existingEntry, setExistingEntry] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [kind, setKind] = useState<"expense" | "funding">("expense");
+  const [kind, setKind] = useState<RequestKind>("expense");
   const [bankId, setBankId] = useState("");
   const [showBankRegistration, setShowBankRegistration] = useState(false);
   const [editingBankId, setEditingBankId] = useState<string | null>(null);
@@ -161,7 +168,7 @@ export default function TreasuryPage() {
 
   const load = useCallback(async () => {
     try {
-      const [me, s, r, b, l, lo, rc, fc, cp, eo, bu] = await Promise.all([
+      const [me, s, r, b, l, lo, rc, fc, cp, eo, lio, bu] = await Promise.all([
         apiGet<FinanceMember>("/api/v1/admin/finance/users/me", { auth: true }),
         apiGet<Summary>(ROOT + "/summary", { auth: true }),
         apiGet<RequestItem[]>(ROOT + "/requests", { auth: true }),
@@ -172,9 +179,10 @@ export default function TreasuryPage() {
         apiGet<Forecast[]>(ROOT + "/forecasts", { auth: true }),
         apiGet<Projection>(ROOT + "/cash-projection?days=" + projectionDays + "&scenario=" + projectionScenario, { auth: true }),
         apiGet<ExpenseOption[]>(ROOT + "/expense-ledger-options", { auth: true }),
+        apiGet<ExpenseOption[]>(ROOT + "/liability-ledger-options", { auth: true }).catch(() => []),
         apiGet<BudgetUtilization[]>(ROOT + "/budgets/utilization", { auth: true }),
       ]);
-      setMember(me); setSummary(s); setRequests(r); setBudgets(b); setLines(l); setLedgerOptions(lo); setRecon(rc); setForecasts(fc); setProjection(cp); setExpenseOptions(eo); setUtilization(bu);
+      setMember(me); setSummary(s); setRequests(r); setBudgets(b); setLines(l); setLedgerOptions(lo); setRecon(rc); setForecasts(fc); setProjection(cp); setExpenseOptions(eo); setLiabilityOptions(lio); setUtilization(bu);
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to load treasury."); }
   }, [projectionDays, projectionScenario]);
   useEffect(() => { void load(); }, [load]);
@@ -197,6 +205,14 @@ export default function TreasuryPage() {
     finally { setBusy(false); }
   }
   const bankName = (id: string | null) => banks.find((b) => b.id === id)?.bank_name ?? "Unknown bank";
+  async function openPrivateDocument(mediaId: string) {
+    try {
+      const item = await apiGet<{ file_url: string }>(`/api/v1/media/media/${mediaId}`, { auth: true });
+      if (item?.file_url) window.open(item.file_url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to open attached document.");
+    }
+  }
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-6">
@@ -302,35 +318,40 @@ export default function TreasuryPage() {
       </section>
 
       <section id="requests" className={tile}>
-        <h2 className="text-lg font-semibold">New expense or operations funding request</h2>
+        <h2 className="text-lg font-semibold">New disbursement or treasury funding request</h2>
         <p className="mb-4 text-sm text-slate-500">Requests require independent internal approval and bank evidence before being marked confirmed.</p>
         {canPrepare ? <form className="grid gap-3 md:grid-cols-2" onSubmit={(e) => { e.preventDefault(); void run(async () => {
+          const isDisbursement = kind === "expense" || kind === "liability_settlement";
           await apiPost(ROOT + "/requests", {
             kind, amount_minor: toMinor(amount), purpose, category,
             source_bank_id: bankId || (kind === "funding" ? treasury?.id : operations?.id),
             destination_bank_id: kind === "funding" ? (destinationId || operations?.id) : null,
             budget_id: selectedBudget || null,
-            vendor_name: kind === "expense" ? (expenseVendor || null) : null,
-            invoice_reference: kind === "expense" ? (expenseInvoice || null) : null,
-            evidence_reference: kind === "expense" ? (expenseEvidence || null) : null,
+            vendor_name: isDisbursement ? (expenseVendor || null) : null,
+            invoice_reference: isDisbursement ? (expenseInvoice || null) : null,
+            evidence_reference: isDisbursement ? (expenseEvidence || null) : null,
+            evidence_media_id: isDisbursement ? expenseMediaId : null,
             programme: expenseProgramme || null, cost_center_code: expenseCostCenter || null,
-            service_on: kind === "expense" && serviceOn ? serviceOn : null,
+            service_on: isDisbursement && serviceOn ? serviceOn : null,
           }, { auth: true });
-          setAmount(""); setPurpose("");
+          setAmount(""); setPurpose(""); setExpenseMediaId(null);
         }, "Request submitted for independent approval."); }}>
-          <label className="text-sm">Type<select className={control} value={kind} onChange={(e) => { const next = e.target.value as "expense" | "funding"; setKind(next); setBankId(""); }}><option value="expense">Operating expense</option><option value="funding">Stanbic → Moniepoint allocation</option></select></label>
+          <label className="text-sm">Type<select className={control} value={kind} onChange={(e) => { const next = e.target.value as RequestKind; setKind(next); setBankId(""); }}><option value="expense">Operating expense</option><option value="liability_settlement">Liability / supplier invoice settlement</option><option value="funding">Treasury → Operations allocation</option></select></label>
           <label className="text-sm">Amount (₦)<input className={control} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="15000.00" required /></label>
-          <label className="text-sm">Source bank<select className={control} value={bankId || (kind === "funding" ? treasury?.id : operations?.id) || ""} onChange={(e) => setBankId(e.target.value)} required><option value="">Choose account</option>{banks.filter((b) => kind === "expense" || b.purpose === "treasury").map((b) => <option key={b.id} value={b.id}>{b.bank_name}</option>)}</select></label>
+          <label className="text-sm">Source bank<select className={control} value={bankId || (kind === "funding" ? treasury?.id : operations?.id) || ""} onChange={(e) => setBankId(e.target.value)} required><option value="">Choose account</option>{banks.filter((b) => kind !== "funding" || b.purpose === "treasury").map((b) => <option key={b.id} value={b.id}>{b.bank_name}</option>)}</select></label>
           {kind === "funding" && <label className="text-sm">Destination<select className={control} value={destinationId || operations?.id || ""} onChange={(e) => setDestinationId(e.target.value)} required><option value="">Choose account</option>{banks.filter((b) => b.purpose === "operations").map((b) => <option key={b.id} value={b.id}>{b.bank_name}</option>)}</select></label>}
           <label className="text-sm">Category<input className={control} value={category} maxLength={80} onChange={(e) => { setCategory(e.target.value); setSelectedBudget(""); }} required /></label>
           <label className="text-sm">Budget (optional)<select className={control} value={selectedBudget} onChange={(e) => setSelectedBudget(e.target.value)}><option value="">Not linked to a budget</option>{availableBudgets.map((b) => <option key={b.id} value={b.id}>{b.name} — {money(b.amount_minor)}</option>)}</select></label>
-          {kind === "expense" && <>
-            <label className="text-sm">Vendor / payee<input className={control} value={expenseVendor} onChange={(e) => setExpenseVendor(e.target.value)} placeholder="Pool operator / supplier" /></label>
+          {(kind === "expense" || kind === "liability_settlement") && <>
+            <label className="text-sm">Vendor / payee<input className={control} value={expenseVendor} onChange={(e) => setExpenseVendor(e.target.value)} placeholder="Supplier or payee name" /></label>
             <label className="text-sm">Invoice reference<input className={control} value={expenseInvoice} onChange={(e) => setExpenseInvoice(e.target.value)} placeholder="INV-123" /></label>
-            <label className="text-sm">Receipt or evidence reference<input className={control} value={expenseEvidence} onChange={(e) => setExpenseEvidence(e.target.value)} placeholder="Secure receipt / payment proof ID" /></label>
-            <label className="text-sm">Service date<input type="date" className={control} value={serviceOn} onChange={(e) => setServiceOn(e.target.value)} /></label>
+            <label className="text-sm">Receipt or evidence reference<input className={control} value={expenseEvidence} onChange={(e) => setExpenseEvidence(e.target.value)} placeholder="Receipt / transfer ref ID" /></label>
+            <label className="text-sm">Service or due date<input type="date" className={control} value={serviceOn} onChange={(e) => setServiceOn(e.target.value)} /></label>
+            <div className="md:col-span-2">
+              <MediaInput purpose="finance_document" label="Attach receipt or invoice (PDF/image, optional)" value={expenseMediaId} onChange={(id) => setExpenseMediaId(id)} showPreview={false} />
+            </div>
           </>}
-          <label className="text-sm">Programme<input className={control} value={expenseProgramme} onChange={(e) => setExpenseProgramme(e.target.value)} placeholder="academy / club / community / store" /></label>
+          <label className="text-sm">Programme / segment<input className={control} value={expenseProgramme} onChange={(e) => setExpenseProgramme(e.target.value)} placeholder="academy / club / community / store" /></label>
           <label className="text-sm">Existing cost-centre code<input className={control} value={expenseCostCenter} onChange={(e) => setExpenseCostCenter(e.target.value)} placeholder="Optional, must exist in ledger" /></label>
           <label className="text-sm md:col-span-2">Purpose and supporting context<textarea className={control} value={purpose} onChange={(e) => setPurpose(e.target.value)} rows={2} required minLength={5} /></label>
           <div><button className={primary} disabled={busy || !banks.length}>Submit request</button></div>
@@ -345,8 +366,9 @@ export default function TreasuryPage() {
             const candidateDebits = unmatched.filter((l) => l.bank_account_id === r.source_bank_id && l.amount_minor === -r.amount_minor);
             const candidateCredits = unmatched.filter((l) => l.bank_account_id === r.destination_bank_id && l.amount_minor === r.amount_minor);
             const selected = confirmation[r.id] ?? { source: "", destination: "" };
+            const kindLabel = r.kind === "funding" ? "Operations allocation" : r.kind === "liability_settlement" ? "Liability settlement" : "Expense";
             return <article className="rounded-lg border border-slate-200 p-3" key={r.id}>
-              <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold">{money(r.amount_minor)} · {r.kind === "funding" ? "Operations allocation" : "Expense"}</p><p className="text-sm text-slate-600">{r.purpose}</p><p className="text-xs text-slate-500">{bankName(r.source_bank_id)}{r.destination_bank_id ? " → " + bankName(r.destination_bank_id) : ""} · {r.category}</p></div><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{r.status}{r.journal_entry_id ? " · ledger posted" : ""}</span></div>
+              <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold">{money(r.amount_minor)} · {kindLabel}</p><p className="text-sm text-slate-600">{r.purpose}</p><p className="text-xs text-slate-500">{bankName(r.source_bank_id)}{r.destination_bank_id ? " → " + bankName(r.destination_bank_id) : ""} · {r.category}</p></div><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{r.status}{r.journal_entry_id ? " · ledger posted" : ""}</span></div>
               {owner && r.status === "requested" && member?.id !== r.requested_by && <div className="mt-3 flex gap-2"><button disabled={busy} className={primary} onClick={() => {
                   let reason: string | null = null;
                   if (!r.budget_id) {
@@ -356,18 +378,29 @@ export default function TreasuryPage() {
                   void run(() => apiPost(ROOT + "/requests/" + r.id + "/decision", { action: "approve", reason }, { auth: true }), "Request approved internally. No bank payment has been sent.");
                 }}>Approve internally</button><button disabled={busy} className={secondary} onClick={() => { const reason = window.prompt("Reason for rejection"); if (reason?.trim()) void run(() => apiPost(ROOT + "/requests/" + r.id + "/decision", { action: "reject", reason }, { auth: true }), "Request rejected."); }}>Reject</button></div>}
               {r.approval_note && <p className="mt-1 text-xs text-slate-600">Approval exception: {r.approval_note}</p>}
-              {r.kind === "expense" && (r.vendor_name || r.invoice_reference || r.evidence_reference || r.programme) &&
-                <p className="mt-1 text-xs text-slate-500">{[r.vendor_name, r.invoice_reference, r.evidence_reference, r.programme].filter(Boolean).join(" · ")}</p>}
+              {(r.kind === "expense" || r.kind === "liability_settlement") && (r.vendor_name || r.invoice_reference || r.evidence_reference || r.programme || r.evidence_media_id) &&
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span>{[r.vendor_name, r.invoice_reference, r.evidence_reference, r.programme].filter(Boolean).join(" · ")}</span>
+                  {r.evidence_media_id && <button type="button" className="text-cyan-700 underline" onClick={() => void openPrivateDocument(r.evidence_media_id!)}>View attached document</button>}
+                </div>}
+              {r.journal_entry_id && <p className="mt-1 text-xs text-slate-500">Posted journal UUID: <code>{r.journal_entry_id}</code></p>}
               {owner && r.status === "confirmed" && !r.journal_entry_id &&
                 <div className="mt-3 flex flex-wrap items-end gap-2">
                   {r.kind === "expense" && <label className="text-xs">Expense ledger account<select className={control} value={postingExpenseCode[r.id] || ""} onChange={(e) => setPostingExpenseCode((old) => ({ ...old, [r.id]: e.target.value }))}>
                     <option value="">Choose expense account</option>{expenseOptions.map((a) => <option key={a.code} value={a.code}>{a.code} — {a.name}</option>)}
                   </select></label>}
-                  <button className={secondary} disabled={busy || (r.kind === "expense" && !postingExpenseCode[r.id])}
+                  {r.kind === "liability_settlement" && <label className="text-xs">Liability ledger account<select className={control} value={postingLiabilityCode[r.id] || ""} onChange={(e) => setPostingLiabilityCode((old) => ({ ...old, [r.id]: e.target.value }))}>
+                    <option value="">Choose liability account (e.g. 2110 Accounts Payable)</option>{liabilityOptions.map((a) => <option key={a.code} value={a.code}>{a.code} — {a.name}</option>)}
+                  </select></label>}
+                  <button className={secondary} disabled={busy || (r.kind === "expense" && !postingExpenseCode[r.id]) || (r.kind === "liability_settlement" && !postingLiabilityCode[r.id])}
                     onClick={() => {
-                      if (!window.confirm("Confirm this transaction is not already posted by another SwimBuddz payout, PSP, refund or ledger workflow, and that original bank evidence was independently verified.")) return;
+                      if (!window.confirm("Confirm this transaction is not already posted by another payout, PSP, refund or ledger workflow, and that original bank evidence was independently verified.")) return;
                       void run(() => apiPost(ROOT + "/requests/" + r.id + "/post-ledger",
-                        { expense_account_code: r.kind === "expense" ? postingExpenseCode[r.id] : null, acknowledgement: true },
+                        {
+                          expense_account_code: r.kind === "expense" ? postingExpenseCode[r.id] : null,
+                          liability_account_code: r.kind === "liability_settlement" ? postingLiabilityCode[r.id] : null,
+                          acknowledgement: true,
+                        },
                         { auth: true }), "Balanced journal posted through existing ledger.");
                     }}>Post verified transaction to ledger</button>
                 </div>}
@@ -420,7 +453,7 @@ export default function TreasuryPage() {
           name: newBudgetName, category: newBudgetCategory, kind: newBudgetKind, amount_minor: toMinor(newBudgetAmount),
           starts_on: newBudgetStart, ends_on: newBudgetEnd,
         }, { auth: true }), "Budget created."); }}>
-          <label className="text-sm">Budget type<select className={control} value={newBudgetKind} onChange={(e) => setNewBudgetKind(e.target.value as "expense" | "funding")}><option value="expense">Expense ceiling</option><option value="funding">Treasury allocation ceiling</option></select></label>
+          <label className="text-sm">Budget type<select className={control} value={newBudgetKind} onChange={(e) => setNewBudgetKind(e.target.value as RequestKind)}><option value="expense">Expense ceiling</option><option value="liability_settlement">Liability settlement ceiling</option><option value="funding">Treasury allocation ceiling</option></select></label>
           <label className="text-sm">Budget name<input className={control} required value={newBudgetName} onChange={(e) => setNewBudgetName(e.target.value)} /></label>
           <label className="text-sm">Category<input className={control} required value={newBudgetCategory} onChange={(e) => setNewBudgetCategory(e.target.value)} /></label>
           <label className="text-sm">Limit (₦)<input className={control} required value={newBudgetAmount} onChange={(e) => setNewBudgetAmount(e.target.value)} /></label>
@@ -434,28 +467,40 @@ export default function TreasuryPage() {
         <h2 className="text-lg font-semibold">Bank reconciliation status</h2>
         <p className="mt-1 text-sm text-slate-600">Each comparison is made at the date of a separately attested bank statement. An uploaded statement row does not, by itself, verify a bank balance.</p>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          {recon.map((bank) => <div key={bank.bank_id} className="rounded-lg border border-slate-200 p-3">
-            <p className="font-semibold">{bank.code === "stanbic" ? "Stanbic IBTC" : "Moniepoint"}</p>
-            <p className="mt-1 text-sm">Attested balance: {bank.latest_statement_balance_minor == null ? "Not verified" : money(bank.latest_statement_balance_minor)}</p>
-            <p className="text-xs text-slate-500">As of {bank.latest_statement_date || "—"} · Ledger at same date: {bank.ledger_balance_minor == null ? "Not linked" : money(bank.ledger_balance_minor)}</p>
-            <p className="mt-2 text-sm">Difference: {bank.difference_minor == null ? "Not comparable" : money(bank.difference_minor)} · {bank.unmatched_rows} unmatched rows</p>
-            <p className="text-xs font-medium text-slate-600">{bank.status.replaceAll("_", " ")}</p>
-          </div>)}
+          {recon.map((bank) => {
+            const matchedBank = banks.find((b) => b.id === bank.bank_id);
+            return <div key={bank.bank_id} className="rounded-lg border border-slate-200 p-3">
+              <p className="font-semibold">{matchedBank?.bank_name ?? bank.code}</p>
+              <p className="mt-1 text-sm">Attested balance: {bank.latest_statement_balance_minor == null ? "Not verified" : money(bank.latest_statement_balance_minor)}</p>
+              <p className="text-xs text-slate-500">As of {bank.latest_statement_date || "—"} · Ledger at same date: {bank.ledger_balance_minor == null ? "Not linked" : money(bank.ledger_balance_minor)}</p>
+              <p className="mt-2 text-sm">Difference: {bank.difference_minor == null ? "Not comparable" : money(bank.difference_minor)} · {bank.unmatched_rows} unmatched rows</p>
+              <div className="mt-1 flex items-center gap-3 text-xs">
+                <span className="font-medium text-slate-600">{bank.status.replaceAll("_", " ")}</span>
+                {matchedBank?.statement_evidence_media_id && <button type="button" className="text-cyan-700 underline" onClick={() => void openPrivateDocument(matchedBank.statement_evidence_media_id!)}>View statement proof</button>}
+              </div>
+            </div>;
+          })}
         </div>
         {owner && <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="text-sm">Bank<select className={control} value={snapshotBank} onChange={(e) => setSnapshotBank(e.target.value)}><option value="">Choose bank</option>{banks.map((b) => <option key={b.id} value={b.id}>{b.bank_name}</option>)}</select></label>
           <label className="text-sm">Statement closing date<input type="date" className={control} value={snapshotDate} onChange={(e) => setSnapshotDate(e.target.value)} /></label>
           <label className="text-sm">Closing balance (₦, signed)<input className={control} value={snapshotAmount} onChange={(e) => setSnapshotAmount(e.target.value)} /></label>
           <label className="text-sm">Original statement evidence ID<input className={control} value={snapshotEvidence} onChange={(e) => setSnapshotEvidence(e.target.value)} /></label>
+          <div className="md:col-span-4">
+            <MediaInput purpose="finance_document" label="Attach official bank statement PDF/screenshot (optional)" value={snapshotMediaId} onChange={(id) => setSnapshotMediaId(id)} showPreview={false} />
+          </div>
           <button className={primary} disabled={busy || !snapshotBank || !snapshotDate || !snapshotAmount || snapshotEvidence.trim().length < 5}
             onClick={() => {
               let verifiedMinor: number;
               try { verifiedMinor = bankBalanceMinor(snapshotAmount); }
               catch (error) { setError(error instanceof Error ? error.message : "Invalid balance"); return; }
               if (!window.confirm("Have you personally verified the bank statement closing balance in the official bank portal? The attested snapshot will be kept in the audit history.")) return;
-              void run(() => apiPost(ROOT + "/banks/" + snapshotBank + "/snapshot",
-                { as_of: snapshotDate, balance_minor: verifiedMinor, evidence_reference: snapshotEvidence.trim() },
-                { auth: true }), "Dated statement balance attested.");
+              void run(async () => {
+                await apiPost(ROOT + "/banks/" + snapshotBank + "/snapshot",
+                  { as_of: snapshotDate, balance_minor: verifiedMinor, evidence_reference: snapshotEvidence.trim(), evidence_media_id: snapshotMediaId },
+                  { auth: true });
+                setSnapshotMediaId(null);
+              }, "Dated statement balance attested.");
             }}>Attest bank statement balance</button>
         </div>}
       </section>
@@ -495,7 +540,7 @@ export default function TreasuryPage() {
         </form>}
       </section>
 
-      <p className="text-xs text-slate-500">No bank API integration is configured. Accounts shown here represent your internal financial controls; always verify movements against Stanbic and Moniepoint.</p>
+      <p className="text-xs text-slate-500">No bank API integration is configured. Accounts shown here represent your internal financial controls; always verify movements against your official bank portals.</p>
     </main>
   );
 }

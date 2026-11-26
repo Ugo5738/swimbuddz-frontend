@@ -8,6 +8,7 @@ type PaymentGroup = { method: string; provider: string; confirmed_count: number;
 type Report = {
   as_of: string;
   classification: string;
+  degraded_domains?: string[];
   payments: {
     successful_checkout_groups: PaymentGroup[];
     posted_paystack_settlements: { count: number; gross_minor: number; net_minor: number; fees_minor: number };
@@ -15,14 +16,18 @@ type Report = {
     warning: string;
   };
   academy: {
-    active_enrollments: number; reviewed_class_plans: number; enrollments_without_class_plan: number;
+    active_enrollments: number;
+    dropout_pending_enrollments?: number;
+    reviewed_class_plans: number; enrollments_without_class_plan: number;
     remaining_prepaid_classes_with_reviewed_plans: number; pending_or_missed_installments_minor: number; warning: string;
   };
   club: { currently_active_enrollments: number; future_service_costs_minor: number | null; warning: string };
   store: {
     order_status_totals: { status: string; count: number; gross_order_ngn: string }[];
     valued_inventory_minor: number | null; partial_valued_inventory_minor: number;
-    unvalued_sku_count: number; supplier_liabilities_minor: number;
+    unvalued_sku_count: number;
+    unvalued_fulfilled_orders_count?: number;
+    supplier_liabilities_minor: number;
     approved_credit_exposure_minor: number; warning: string;
   };
 };
@@ -50,6 +55,11 @@ export default function IntelligencePage() {
     {error && <p role="alert" className="rounded-lg border border-red-200 p-3 text-sm text-red-700">{error}</p>}
     {data && <>
       <p className="text-xs text-slate-500">Snapshot generated {new Date(data.as_of).toLocaleString()}</p>
+      {data.degraded_domains && data.degraded_domains.length > 0 && (
+        <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          Partial snapshot: {data.degraded_domains.join(", ")} service summary was temporarily unavailable.
+        </p>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <section className={tile}>
           <h2 className="font-semibold">Payments and Paystack</h2>
@@ -65,9 +75,12 @@ export default function IntelligencePage() {
         <section className={tile}>
           <h2 className="font-semibold">Academy obligations</h2>
           <p className={metric}>{data.academy.active_enrollments} active enrollments</p>
+          {(data.academy.dropout_pending_enrollments ?? 0) > 0 && (
+            <p className="text-sm text-amber-800">Dropout-pending (recoverable): <strong>{data.academy.dropout_pending_enrollments}</strong></p>
+          )}
           <p className="text-sm">Reviewed plans: {data.academy.reviewed_class_plans}; missing plans: {data.academy.enrollments_without_class_plan}</p>
           <p className="text-sm">Outstanding prepaid lessons (reviewed plans): <strong>{data.academy.remaining_prepaid_classes_with_reviewed_plans}</strong></p>
-          <p className="text-sm">Pending/missed instalments: {naira(data.academy.pending_or_missed_installments_minor)}</p>
+          <p className="text-sm">Pending/missed instalments (active &amp; recoverable): {naira(data.academy.pending_or_missed_installments_minor)}</p>
           <p className="text-xs text-amber-800">{data.academy.warning}</p>
         </section>
         <section className={tile}>
@@ -80,6 +93,9 @@ export default function IntelligencePage() {
           <h2 className="font-semibold">Store, purchasing and receivables</h2>
           <p className="text-sm">Inventory at verified cost: <strong>{data.store.valued_inventory_minor == null ? "Incomplete" : naira(data.store.valued_inventory_minor)}</strong></p>
           <p className="text-sm">Partially valued stock: {naira(data.store.partial_valued_inventory_minor)} · {data.store.unvalued_sku_count} unvalued SKUs</p>
+          {(data.store.unvalued_fulfilled_orders_count ?? 0) > 0 && (
+            <p className="text-sm text-amber-800">Fulfilled orders with unvalued legacy SKUs (awaiting opening valuation): <strong>{data.store.unvalued_fulfilled_orders_count}</strong></p>
+          )}
           <p className="text-sm">Unsettled supplier invoices: {naira(data.store.supplier_liabilities_minor)}</p>
           <p className="text-sm">Approved customer-credit exposure: {naira(data.store.approved_credit_exposure_minor)}</p>
           {data.store.order_status_totals.map(o => <p className="text-xs text-slate-500" key={o.status}>{o.status}: {o.count} orders (face value ₦{o.gross_order_ngn})</p>)}

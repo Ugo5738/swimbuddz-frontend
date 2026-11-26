@@ -796,12 +796,11 @@ or frontend control is introduced by the scoped operator repair. See backend
 `docs/SESSION_WALLET_REALLOCATION_RUNBOOK.md` for checks and accounting replay.
 
 
-### Finance intelligence availability (20 Nov 2026)
+### Finance intelligence & detachable Ledger workflows (25 Nov 2026 — ADR-023)
 
-The Finance Intelligence page gets its operational rollup from the Ledger
-service. The signed-in caller needs an active Ledger membership at viewer level
-or above. The page uses the existing report contract after Ledger startup
-recovery.
+- **Finance Intelligence (`/admin/finance/intelligence`):** Aggregated by **`gateway_service`** from service-owned internal endpoints (zero SwimBuddz queries inside `ledger_service`), gated strictly on active Ledger membership. Surfaces `dropout_pending_enrollments` alongside `active_enrollments` (with installments excluding dropped learners), `unvalued_fulfilled_orders_count` for legacy Store SKUs, and partial-outage banners (`degraded_domains`) if any service is unreachable.
+- **Treasury & Operations (`/admin/finance/treasury`):** Supports **Operating Expense**, **Liability / Supplier Invoice Settlement** (`liability_settlement`, posting `DR Liability / CR Bank`), and **Treasury → Operations Allocation** requests, N-bank reconciliation & cash projection, and optional private PDF/image receipt attachments (`finance_document`) on requests and bank balance snapshots.
+- **Store Procurement (`/admin/store/procurement`):** Supports optional PDF/image receipt uploads on deliveries, invoices, openings, settlements, and repayments; Owner-verified partial/full **Supplier Invoice Settlements** (linking posted Treasury Ledger journals); **Customer Credit Agreements** (independent approval posts AR and unlocks controlled fulfillment, followed by verified partial/full repayments); and **Fulfilled Order Returns & COGS Reversals** (`restockable` vs. `damaged`).
 
 ### Store availability and procurement authorization (19 Nov 2026)
 
