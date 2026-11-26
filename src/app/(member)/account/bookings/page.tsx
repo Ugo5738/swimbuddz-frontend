@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Clock, MapPin } from "lucide-react";
 import { SwimRewards } from "@/components/swims/SwimRewards";
 import { SwimModal } from "@/components/swims/SwimModal";
 import { SessionDetailContent } from "@/components/swims/SessionDetailContent";
@@ -47,51 +48,174 @@ function Status({ status }: { status: string }) {
   const s = status.toLowerCase();
   const positive = ["confirmed", "present", "checked_in", "late"].includes(s);
   const warning = ["pending", "pending_payment", "excused"].includes(s);
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${positive
-    ? "bg-emerald-50 text-emerald-800" : warning
-      ? "bg-amber-50 text-amber-900" : s === "assigned"
-        ? "bg-sky-50 text-sky-800" : "bg-slate-100 text-slate-700"}`}>
-    {label(status)}
-  </span>;
+  const clubScheduled = ["scheduled_for_club", "scheduled_for_pod"].includes(s);
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
+        positive
+          ? "bg-emerald-50 text-emerald-800"
+          : warning
+            ? "bg-amber-50 text-amber-900"
+            : s === "assigned"
+              ? "bg-sky-50 text-sky-800"
+              : clubScheduled
+                ? "border border-cyan-200 bg-cyan-50 text-cyan-800"
+                : "bg-slate-100 text-slate-700"
+      }`}
+    >
+      {label(status)}
+    </span>
+  );
 }
-function ActivityRow({ item, onChanged, onDetails }: { item: SwimActivity; onChanged: () => Promise<unknown>; onDetails: (id: string) => void }) {
+function ActivityRow({
+  item,
+  onChanged,
+  onDetails,
+}: {
+  item: SwimActivity;
+  onChanged: () => Promise<unknown>;
+  onDetails: (id: string) => void;
+}) {
   const href = item.sessionId ? `/sessions/${item.sessionId}` : "/account/pool-access";
-  return <article className="rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-300">
-    <div className="flex flex-wrap items-center gap-3">
-      <div className="min-w-0 flex-1">
-        {item.sessionId
-          ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="block text-left text-base font-semibold text-slate-950 hover:text-cyan-700">{item.title}</button>
-          : <Link href={href} className="block text-base font-semibold text-slate-950 hover:text-cyan-700">{item.title}</Link>}
-        <p className="mt-1 text-sm text-slate-600">{formatTime(item.date)} · {item.location || "Location to be confirmed"}</p>
+  return (
+    <article className="rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-cyan-300">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <Status status={item.status} />
+          </div>
+          {item.sessionId ? (
+            <button
+              type="button"
+              onClick={() => onDetails(item.sessionId!)}
+              className="block text-left text-base font-semibold leading-snug text-slate-950 hover:text-cyan-700"
+            >
+              {item.title}
+            </button>
+          ) : (
+            <Link
+              href={href}
+              className="block text-base font-semibold leading-snug text-slate-950 hover:text-cyan-700"
+            >
+              {item.title}
+            </Link>
+          )}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+              {formatTime(item.date)}
+            </span>
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+              <span className="break-words">{item.location || "Location to be confirmed"}</span>
+            </span>
+          </div>
+          {item.scheduledClub && (
+            <p className="text-xs text-slate-500">
+              On your Club schedule · A spot is not yet reserved
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 sm:shrink-0 sm:justify-end sm:border-t-0 sm:pt-0">
+          {item.scheduledClub && item.canBook && item.sessionId ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onDetails(item.sessionId!)}
+                className="text-sm font-semibold text-slate-600 hover:text-cyan-700"
+                aria-label={`View ${item.title} details`}
+              >
+                Details
+              </button>
+              <Link
+                href={`/sessions/${item.sessionId}/book`}
+                className="inline-flex items-center justify-center rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-800"
+              >
+                Book this swim
+              </Link>
+            </>
+          ) : item.sessionId ? (
+            <button
+              type="button"
+              onClick={() => onDetails(item.sessionId!)}
+              className="inline-flex items-center text-sm font-semibold text-cyan-700 hover:underline"
+              aria-label={`View ${item.title} details`}
+            >
+              Details →
+            </button>
+          ) : (
+            <Link
+              href={href}
+              className="inline-flex items-center text-sm font-semibold text-cyan-700 hover:underline"
+            >
+              Details →
+            </Link>
+          )}
+        </div>
       </div>
-      <Status status={item.status}/>
-      {item.scheduledClub && item.canBook && item.sessionId
-        ? <Link href={`/sessions/${item.sessionId}/book`}
-            className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-800">Book this swim</Link>
-        : item.sessionId
-          ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="text-sm font-semibold text-cyan-700 hover:underline" aria-label={`View ${item.title} details`}>Details →</button>
-          : <Link href={href} className="text-sm font-semibold text-cyan-700 hover:underline">Details →</Link>}
-    </div>
-    {item.scheduledClub && <p className="mt-2 text-xs text-slate-600">On your Club schedule · A spot is not yet reserved</p>}
-    {item.pool && <div className="mt-3 border-t border-slate-100 pt-3"><PoolVisitActions booking={item.pool} onChanged={() => void onChanged()}/></div>}
-  </article>;
+      {item.pool && (
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <PoolVisitActions booking={item.pool} onChanged={() => void onChanged()} />
+        </div>
+      )}
+    </article>
+  );
 }
-function HistoryRow({ item, onDetails }: { item: PersonalSwimHistoryItem; onDetails: (id: string) => void }) {
+function HistoryRow({
+  item,
+  onDetails,
+}: {
+  item: PersonalSwimHistoryItem;
+  onDetails: (id: string) => void;
+}) {
   const href = item.sessionId ? `/sessions/${item.sessionId}` : "/account/pool-access";
   const outcome = item.attendanceStatus || item.bookingStatus || "not_recorded";
-  const body = <div className="flex items-center gap-3">
-    <div className="min-w-0 flex-1">
-      <strong className="block text-base text-slate-950">{item.title}</strong>
-      <p className="mt-1 text-sm text-slate-600">{formatTime(item.date)} · {item.location || "Location unavailable"}</p>
+  const body = (
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          {outcome === "not_recorded" ? (
+            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+              Attendance not recorded
+            </span>
+          ) : (
+            <Status status={outcome} />
+          )}
+        </div>
+        <strong className="block text-base leading-snug text-slate-950">{item.title}</strong>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+            {formatTime(item.date)}
+          </span>
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+            <span className="break-words">{item.location || "Location unavailable"}</span>
+          </span>
+        </div>
+      </div>
+      <span className="hidden shrink-0 text-sm font-semibold text-cyan-700 sm:inline" aria-hidden="true">
+        →
+      </span>
     </div>
-    {outcome === "not_recorded"
-      ? <span className="text-xs text-slate-600">Attendance not recorded</span>
-      : <Status status={outcome}/>}
-    <span className="text-cyan-700" aria-hidden="true">→</span>
-  </div>;
-  return item.sessionId
-    ? <button type="button" onClick={() => onDetails(item.sessionId!)} className="block w-full rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-cyan-300">{body}</button>
-    : <Link href={href} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-300">{body}</Link>;
+  );
+  return item.sessionId ? (
+    <button
+      type="button"
+      onClick={() => onDetails(item.sessionId!)}
+      className="block w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-cyan-300"
+    >
+      {body}
+    </button>
+  ) : (
+    <Link
+      href={href}
+      className="block rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-cyan-300"
+    >
+      {body}
+    </Link>
+  );
 }
 function PageContent() {
   const searchParams = useSearchParams();
@@ -153,23 +277,33 @@ function PageContent() {
           <button type="button" onClick={() => void projection.refetch()} className="ml-2 font-semibold underline">Retry</button>
         </p>}
       {next && <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold uppercase tracking-widest text-cyan-800">
             {next.scheduledClub ? "Next on your Club schedule" : "Your next swim"}
           </span>
           <Status status={next.status}/>
         </div>
-        <h2 className="mt-3 text-xl font-bold text-slate-950">{next.title}</h2>
+        <h2 className="mt-3 text-xl font-bold leading-snug text-slate-950">{next.title}</h2>
         <p className="mt-2 text-sm text-slate-700">
           {next.date ? new Date(next.date).toLocaleString("en-NG", {
             timeZone: "Africa/Lagos", weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit",
           }) : "Date to be confirmed"} · {next.location || "Location to be confirmed"}
         </p>
         {next.scheduledClub && <p className="mt-2 text-sm text-slate-700">You have not booked this session yet.</p>}
-        {next.sessionId
-          ? <button type="button" onClick={() => setSelectedSessionId(next.sessionId!)}
-              className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View details</button>
-          : <Link href="/account/pool-access" className="mt-3 inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View visit</Link>}
+        <div className="mt-4 flex flex-wrap items-center gap-2.5">
+          {next.scheduledClub && next.canBook && next.sessionId && (
+            <Link
+              href={`/sessions/${next.sessionId}/book`}
+              className="inline-flex rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-800"
+            >
+              Book this swim
+            </Link>
+          )}
+          {next.sessionId
+            ? <button type="button" onClick={() => setSelectedSessionId(next.sessionId!)}
+                className="inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View details</button>
+            : <Link href="/account/pool-access" className="inline-flex rounded-lg border border-cyan-700 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-white">View visit</Link>}
+        </div>
       </section>}
     </>}
     <SwimRewards variant="strip" />

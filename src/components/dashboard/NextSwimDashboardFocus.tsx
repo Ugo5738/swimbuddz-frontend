@@ -89,7 +89,7 @@ export function NextSwimDashboardFocus({
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-bold uppercase tracking-wider text-cyan-800">{heading}</p>
-          {next && <span className="rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-semibold text-cyan-900">
+          {next && <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-semibold text-cyan-900">
             {statusLabels[next.status] ?? next.status.replaceAll("_", " ")}
           </span>}
         </div>
@@ -98,13 +98,15 @@ export function NextSwimDashboardFocus({
             {projection.isLoading ? "Loading your swimming schedule…" : "Finding your next eligible swim…"}
           </p> :
           <div className="mt-3 space-y-2.5">
-            <h2 className="text-xl font-bold text-slate-950">
+            <h2 className="text-xl font-bold leading-snug text-slate-950">
               {next?.title || suggested?.title || "Ready to get back in the water?"}
             </h2>
-            {next || suggested ? <p className="flex items-center gap-2 text-sm text-slate-700">
-              <CalendarDays className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden="true"/>
-              {localDate(next?.date || suggested?.starts_at)} ·
-              {" "}{next?.location || suggested?.location_name || suggested?.location || "Pool to be confirmed"}
+            {next || suggested ? <p className="flex items-start gap-2 text-sm text-slate-700">
+              <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" aria-hidden="true"/>
+              <span>
+                {localDate(next?.date || suggested?.starts_at)} ·{" "}
+                {next?.location || suggested?.location_name || suggested?.location || "Pool to be confirmed"}
+              </span>
             </p> :
             <p className="text-sm text-slate-700">
               Explore a suitable session or plan a swim with friends.

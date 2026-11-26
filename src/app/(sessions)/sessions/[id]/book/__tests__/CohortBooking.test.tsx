@@ -161,3 +161,42 @@ it.each([true, false])(
     );
   }
 );
+
+it("renders checkout without waiting on slow ride-configs and checks single-session bookings once (ADR-024)", async () => {
+  let resolveRides!: (value: unknown) => void;
+  const pendingRides = new Promise((resolve) => {
+    resolveRides = resolve;
+  });
+
+  vi.mocked(apiGet).mockImplementation((path) => {
+    if (path === "/api/v1/members/me") {
+      return Promise.resolve({
+        id: "member-1",
+        email: "learner@example.com",
+        membership: { academy_paid_until: "2031-01-01T00:00:00Z" },
+      });
+    }
+    if (path === "/api/v1/wallet/me") {
+      return Promise.resolve({ balance: 20, status: "active" });
+    }
+    if (path === "/api/v1/transport/sessions/session-1/ride-configs") {
+      return pendingRides;
+    }
+    return Promise.resolve([]);
+  });
+
+  render(<SessionBookPage params={{ id: "session-1" }} />);
+
+  // Checkout renders immediately once session + profile resolve even while ride-configs is still in flight
+  expect(await screen.findByText("Extra cohort class")).toBeInTheDocument();
+
+  const calledPaths = vi.mocked(apiGet).mock.calls.map(([path]) => path);
+  expect(
+    calledPaths.filter((p) => p.startsWith("/api/v1/sessions/bookings/me"))
+  ).toEqual(["/api/v1/sessions/bookings/me?status_filter=confirmed&session_id=session-1"]);
+  expect(calledPaths).toContain(
+    "/api/v1/attendance/me?session_id=session-1&include_session=false"
+  );
+
+  resolveRides([]);
+});

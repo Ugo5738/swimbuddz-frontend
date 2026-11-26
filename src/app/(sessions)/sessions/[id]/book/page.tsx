@@ -228,8 +228,13 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
     verifyPayment();
   }, [paymentReference]);
 
-  // Load session and member data
+  // Load session, member profile, wallet balance, ride configs, and existing
+  // single-session booking concurrently on mount (ADR-024). Only session +
+  // member block initial page render so checkout paints immediately while
+  // optional ride-share and wallet balance hydrate seamlessly.
   useEffect(() => {
+    let cancelled = false;
+
     async function loadData() {
       try {
         // Middleware normally redirects signed-out visitors before this client
@@ -238,170 +243,162 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
         // and an anonymous session response has no booking-access object. That
         // must be presented as a sign-in requirement, not a verification error.
         const accessToken = await getCurrentAccessToken();
+        if (cancelled) return;
         if (!accessToken) {
           setError(SIGN_IN_REQUIRED);
           return;
         }
 
-        const sessionData = await getSession(params.id, { auth: true });
+        const encodedSessionId = encodeURIComponent(params.id);
 
-        // Load ride configs
-        try {
-          const rideConfigs = await apiGet<RideConfig[]>(
-            `/api/v1/transport/sessions/${params.id}/ride-configs`,
-            { auth: true }
-          );
-          if (rideConfigs && rideConfigs.length > 0) {
-            sessionData.rideShareAreas = rideConfigs.map(
-              (config): RideShareArea => ({
-                id: config.id,
-                ride_area_id: config.ride_area_id,
-                ride_area_name: config.ride_area_name,
-                cost: config.cost,
-                capacity: config.capacity,
-                pickup_locations: config.pickup_locations.map((loc) => ({
-                  id: loc.id,
-                  name: loc.name,
-                  description: loc.description,
-                  is_available: loc.is_available,
-                  max_capacity: loc.max_capacity,
-                  current_bookings: loc.current_bookings,
-                  distance_text: loc.distance_text,
-                  duration_text: loc.duration_text,
-                  departure_time_calculated: loc.departure_time_calculated,
-                })),
-              })
-            );
-          }
-        } catch (transportErr) {
+        // Start all independent requests concurrently instead of chaining them.
+        const sessionPromise = getSession(params.id, { auth: true });
+        const profilePromise = apiGet<MemberProfile>("/api/v1/members/me", { auth: true });
+
+        // Non-blocking: wallet balance hydrates the Bubbles slider as soon as ready.
+        void apiGet<{ balance: number; available_balance?: number; status: string }>(
+          "/api/v1/wallet/me",
+          { auth: true }
+        )
+          .then((wallet) => {
+            if (!cancelled && wallet.status === "active") {
+              setWalletBalance(wallet.available_balance ?? wallet.balance);
+            }
+          })
+          .catch(() => {
+            // Optional — user can still pay via Paystack or bank transfer.
+          });
+
+        // Non-blocking: ride configs merge onto session state once available.
+        const rideConfigsPromise = apiGet<RideConfig[]>(
+          `/api/v1/transport/sessions/${params.id}/ride-configs`,
+          { auth: true }
+        ).catch((transportErr) => {
           console.log("No ride share config found for session:", transportErr);
+          return null;
+        });
+
+        // Single-session existing-booking check runs ONCE per params.id (never
+        // re-triggered by session state updates) and scopes queries to this
+        // session instead of downloading lifetime booking/attendance history.
+        void (async () => {
+          try {
+            let foundStatus: string | null = null;
+            try {
+              const myBookings = await apiGet<Array<{ session_id: string; status?: string }>>(
+                `/api/v1/sessions/bookings/me?status_filter=confirmed&session_id=${encodedSessionId}`,
+                { auth: true }
+              );
+              if (cancelled) return;
+              const booking = (myBookings || []).find((b) => b.session_id === params.id);
+              if (booking) {
+                foundStatus = String(booking.status || "confirmed").toLowerCase();
+              }
+            } catch {
+              // Endpoint unavailable / not authenticated — fall through to
+              // the legacy attendance check.
+            }
+
+            if (!foundStatus) {
+              const attendance = await apiGet<Array<{ session_id: string; status?: string }>>(
+                `/api/v1/attendance/me?session_id=${encodedSessionId}&include_session=false`,
+                { auth: true }
+              );
+              if (cancelled) return;
+              const record = (attendance || []).find((r) => r.session_id === params.id);
+              if (!record) return;
+              const status = String(record.status || "").toLowerCase();
+              if (status === "cancelled" || status === "canceled" || status === "no_show") {
+                return;
+              }
+              foundStatus = status || "booked";
+            }
+
+            if (cancelled) return;
+            setExistingBookingStatus(foundStatus);
+
+            // Already booked: check unpaid pool fee and existing ride booking in parallel.
+            const [unpaidResult, rideBookingResult] = await Promise.allSettled([
+              apiGet<Array<{ id: string; session_id: string; fee_amount_kobo: number }>>(
+                `/api/v1/sessions/bookings/me/unpaid?session_id=${encodedSessionId}`,
+                { auth: true }
+              ),
+              apiGet<any>(`/api/v1/transport/sessions/${params.id}/bookings/me`, {
+                auth: true,
+              }),
+            ]);
+            if (cancelled) return;
+            if (unpaidResult.status === "fulfilled") {
+              const match = (unpaidResult.value || []).find((b) => b.session_id === params.id);
+              if (match) {
+                setUnpaidBooking({ id: match.id, fee_amount_kobo: match.fee_amount_kobo });
+              }
+            }
+            if (rideBookingResult.status === "fulfilled" && rideBookingResult.value) {
+              setExistingRideBooking(rideBookingResult.value);
+            }
+          } catch {
+            // Ignore - best-effort UX improvement
+          }
+        })();
+
+        // Only wait on core session + member profile before unlocking the page.
+        const [sessionResult, profileResult] = await Promise.allSettled([
+          sessionPromise,
+          profilePromise,
+        ]);
+        if (cancelled) return;
+
+        if (sessionResult.status === "rejected") {
+          console.error("Failed to fetch session:", sessionResult.reason);
+          setError("Session not found.");
+          return;
         }
 
-        setSession(sessionData);
-
-        // Load member profile and wallet balance in parallel
-        try {
-          const [profile, wallet] = await Promise.allSettled([
-            apiGet<MemberProfile>("/api/v1/members/me", { auth: true }),
-            apiGet<{ balance: number; available_balance?: number; status: string }>(
-              "/api/v1/wallet/me",
-              {
-                auth: true,
-              }
-            ),
-          ]);
-          if (profile.status === "fulfilled") {
-            setMember(profile.value);
-          } else {
-            setError(SIGN_IN_REQUIRED);
-          }
-          if (wallet.status === "fulfilled" && wallet.value.status === "active") {
-            setWalletBalance(wallet.value.available_balance ?? wallet.value.balance);
-          }
-        } catch {
+        setSession(sessionResult.value);
+        if (profileResult.status === "fulfilled") {
+          setMember(profileResult.value);
+        } else {
           setError(SIGN_IN_REQUIRED);
+        }
+        setLoading(false);
+
+        // Merge ride-share areas once ride-configs resolves.
+        const rideConfigs = await rideConfigsPromise;
+        if (!cancelled && rideConfigs && rideConfigs.length > 0) {
+          const rideShareAreas: RideShareArea[] = rideConfigs.map((config) => ({
+            id: config.id,
+            ride_area_id: config.ride_area_id,
+            ride_area_name: config.ride_area_name,
+            cost: config.cost,
+            capacity: config.capacity,
+            pickup_locations: config.pickup_locations.map((loc) => ({
+              id: loc.id,
+              name: loc.name,
+              description: loc.description,
+              is_available: loc.is_available,
+              max_capacity: loc.max_capacity,
+              current_bookings: loc.current_bookings,
+              distance_text: loc.distance_text,
+              duration_text: loc.duration_text,
+              departure_time_calculated: loc.departure_time_calculated,
+            })),
+          }));
+          setSession((prev) => (prev ? { ...prev, rideShareAreas } : prev));
         }
       } catch (err) {
         console.error("Failed to fetch session:", err);
-        setError("Session not found.");
+        if (!cancelled) setError("Session not found.");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-    loadData();
-  }, [params.id]);
 
-  // Check existing bookings (SessionBooking + legacy attendance + ride)
-  useEffect(() => {
-    let cancelled = false;
-    async function loadExistingBooking() {
-      try {
-        // Phase 3.3: a confirmed SessionBooking is the canonical "I've
-        // paid for this session" record. It does NOT create an
-        // attendance row (attendance is day-of, at sign-in), so this
-        // must be checked directly — otherwise the page can't tell the
-        // user already paid and re-shows the payment form (double-pay
-        // risk). Fall back to the legacy attendance check below for
-        // pre-Phase-3.3 bookings.
-        let foundStatus: string | null = null;
-        try {
-          const myBookings = await apiGet<Array<{ session_id: string; status?: string }>>(
-            "/api/v1/sessions/bookings/me?status_filter=confirmed",
-            {
-              auth: true,
-            }
-          );
-          if (cancelled) return;
-          const booking = (myBookings || []).find((b) => b.session_id === params.id);
-          if (booking) {
-            foundStatus = String(booking.status || "confirmed").toLowerCase();
-          }
-        } catch {
-          // Endpoint unavailable / not authenticated — fall through to
-          // the legacy attendance check.
-        }
-
-        if (!foundStatus) {
-          const attendance = await apiGet<Array<{ session_id: string; status?: string }>>(
-            "/api/v1/attendance/me",
-            { auth: true }
-          );
-          if (cancelled) return;
-          const record = (attendance || []).find((r) => r.session_id === params.id);
-          if (!record) return;
-          const status = String(record.status || "").toLowerCase();
-          if (status === "cancelled" || status === "canceled" || status === "no_show") {
-            return;
-          }
-          foundStatus = status || "booked";
-        }
-
-        setExistingBookingStatus(foundStatus);
-
-        // Best-effort: if this confirmed booking still has an outstanding
-        // pool fee (no payment + no Bubbles linked), surface a Pay button
-        // in the AlreadyBooked screen.
-        try {
-          const unpaid = await apiGet<
-            Array<{ id: string; session_id: string; fee_amount_kobo: number }>
-          >("/api/v1/sessions/bookings/me/unpaid", { auth: true });
-          if (cancelled) return;
-          const match = (unpaid || []).find((b) => b.session_id === params.id);
-          if (match) {
-            setUnpaidBooking({ id: match.id, fee_amount_kobo: match.fee_amount_kobo });
-          }
-        } catch {
-          // Endpoint may be unavailable — fine, just don't surface the button.
-        }
-
-        // Check for existing ride booking
-        let hasRideBooking = false;
-        try {
-          const rideBooking = await apiGet<any>(
-            `/api/v1/transport/sessions/${params.id}/bookings/me`,
-            { auth: true }
-          );
-          if (cancelled) return;
-          if (rideBooking) {
-            setExistingRideBooking(rideBooking);
-            hasRideBooking = true;
-          }
-        } catch {
-          // 404 or error means no ride booking — that's fine
-        }
-
-        // Note: we do NOT auto-set isRideOnlyFlow here.
-        // The AlreadyBooked screen shows a "Need a ride?" button
-        // that lets the user opt into the ride-only flow explicitly.
-      } catch {
-        // Ignore - best-effort UX improvement
-      }
-    }
-    loadExistingBooking();
+    void loadData();
     return () => {
       cancelled = true;
     };
-  }, [params.id, session]);
+  }, [params.id]);
 
   // --- Handlers ---
 

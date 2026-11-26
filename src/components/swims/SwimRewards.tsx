@@ -249,7 +249,7 @@ export function SwimRewardCard({
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-xs text-slate-500">Swim Bubbles (since 22 Nov 2026)</p>
+              <p className="text-xs text-slate-500">Swim Bubbles</p>
               <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-950">
                 {number.format(data.bubbles_earned)} 🫧{" "}
                 <span className="text-xs font-normal text-slate-500">
@@ -282,25 +282,15 @@ export function SwimRewardCard({
 
   return (
     <div id="swim-rewards" className="grid scroll-mt-20 gap-4 lg:grid-cols-12">
-      {/* Left: Swim Bubbles Programme (Since 22 Nov 2026) */}
+      {/* Left: Weekly Swim Bubbles */}
       <section
         aria-labelledby={heading}
         className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-7"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-cyan-700">
-              Swim Bubbles Programme · Since 22 Nov 2026
-            </p>
-            <h2 id={heading} className="mt-1 flex items-center gap-2 text-lg font-bold text-slate-950">
-              <Bubbles className="h-5 w-5 text-cyan-700" aria-hidden="true" />
-              Weekly Swim Bubbles
-            </h2>
-          </div>
-          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
-            Automatic · ₦100 / 🫧
-          </span>
-        </div>
+        <h2 id={heading} className="flex items-center gap-2 text-lg font-bold text-slate-950">
+          <Bubbles className="h-5 w-5 text-cyan-700" aria-hidden="true" />
+          Weekly Swim Bubbles
+        </h2>
 
         <dl className="grid grid-cols-3 gap-2.5 text-center">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -339,16 +329,10 @@ export function SwimRewardCard({
           )}
         </div>
 
-        <p className="text-xs leading-relaxed text-slate-600">
-          1 Bubble (₦100) per eligible swim day, up to {data.weekly_limit} days/week (Mon–Sun
-          Lagos). Reversed if marked absent or cancelled.
+        <p className="text-xs text-slate-500">
+          1 🫧 (₦100) per eligible swim day, up to {data.weekly_limit} days/week · Reversed if
+          absent or cancelled.
         </p>
-
-        {data.bubbles_earned === 0 && allTimeSwims > 0 && (
-          <p className="text-xs text-slate-500">
-            Swim Bubbles launched 22 Nov 2026 — earlier swims still count toward your badges.
-          </p>
-        )}
       </section>
 
       {/* Right: All-Time Swimming Milestones & Badges */}
