@@ -4,14 +4,16 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { CurriculumCompositionPanel } from "@/components/academy/CurriculumCompositionPanel";
+import { CurriculumVersionEditor } from "@/components/academy/CurriculumVersionEditor";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import {
-  CurriculumDefinition,
-  CurriculumKind,
+  type CurriculumDefinition,
+  type CurriculumKind,
   CurriculumLibraryApi,
-  CurriculumVersion,
+  type CurriculumVersion,
   curriculumKinds,
   starterContent,
 } from "@/lib/academy/curriculum-library";
@@ -24,6 +26,7 @@ export default function CurriculumLibraryPage() {
   const [definitions, setDefinitions] = useState<CurriculumDefinition[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [versions, setVersions] = useState<CurriculumVersion[]>([]);
+  const [editingVersion, setEditingVersion] = useState<CurriculumVersion | null>(null);
   const [loading, setLoading] = useState(true);
   const [versionLoading, setVersionLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -31,9 +34,6 @@ export default function CurriculumLibraryPage() {
   const [newCode, setNewCode] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [search, setSearch] = useState("");
-  const [versionJson, setVersionJson] = useState(
-    JSON.stringify(starterContent.milestone, null, 2),
-  );
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (nextKind: CurriculumKind) => {
@@ -54,6 +54,7 @@ export default function CurriculumLibraryPage() {
   }, [kind, load]);
 
   useEffect(() => {
+    setEditingVersion(null);
     if (!selectedId) {
       setVersions([]);
       return;
@@ -84,8 +85,8 @@ export default function CurriculumLibraryPage() {
     setKind(nextKind);
     setSelectedId(null);
     setVersions([]);
+    setEditingVersion(null);
     setSearch("");
-    setVersionJson(JSON.stringify(starterContent[nextKind], null, 2));
     setError(null);
   };
 
@@ -99,7 +100,9 @@ export default function CurriculumLibraryPage() {
         code: newCode.trim().toUpperCase(),
         description: newDescription.trim() || undefined,
       });
-      setDefinitions((existing) => [...existing, created].sort((a, b) => a.code.localeCompare(b.code)));
+      setDefinitions((existing) =>
+        [...existing, created].sort((a, b) => a.code.localeCompare(b.code)),
+      );
       setSelectedId(created.id);
       setNewTitle("");
       setNewCode("");
@@ -113,25 +116,56 @@ export default function CurriculumLibraryPage() {
     }
   };
 
-  const createVersion = async () => {
-    if (!selectedId) return;
-    let content: Record<string, unknown>;
-    try {
-      const parsed: unknown = JSON.parse(versionJson);
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        throw new Error("Version content must be a JSON object");
-      }
-      content = parsed as Record<string, unknown>;
-    } catch (err) {
-      setError(`Invalid version JSON: ${errorMessage(err)}`);
+  const retireDefinition = async () => {
+    if (!selected || selected.is_retired) return;
+    if (
+      !window.confirm(
+        `Retire ${selected.code}? Retired definitions stay visible for historical records but cannot accept new versions or be published.`,
+      )
+    ) {
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      const created = await CurriculumLibraryApi.createVersion(kind, selectedId, content);
-      setVersions((items) => [created, ...items]);
-      toast.success(`Draft version ${created.version} created`);
+      const updated = await CurriculumLibraryApi.retireDefinition(kind, selected.id);
+      setDefinitions((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      toast.success(`${updated.code} retired`);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveVersion = async (content: Record<string, unknown>) => {
+    if (!selectedId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      if (editingVersion) {
+        const updated = await CurriculumLibraryApi.updateDraftVersion(
+          kind,
+          selectedId,
+          editingVersion.id,
+          content,
+        );
+        setVersions((items) =>
+          items.map((item) => (item.id === updated.id ? updated : item)),
+        );
+        setEditingVersion(null);
+        toast.success(`Draft v${updated.version} updated`);
+      } else {
+        const created = await CurriculumLibraryApi.createVersion(
+          kind,
+          selectedId,
+          content,
+        );
+        setVersions((items) => [created, ...items]);
+        toast.success(`Draft version ${created.version} created`);
+      }
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -141,12 +175,25 @@ export default function CurriculumLibraryPage() {
 
   const publishVersion = async (version: CurriculumVersion) => {
     if (!selectedId || version.state === "published") return;
-    if (!window.confirm("Publish this version? Published content is fixed and cannot be edited.")) return;
+    if (
+      !window.confirm(
+        "Publish this version? Published content is fixed and cannot be edited.",
+      )
+    ) {
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const published = await CurriculumLibraryApi.publish(kind, selectedId, version.id);
-      setVersions((items) => items.map((item) => item.id === published.id ? published : item));
+      const published = await CurriculumLibraryApi.publish(
+        kind,
+        selectedId,
+        version.id,
+      );
+      setVersions((items) =>
+        items.map((item) => (item.id === published.id ? published : item)),
+      );
+      if (editingVersion?.id === published.id) setEditingVersion(null);
       toast.success(`Version ${published.version} published`);
     } catch (err) {
       setError(errorMessage(err));
@@ -158,17 +205,31 @@ export default function CurriculumLibraryPage() {
   return (
     <main className="mx-auto max-w-7xl space-y-5 px-3 py-5 md:px-6">
       <header className="space-y-2">
-        <Link href="/admin/academy" className="text-sm font-medium text-cyan-700 hover:underline">
+        <Link
+          href="/admin/academy"
+          className="text-sm font-medium text-cyan-700 hover:underline"
+        >
           Back to Academy
         </Link>
         <h1 className="text-2xl font-bold text-slate-900">Curriculum Library</h1>
-        <Link href="/admin/academy/requirements" className="inline-flex rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100">
-          Manage programme and cohort requirements
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/academy/requirements"
+            className="inline-flex rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100"
+          >
+            Programme & Cohort Requirements
+          </Link>
+          <Link
+            href="/admin/academy/competencies"
+            className="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
+          >
+            Competency Verification Admin
+          </Link>
+        </div>
         <p className="max-w-3xl text-sm text-slate-600">
-          Create reusable Academy content and publish fixed versions. This is the first
-          authoring release. Publishing here does not yet assign content to cohorts,
-          award competency credits, or change graduation requirements.
+          Author reusable Milestones, Drills, Lessons, Quizzes, and Modules using
+          structured forms. Drafts can be edited and composed freely; publishing
+          locks the version and validates assessment contracts.
         </p>
       </header>
 
@@ -191,51 +252,104 @@ export default function CurriculumLibraryPage() {
       </nav>
 
       {error && (
-        <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <div
+          role="alert"
+          className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+        >
           {error}
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.35fr)]">
         <section className="space-y-4">
-          <form onSubmit={createDefinition} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-            <h2 className="text-lg font-semibold text-slate-900">Create definition</h2>
-            <Input label="Title" name="title" required minLength={3} maxLength={200}
-              value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="e.g. Controlled breathing"/>
-            <Input label="Stable code" name="code" required
-              value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+          <form
+            onSubmit={createDefinition}
+            className="space-y-3 rounded-xl border border-slate-200 bg-white p-4"
+          >
+            <h2 className="text-lg font-semibold text-slate-900">
+              Create {kind} definition
+            </h2>
+            <Input
+              label="Title"
+              name="title"
+              required
+              minLength={3}
+              maxLength={200}
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="e.g. Controlled rhythmic breathing"
+            />
+            <Input
+              label="Stable code"
+              name="code"
+              required
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value.toUpperCase())}
               pattern="[A-Z][A-Z0-9_-]{2,79}"
-              hint="Unique, permanent identifier. Use uppercase letters, numbers, - or _."
-              placeholder="MS-BREATH-01"/>
-            <Textarea label="Description" name="description" value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)} rows={2}/>
-            <Button type="submit" disabled={saving}>Create {kind}</Button>
+              hint="Unique permanent identifier. Uppercase letters, numbers, - or _."
+              placeholder="MS-F2-BOBS-20"
+            />
+            <Textarea
+              label="Description"
+              name="description"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              rows={2}
+            />
+            <Button type="submit" disabled={saving}>
+              Create {kind}
+            </Button>
           </form>
 
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="mb-3 space-y-2">
-              <h2 className="text-lg font-semibold text-slate-900">Library entries</h2>
-              <Input label="Search" name="search" value={search}
+              <h2 className="text-lg font-semibold text-slate-900">
+                Library entries ({visibleDefinitions.length})
+              </h2>
+              <Input
+                label="Search"
+                name="search"
+                value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search title or code"/>
+                placeholder="Search title or code"
+              />
             </div>
             {loading ? (
-              <p role="status" className="text-sm text-slate-500">Loading library...</p>
+              <p role="status" className="text-sm text-slate-500">
+                Loading library...
+              </p>
             ) : visibleDefinitions.length === 0 ? (
               <p className="text-sm text-slate-500">No matching entries yet.</p>
             ) : (
-              <ul className="max-h-[32rem] space-y-2 overflow-y-auto">
+              <ul className="max-h-[34rem] space-y-2 overflow-y-auto">
                 {visibleDefinitions.map((item) => (
                   <li key={item.id}>
-                    <button type="button" onClick={() => setSelectedId(item.id)}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(item.id)}
                       aria-pressed={selectedId === item.id}
                       className={`w-full rounded-lg border p-3 text-left transition ${
-                        selectedId === item.id ? "border-cyan-600 bg-cyan-50" : "border-slate-200 hover:bg-slate-50"
-                      }`}>
-                      <span className="block text-sm font-semibold text-slate-900">{item.title}</span>
+                        selectedId === item.id
+                          ? "border-cyan-600 bg-cyan-50"
+                          : "border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-slate-900">
+                          {item.title}
+                        </span>
+                        {item.is_retired && (
+                          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                            Retired
+                          </span>
+                        )}
+                      </div>
                       <span className="block text-xs text-slate-500">{item.code}</span>
-                      {item.description && <span className="mt-1 block text-xs text-slate-600">{item.description}</span>}
+                      {item.description && (
+                        <span className="mt-1 block text-xs text-slate-600">
+                          {item.description}
+                        </span>
+                      )}
                     </button>
                   </li>
                 ))}
@@ -246,54 +360,114 @@ export default function CurriculumLibraryPage() {
 
         <section className="rounded-xl border border-slate-200 bg-white p-4">
           {!selected ? (
-            <p className="text-sm text-slate-600">Choose a library entry to manage its versions.</p>
+            <p className="text-sm text-slate-600">
+              Choose a library entry to author versions, manage links, or publish.
+            </p>
           ) : (
             <div className="space-y-5">
-              <header>
-                <h2 className="text-xl font-semibold text-slate-900">{selected.title}</h2>
-                <p className="text-xs font-medium text-slate-500">{selected.code}</p>
+              <header className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    {selected.title}
+                  </h2>
+                  <p className="text-xs font-medium text-slate-500">
+                    {selected.code}
+                    {selected.is_retired ? " · Retired" : ""}
+                  </p>
+                </div>
+                {!selected.is_retired && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={saving}
+                    onClick={() => void retireDefinition()}
+                  >
+                    Retire definition
+                  </Button>
+                )}
               </header>
-              <div className="space-y-2">
-                <h3 className="text-base font-semibold text-slate-900">Create next version</h3>
-                <p className="text-xs text-slate-600">
-                  Edit the structured content below. New versions start as drafts.
-                  The published version is retained for historical consistency.
-                </p>
-                <Textarea label="Version details (JSON)" name="version-content"
-                  value={versionJson} onChange={(e) => setVersionJson(e.target.value)}
-                  rows={13} className="w-full font-mono text-xs"/>
-                <Button type="button" disabled={saving} onClick={() => void createVersion()}>
-                  Save draft version
-                </Button>
-              </div>
+
+              {!selected.is_retired && (
+                <CurriculumVersionEditor
+                  kind={kind}
+                  initialContent={
+                    editingVersion
+                      ? editingVersion.content
+                      : versions[0]?.content ?? starterContent[kind]
+                  }
+                  editingVersionNumber={editingVersion?.version ?? null}
+                  saving={saving}
+                  onCancelEdit={() => setEditingVersion(null)}
+                  onSave={saveVersion}
+                />
+              )}
+
+              <CurriculumCompositionPanel
+                kind={kind}
+                definitionId={selected.id}
+                versions={versions}
+                onError={setError}
+              />
+
               <div className="space-y-3">
                 <h3 className="text-base font-semibold text-slate-900">Versions</h3>
                 {versionLoading ? (
-                  <p role="status" className="text-sm text-slate-500">Loading versions...</p>
+                  <p role="status" className="text-sm text-slate-500">
+                    Loading versions...
+                  </p>
                 ) : versions.length === 0 ? (
                   <p className="text-sm text-slate-500">No versions saved yet.</p>
-                ) : versions.map((version) => (
-                  <article key={version.id} className="rounded-lg border border-slate-200 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-slate-900">Version {version.version}</p>
-                        <p className="text-xs text-slate-500">
-                          {version.state === "published" ? "Published" : "Draft"}
-                        </p>
+                ) : (
+                  versions.map((version) => (
+                    <article
+                      key={version.id}
+                      className="rounded-lg border border-slate-200 p-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            Version {version.version}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {version.state === "published"
+                              ? `Published ${version.published_at ? new Date(version.published_at).toLocaleDateString() : ""}`
+                              : "Draft"}
+                          </p>
+                        </div>
+                        {version.state === "draft" && (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              type="button"
+                              variant="secondary"
+                              disabled={saving}
+                              onClick={() => setEditingVersion(version)}
+                            >
+                              Edit draft
+                            </Button>
+                            <Button
+                              size="sm"
+                              type="button"
+                              disabled={saving}
+                              onClick={() => void publishVersion(version)}
+                            >
+                              Publish
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      {version.state === "draft" && (
-                        <Button size="sm" type="button" disabled={saving}
-                          onClick={() => void publishVersion(version)}>Publish</Button>
-                      )}
-                    </div>
-                    <details className="mt-3">
-                      <summary className="cursor-pointer text-xs font-medium text-cyan-700">View content</summary>
-                      <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded bg-slate-50 p-3 text-xs text-slate-700">
-                        {JSON.stringify(version.content, null, 2)}
-                      </pre>
-                    </details>
-                  </article>
-                ))}
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-xs font-medium text-cyan-700">
+                          View content JSON
+                        </summary>
+                        <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded bg-slate-50 p-3 text-xs text-slate-700">
+                          {JSON.stringify(version.content, null, 2)}
+                        </pre>
+                      </details>
+                    </article>
+                  ))
+                )}
               </div>
             </div>
           )}

@@ -144,6 +144,7 @@ Complete reference for all routes in the SwimBuddz Next.js application.
 | `/account/academy/programs/[id]`      | `src/app/(member)/account/academy/programs/[id]/page.tsx`      | Program detail page                      |
 | `/account/academy/cohorts/[id]`       | `src/app/(member)/account/academy/cohorts/[id]/page.tsx`       | Cohort detail page                       |
 | `/account/academy/enrollments/[id]`   | `src/app/(member)/account/academy/enrollments/[id]/page.tsx`   | Enrollment detail and progress           |
+| `/account/academy/passport`           | `src/app/(member)/account/academy/passport/page.tsx`           | Evidence-backed Swimming Competency Passport |
 | `/account/academy/enrollment-success` | `src/app/(member)/account/academy/enrollment-success/page.tsx` | Post-enrollment confirmation             |
 
 ### Billing & Orders
@@ -317,6 +318,9 @@ The member dashboard shows this week’s progress. My Swims at `/account/booking
 | `/admin/academy/enrollments`              | `src/app/(admin)/admin/academy/enrollments/page.tsx`              | All enrollments list            |
 | `/admin/academy/enrollments/[id]`         | `src/app/(admin)/admin/academy/enrollments/[id]/page.tsx`         | Single enrollment management    |
 | `/admin/academy/extension-requests`       | `src/app/(admin)/admin/academy/extension-requests/page.tsx`       | Cohort extension approval queue |
+| `/admin/academy/curriculum-library`       | `src/app/(admin)/admin/academy/curriculum-library/page.tsx`       | Versioned V2 curriculum catalog studio (Milestones, Drills, Lessons, Quizzes, Modules) |
+| `/admin/academy/requirements`             | `src/app/(admin)/admin/academy/requirements/page.tsx`             | Programme/cohort V2 milestone requirements & immutable snapshot freezing |
+| `/admin/academy/competencies`             | `src/app/(admin)/admin/academy/competencies/page.tsx`             | Evidence-backed legacy competency promotion & revocation console |
 
 ### Gallery Management
 
