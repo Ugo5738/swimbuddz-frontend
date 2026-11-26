@@ -1,93 +1,46 @@
 "use client";
 
+import { OrderCasesAndRefundsCard } from "@/components/store/orders/OrderCasesAndRefundsCard";
+import { OrderManagePanel } from "@/components/store/orders/OrderManagePanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
-import { apiGet } from "@/lib/api";
+import { useApi } from "@/hooks/useApi";
+import {
+  effectiveOrderTotal,
+  formatNaira,
+  fulfillmentStatusMeta,
+  paymentStatusMeta,
+  type OrderActionEligibility,
+  type StoreOrderDetail,
+} from "@/lib/storeOrderLifecycle";
 import { ArrowLeft, MapPin, Package, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-
-interface OrderItem {
-  id: string;
-  quantity: number;
-  unit_price_ngn: number;
-  line_total_ngn: number;
-  variant?: {
-    id: string;
-    name: string | null;
-    sku: string;
-    options: Record<string, string>;
-    product?: {
-      id: string;
-      name: string;
-      slug: string;
-      images?: { url: string; is_primary: boolean }[];
-    };
-  };
-}
-
-interface OrderDetail {
-  id: string;
-  order_number: string;
-  status: string;
-  fulfillment_type: string;
-  subtotal_ngn: number;
-  discount_amount_ngn: number;
-  delivery_fee_ngn: number;
-  total_ngn: number;
-  discount_code: string | null;
-  customer_notes: string | null;
-  admin_notes: string | null;
-  created_at: string;
-  updated_at: string;
-  paid_at: string | null;
-  shipped_at: string | null;
-  delivered_at: string | null;
-  items: OrderItem[];
-  pickup_location?: {
-    id: string;
-    name: string;
-    address: string | null;
-  };
-  delivery_address?: {
-    street: string;
-    city: string;
-    state: string;
-    phone: string;
-  };
-  tracking_number?: string;
-  tracking_url?: string;
-}
 
 export default function OrderDetailPage() {
   const params = useParams();
   const orderNumber = params.id as string;
 
-  const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: order,
+    loading,
+    error,
+    refetch: refetchOrder,
+  } = useApi<StoreOrderDetail>(`/api/v1/store/orders/${orderNumber}`);
 
-  const loadOrder = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await apiGet<OrderDetail>(`/api/v1/store/orders/${orderNumber}`, {
-        auth: true,
-      });
-      setOrder(data);
-    } catch (e) {
-      console.error("Failed to load order:", e);
-      setError(e instanceof Error ? e.message : "Order not found");
-    } finally {
-      setLoading(false);
-    }
-  }, [orderNumber]);
+  const {
+    data: eligibility,
+    refetch: refetchEligibility,
+  } = useApi<OrderActionEligibility>(
+    order ? `/api/v1/store/orders/${orderNumber}/actions` : null
+  );
 
-  useEffect(() => {
-    loadOrder();
-  }, [loadOrder]);
+  const handleRefresh = () => {
+    refetchOrder();
+    refetchEligibility();
+  };
 
   if (loading) {
     return <LoadingCard text="Loading order..." />;
@@ -105,6 +58,15 @@ export default function OrderDetailPage() {
     );
   }
 
+  const paymentBadge = paymentStatusMeta(eligibility?.payment_status ?? order.payment_status);
+  const fulfillmentBadge = fulfillmentStatusMeta(
+    eligibility?.fulfillment_status ?? order.fulfillment_status
+  );
+  const orderTotal = effectiveOrderTotal(order);
+  const bubblesNgn = (order.bubbles_applied || 0) * 100;
+  const storeCredit = Number(order.store_credit_applied_ngn || 0);
+  const cashPayable = Number(order.cash_payable_ngn ?? order.total_ngn ?? 0);
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Back Link */}
@@ -116,7 +78,7 @@ export default function OrderDetailPage() {
         Back to Orders
       </Link>
 
-      {/* Header */}
+      {/* Header with Separated Payment & Fulfillment Statuses (ADR-024) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Order #{order.order_number}</h1>
@@ -131,12 +93,41 @@ export default function OrderDetailPage() {
             })}
           </p>
         </div>
-        <OrderStatusBadge status={order.status} />
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${paymentBadge.className}`}>
+            Payment: {paymentBadge.label}
+          </span>
+          <span
+            className={`px-3 py-1 text-xs font-semibold rounded-full ${fulfillmentBadge.className}`}
+          >
+            Fulfillment: {fulfillmentBadge.label}
+          </span>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Order Items */}
+        {/* Main column */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Post-Purchase Actions */}
+          {eligibility && (
+            <OrderManagePanel
+              order={order}
+              eligibility={eligibility}
+              onUpdated={handleRefresh}
+            />
+          )}
+
+          {/* Active Requests & Refunds Tracker */}
+          {eligibility && (
+            <OrderCasesAndRefundsCard
+              orderNumber={order.order_number}
+              cases={eligibility.cases}
+              refunds={eligibility.refunds}
+              onUpdated={handleRefresh}
+            />
+          )}
+
+          {/* Order Items */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Items</h2>
             <div className="divide-y divide-slate-100">
@@ -151,8 +142,9 @@ export default function OrderDetailPage() {
                       {primaryImage ? (
                         <Image
                           src={primaryImage.url}
-                          alt={item.variant?.product?.name || "Product"}
+                          alt={item.variant?.product?.name || item.product_name || "Product"}
                           fill
+                          sizes="64px"
                           className="object-cover"
                         />
                       ) : (
@@ -162,9 +154,20 @@ export default function OrderDetailPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900">{item.variant?.product?.name}</p>
-                      {item.variant?.name && (
-                        <p className="text-sm text-slate-500">{item.variant.name}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-slate-900">
+                          {item.variant?.product?.name || item.product_name}
+                        </p>
+                        {(item.is_preorder || item.sourcing_type === "preorder") && (
+                          <span className="px-2 py-0.5 text-[11px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                            Preorder
+                          </span>
+                        )}
+                      </div>
+                      {(item.variant?.name || item.variant_name) && (
+                        <p className="text-sm text-slate-500">
+                          {item.variant?.name || item.variant_name}
+                        </p>
                       )}
                       {item.variant?.options && Object.keys(item.variant.options).length > 0 && (
                         <p className="text-sm text-slate-500">
@@ -174,12 +177,12 @@ export default function OrderDetailPage() {
                         </p>
                       )}
                       <p className="text-sm text-slate-600 mt-1">
-                        Qty: {item.quantity} × ₦{item.unit_price_ngn.toLocaleString()}
+                        Qty: {item.quantity} × {formatNaira(item.unit_price_ngn)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-slate-900">
-                        ₦{item.line_total_ngn.toLocaleString()}
+                        {formatNaira(item.line_total_ngn)}
                       </p>
                     </div>
                   </div>
@@ -226,9 +229,11 @@ export default function OrderDetailPage() {
                 </p>
                 <p className="text-slate-500">{order.delivery_address.phone}</p>
 
-                {order.tracking_number && (
+                {(order.tracking_number || order.delivery_notes) && (
                   <div className="mt-4 pt-4 border-t border-slate-100">
-                    <p className="text-sm text-slate-600">Tracking: {order.tracking_number}</p>
+                    <p className="text-sm text-slate-600">
+                      Tracking: {order.tracking_number || order.delivery_notes}
+                    </p>
                     {order.tracking_url && (
                       <a
                         href={order.tracking_url}
@@ -253,38 +258,59 @@ export default function OrderDetailPage() {
           </Card>
         </div>
 
-        {/* Order Summary */}
+        {/* Order Summary & Tender Breakdown */}
         <div className="lg:col-span-1">
           <Card className="p-6 sticky top-24">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Summary</h2>
 
-            <div className="space-y-3 text-sm">
+            <div className="space-y-2.5 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-600">Subtotal</span>
-                <span className="text-slate-900">₦{order.subtotal_ngn.toLocaleString()}</span>
+                <span className="text-slate-900">{formatNaira(order.subtotal_ngn)}</span>
               </div>
 
-              {order.discount_amount_ngn > 0 && (
+              {Number(order.discount_amount_ngn) > 0 && (
                 <div className="flex justify-between text-emerald-600">
                   <span>
                     Discount
                     {order.discount_code && ` (${order.discount_code})`}
                   </span>
-                  <span>-₦{order.discount_amount_ngn.toLocaleString()}</span>
+                  <span>-{formatNaira(order.discount_amount_ngn)}</span>
                 </div>
               )}
 
-              {order.delivery_fee_ngn > 0 && (
+              {Number(order.delivery_fee_ngn) > 0 && (
                 <div className="flex justify-between">
                   <span className="text-slate-600">Delivery</span>
-                  <span className="text-slate-900">₦{order.delivery_fee_ngn.toLocaleString()}</span>
+                  <span className="text-slate-900">{formatNaira(order.delivery_fee_ngn)}</span>
                 </div>
               )}
 
-              <div className="pt-3 border-t border-slate-200 flex justify-between font-semibold">
-                <span className="text-slate-900">Total</span>
-                <span className="text-cyan-600">₦{order.total_ngn.toLocaleString()}</span>
+              <div className="pt-2.5 border-t border-slate-200 flex justify-between font-semibold">
+                <span className="text-slate-900">Order Total</span>
+                <span className="text-slate-900">{formatNaira(orderTotal)}</span>
               </div>
+
+              {(storeCredit > 0 || bubblesNgn > 0) && (
+                <div className="pt-2 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
+                  {storeCredit > 0 && (
+                    <div className="flex justify-between">
+                      <span>Store Credit Applied</span>
+                      <span className="text-emerald-700">-{formatNaira(storeCredit)}</span>
+                    </div>
+                  )}
+                  {bubblesNgn > 0 && (
+                    <div className="flex justify-between">
+                      <span>Bubbles Applied ({order.bubbles_applied} 🫧)</span>
+                      <span className="text-cyan-700">-{formatNaira(bubblesNgn)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-semibold text-sm pt-1">
+                    <span className="text-slate-800">Card / Bank Paid</span>
+                    <span className="text-cyan-600">{formatNaira(cashPayable)}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Order Timeline */}
@@ -292,37 +318,39 @@ export default function OrderDetailPage() {
               <h3 className="text-sm font-medium text-slate-900 mb-3">Timeline</h3>
               <div className="space-y-2 text-sm">
                 <TimelineItem label="Order placed" date={order.created_at} done={true} />
-                <TimelineItem
-                  label="Payment received"
-                  date={order.paid_at}
-                  done={!!order.paid_at}
-                />
+                <TimelineItem label="Payment received" date={order.paid_at} done={!!order.paid_at} />
                 {order.fulfillment_type === "delivery" ? (
                   <>
                     <TimelineItem
                       label="Shipped"
-                      date={order.shipped_at}
-                      done={!!order.shipped_at}
+                      date={order.shipped_at ?? null}
+                      done={!!order.shipped_at || ["shipped", "delivered"].includes(order.status)}
                     />
                     <TimelineItem
                       label="Delivered"
-                      date={order.delivered_at}
-                      done={!!order.delivered_at}
+                      date={order.delivered_at ?? order.fulfilled_at ?? null}
+                      done={!!order.delivered_at || order.status === "delivered"}
                     />
                   </>
                 ) : (
                   <TimelineItem
                     label="Ready for pickup"
-                    date={order.status === "ready_for_pickup" ? new Date().toISOString() : null}
+                    date={order.fulfilled_at ?? null}
                     done={["ready_for_pickup", "picked_up"].includes(order.status)}
                   />
+                )}
+                {order.cancelled_at && (
+                  <TimelineItem label="Cancelled" date={order.cancelled_at} done={true} />
+                )}
+                {order.refunded_at && (
+                  <TimelineItem label="Refunded" date={order.refunded_at} done={true} />
                 )}
               </div>
             </div>
 
             {/* Need Help */}
             <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-              <p className="text-sm text-slate-500">Need help with your order?</p>
+              <p className="text-sm text-slate-500">Need extra help with your order?</p>
               <a
                 href="mailto:swimbuddz@gmail.com"
                 className="text-sm text-cyan-600 hover:underline"
@@ -334,40 +362,6 @@ export default function OrderDetailPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-function OrderStatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, { label: string; className: string }> = {
-    pending_payment: {
-      label: "Pending Payment",
-      className: "bg-amber-100 text-amber-700",
-    },
-    paid: { label: "Paid", className: "bg-blue-100 text-blue-700" },
-    processing: { label: "Processing", className: "bg-blue-100 text-blue-700" },
-    ready_for_pickup: {
-      label: "Ready for Pickup",
-      className: "bg-emerald-100 text-emerald-700",
-    },
-    picked_up: { label: "Picked Up", className: "bg-slate-100 text-slate-700" },
-    shipped: { label: "Shipped", className: "bg-cyan-100 text-cyan-700" },
-    delivered: {
-      label: "Delivered",
-      className: "bg-emerald-100 text-emerald-700",
-    },
-    cancelled: { label: "Cancelled", className: "bg-rose-100 text-rose-700" },
-    refunded: { label: "Refunded", className: "bg-slate-100 text-slate-700" },
-  };
-
-  const config = statusConfig[status] || {
-    label: status,
-    className: "bg-slate-100 text-slate-700",
-  };
-
-  return (
-    <span className={`px-3 py-1 text-sm font-medium rounded-full ${config.className}`}>
-      {config.label}
-    </span>
   );
 }
 

@@ -57,7 +57,7 @@ describe("SwimRewardCard variants (ADR-020)", () => {
     expect(screen.queryByText(/since 22 Nov 2026/i)).not.toBeInTheDocument();
   });
 
-  it("renders a clean evergreen Weekly Swim Bubbles card beside all-time milestones on the Rewards hub (ADR-024)", () => {
+  it("renders a clean evergreen Weekly Swim Bubbles card beside all-time milestones on the Rewards hub (ADR-025)", () => {
     render(<SwimRewardCard data={returningSwimmerZeroProgramme} variant="hub" />);
 
     expect(screen.getByText(/Weekly Swim Bubbles/i)).toBeInTheDocument();

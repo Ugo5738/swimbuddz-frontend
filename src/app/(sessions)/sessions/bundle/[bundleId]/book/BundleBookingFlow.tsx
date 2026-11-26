@@ -118,7 +118,7 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
           setLoading(false);
           return;
         }
-        // Fetch session details and optional ride configs concurrently per session (ADR-024).
+        // Fetch session details and optional ride configs concurrently per session (ADR-025).
         const sessionsData = await Promise.all(
           ids.map(async (id) => {
             const [s, rideConfigs] = await Promise.all([

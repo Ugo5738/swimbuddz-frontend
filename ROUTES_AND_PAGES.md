@@ -320,7 +320,7 @@ The member dashboard shows this week’s progress. My Swims at `/account/booking
 | `/admin/academy/extension-requests`       | `src/app/(admin)/admin/academy/extension-requests/page.tsx`       | Cohort extension approval queue |
 | `/admin/academy/curriculum-library`       | `src/app/(admin)/admin/academy/curriculum-library/page.tsx`       | Versioned V2 curriculum catalog studio (Milestones, Drills, Lessons, Quizzes, Modules) |
 | `/admin/academy/requirements`             | `src/app/(admin)/admin/academy/requirements/page.tsx`             | Programme/cohort V2 milestone requirements & immutable snapshot freezing |
-| `/admin/academy/competencies`             | `src/app/(admin)/admin/academy/competencies/page.tsx`             | Evidence-backed legacy competency promotion & revocation console |
+| `/admin/academy/competencies`             | `src/app/(admin)/admin/academy/competencies/page.tsx`             | Evidence-backed legacy promotion, diagnostic assessments, revocations & shadow graduation parity console |
 
 ### Gallery Management
 
@@ -465,9 +465,11 @@ _Last updated: July 2026_
 | `/guest-pass/session/[sessionId]`           | `src/app/(public)/guest-pass/session/[sessionId]/page.tsx` | Public self-paying guest booking; accepts optional `ref` attribution                                               |
 | `/guest-pass/[guestPassId]`                 | `src/app/(public)/guest-pass/[guestPassId]/page.tsx`       | Redacted public guest payment/status receipt                                                                       |
 | `/admin/club-plans`                         | `src/app/(admin)/admin/club-plans/page.tsx`                | Publish effective-dated prices by Club location                                                                    |
-| `/admin/club-applications`                  | `src/app/(admin)/admin/club-applications/page.tsx`         | Review readiness, record baseline/outcome, approve application-specific payment modes, and send result email        |
+| `/admin/club-applications`                  | `src/app/(admin)/admin/club-applications/page.tsx`         | Review readiness (with advisory V2 Academy competency summary), record baseline/outcome, approve payment modes, and send result email |
 | `/admin/guest-passes`                       | `src/app/(admin)/admin/guest-passes/page.tsx`              | Track payment, attendance/swimmer-minutes, assessments, and automatic 10-Bubble referral status                    |
 | `/admin/payment-charges`                    | `src/app/(admin)/admin/payment-charges/page.tsx`           | Configure purpose/method-specific additive or gross-up payment charges                                             |
+| `/admin/store/cases`                        | `src/app/(admin)/admin/store/cases/page.tsx`               | Review Store post-purchase cancellations, 7-day returns/exchanges, and FCCPA defect claims with return inspection |
+| `/admin/payments?tab=refunds`               | `src/app/(admin)/admin/payments/page.tsx`                  | Shared Refunds & Payouts console (Paystack API refunds, status sync, NUBAN verification, bank transfer references) |
 
 The current-quarter Community Experience is optional but selected by default in
 Club checkout. It is ₦50,000 for a standard member, ₦40,000 for an active Club

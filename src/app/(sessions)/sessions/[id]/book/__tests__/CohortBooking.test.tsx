@@ -162,7 +162,7 @@ it.each([true, false])(
   }
 );
 
-it("renders checkout without waiting on slow ride-configs and checks single-session bookings once (ADR-024)", async () => {
+it("renders checkout without waiting on slow ride-configs and checks single-session bookings once (ADR-025)", async () => {
   let resolveRides!: (value: unknown) => void;
   const pendingRides = new Promise((resolve) => {
     resolveRides = resolve;

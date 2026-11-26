@@ -229,7 +229,7 @@ export default function SessionBookPage({ params }: { params: { id: string } }) 
   }, [paymentReference]);
 
   // Load session, member profile, wallet balance, ride configs, and existing
-  // single-session booking concurrently on mount (ADR-024). Only session +
+  // single-session booking concurrently on mount (ADR-025). Only session +
   // member block initial page render so checkout paints immediately while
   // optional ride-share and wallet balance hydrate seamlessly.
   useEffect(() => {

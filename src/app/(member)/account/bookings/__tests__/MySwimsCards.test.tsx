@@ -55,7 +55,7 @@ vi.mock("@/hooks/usePersonalSwims", () => ({
   }),
 }));
 
-describe("MySwimsPage mobile-first cards (ADR-024)", () => {
+describe("MySwimsPage mobile-first cards (ADR-025)", () => {
   it("renders non-wrapping Club status pills and clean stacked card actions", () => {
     render(<MySwimsPage />);
 

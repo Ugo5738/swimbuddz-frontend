@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { DiagnosticAssessmentPanel } from "@/components/academy/DiagnosticAssessmentPanel";
+import { GraduationParityPanel } from "@/components/academy/GraduationParityPanel";
 import { IssuedVerificationsPanel } from "@/components/academy/IssuedVerificationsPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -36,7 +37,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 export default function AdminAcademyCompetenciesPage() {
-  const [tab, setTab] = useState<"promote" | "diagnostic" | "verifications">("promote");
+  const [tab, setTab] = useState<"promote" | "diagnostic" | "verifications" | "parity">("promote");
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
   const [cohortId, setCohortId] = useState("");
   const [memberAuthFilter, setMemberAuthFilter] = useState("");
@@ -265,6 +266,14 @@ export default function AdminAcademyCompetenciesPage() {
         >
           Issued verifications & revocations ({verifications.length})
         </button>
+        <button
+          type="button"
+          onClick={() => setTab("parity")}
+          aria-pressed={tab === "parity"}
+          className={`rounded-lg border px-4 py-2 text-sm font-medium ${tab === "parity" ? "border-cyan-700 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+        >
+          Graduation parity (shadow)
+        </button>
       </nav>
 
       {tab === "promote" ? (
@@ -404,8 +413,17 @@ export default function AdminAcademyCompetenciesPage() {
           }}
           onError={setError}
         />
-      ) : (
+      ) : tab === "verifications" ? (
         <IssuedVerificationsPanel verifications={verifications} busy={busy} onRevoke={handleRevoke} />
+      ) : (
+        <GraduationParityPanel
+          cohortId={cohortId}
+          refreshKey={refreshKey}
+          onJumpToPromote={(memberAuth) => {
+            setMemberAuthFilter(memberAuth);
+            setTab("promote");
+          }}
+        />
       )}
     </main>
   );
