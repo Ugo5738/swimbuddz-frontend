@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { MilestoneRemedialDrillsPanel } from "@/components/academy/MilestoneRemedialDrillsPanel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
@@ -177,63 +178,71 @@ export function CurriculumCompositionPanel({
   if (kind === "milestone" || kind === "drill") {
     const entity = kind === "milestone" ? "milestones" : "drills";
     return (
-      <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-        <h3 className="text-base font-semibold text-slate-900">Linked canonical skills</h3>
-        <div className="flex flex-wrap gap-2">
-          {linkedSkills.map((link) => (
-            <span
-              key={link.id}
-              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-800"
-            >
-              {link.name ?? link.skill_id}
-              {link.category ? ` (${link.category})` : ""}
-              <button
+      <div className="space-y-4">
+        <div className="space-y-2 rounded-xl border border-slate-200 p-4">
+          <h3 className="text-base font-semibold text-slate-900">Linked canonical skills</h3>
+          <div className="flex flex-wrap gap-2">
+            {linkedSkills.map((link) => (
+              <span
+                key={link.id}
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-800"
+              >
+                {link.name ?? link.skill_id}
+                {link.category ? ` (${link.category})` : ""}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    void runAction(async () => {
+                      await CurriculumLibraryApi.removeEntitySkill(entity, definitionId, link.id);
+                      setLinkedSkills((prev) => prev.filter((i) => i.id !== link.id));
+                    }, "Skill unlinked")
+                  }
+                  className="text-slate-500 hover:text-rose-700"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {linkedSkills.length === 0 && (
+              <p className="text-xs text-slate-500">No skills linked yet.</p>
+            )}
+          </div>
+          {allSkills.length > 0 && (
+            <div className="flex flex-wrap items-end gap-2 pt-1">
+              <select
+                value={selectedSkillId}
+                onChange={(e) => setSelectedSkillId(e.target.value)}
+                className="min-h-10 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              >
+                {allSkills.map((skill) => (
+                  <option key={skill.id} value={skill.id}>
+                    {skill.name} ({skill.category})
+                  </option>
+                ))}
+              </select>
+              <Button
                 type="button"
-                disabled={busy}
+                size="sm"
+                variant="secondary"
+                disabled={busy || !selectedSkillId}
                 onClick={() =>
                   void runAction(async () => {
-                    await CurriculumLibraryApi.removeEntitySkill(entity, definitionId, link.id);
-                    setLinkedSkills((prev) => prev.filter((i) => i.id !== link.id));
-                  }, "Skill unlinked")
+                    await CurriculumLibraryApi.attachEntitySkill(entity, definitionId, selectedSkillId);
+                    setLinkedSkills(await CurriculumLibraryApi.listEntitySkills(entity, definitionId));
+                  }, "Skill linked")
                 }
-                className="text-slate-500 hover:text-rose-700"
               >
-                ×
-              </button>
-            </span>
-          ))}
-          {linkedSkills.length === 0 && (
-            <p className="text-xs text-slate-500">No skills linked yet.</p>
+                Link skill
+              </Button>
+            </div>
           )}
         </div>
-        {allSkills.length > 0 && (
-          <div className="flex flex-wrap items-end gap-2 pt-1">
-            <select
-              value={selectedSkillId}
-              onChange={(e) => setSelectedSkillId(e.target.value)}
-              className="min-h-10 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            >
-              {allSkills.map((skill) => (
-                <option key={skill.id} value={skill.id}>
-                  {skill.name} ({skill.category})
-                </option>
-              ))}
-            </select>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled={busy || !selectedSkillId}
-              onClick={() =>
-                void runAction(async () => {
-                  await CurriculumLibraryApi.attachEntitySkill(entity, definitionId, selectedSkillId);
-                  setLinkedSkills(await CurriculumLibraryApi.listEntitySkills(entity, definitionId));
-                }, "Skill linked")
-              }
-            >
-              Link skill
-            </Button>
-          </div>
+        {kind === "milestone" && (
+          <MilestoneRemedialDrillsPanel
+            milestoneDefinitionId={definitionId}
+            onError={onError}
+          />
         )}
       </div>
     );

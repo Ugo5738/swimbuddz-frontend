@@ -43,6 +43,18 @@ export interface LinkedSkill {
   category: string | null;
 }
 
+export interface MilestoneRemedialDrillLink {
+  id: string;
+  milestone_definition_id: string;
+  drill_id: string;
+  drill_code: string | null;
+  drill_title: string | null;
+  latest_published_version_id: string | null;
+  primary_focal_cue: string | null;
+  priority_order: number;
+  coach_tip: string | null;
+}
+
 export interface LessonDrillLink {
   id: string;
   lesson_version_id: string;
@@ -203,6 +215,26 @@ export const CurriculumLibraryApi = {
     apiDelete<void>(`${base}/${entity}/${definitionId}/skills/${linkId}`, {
       auth: true,
     }),
+
+  listMilestoneRemedialDrills: (milestoneDefinitionId: string) =>
+    apiGet<MilestoneRemedialDrillLink[]>(
+      `${base}/milestones/${milestoneDefinitionId}/remedial-drills`,
+      { auth: true },
+    ),
+  attachMilestoneRemedialDrill: (
+    milestoneDefinitionId: string,
+    input: { drill_id: string; priority_order: number; coach_tip?: string | null },
+  ) =>
+    apiPost<{ id: string }>(
+      `${base}/milestones/${milestoneDefinitionId}/remedial-drills`,
+      input,
+      { auth: true },
+    ),
+  removeMilestoneRemedialDrill: (milestoneDefinitionId: string, linkId: string) =>
+    apiDelete<void>(
+      `${base}/milestones/${milestoneDefinitionId}/remedial-drills/${linkId}`,
+      { auth: true },
+    ),
 };
 
 export const starterContent: Record<CurriculumKind, Record<string, unknown>> = {
