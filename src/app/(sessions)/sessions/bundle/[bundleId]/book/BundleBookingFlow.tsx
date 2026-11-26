@@ -118,7 +118,40 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
           setLoading(false);
           return;
         }
-        const sessionsData = await Promise.all(ids.map((id) => getSession(id, { auth: true })));
+        // Fetch session details and optional ride configs concurrently per session (ADR-025).
+        const sessionsData = await Promise.all(
+          ids.map(async (id) => {
+            const [s, rideConfigs] = await Promise.all([
+              getSession(id, { auth: true }),
+              apiGet<RideConfig[]>(`/api/v1/transport/sessions/${id}/ride-configs`, {
+                auth: true,
+              }).catch(() => null),
+            ]);
+            if (rideConfigs && rideConfigs.length > 0) {
+              s.rideShareAreas = rideConfigs.map(
+                (config): RideShareArea => ({
+                  id: config.id,
+                  ride_area_id: config.ride_area_id,
+                  ride_area_name: config.ride_area_name,
+                  cost: config.cost,
+                  capacity: config.capacity,
+                  pickup_locations: config.pickup_locations.map((loc) => ({
+                    id: loc.id,
+                    name: loc.name,
+                    description: loc.description,
+                    is_available: loc.is_available,
+                    max_capacity: loc.max_capacity,
+                    current_bookings: loc.current_bookings,
+                    distance_text: loc.distance_text,
+                    duration_text: loc.duration_text,
+                    departure_time_calculated: loc.departure_time_calculated,
+                  })),
+                })
+              );
+            }
+            return s;
+          })
+        );
         if (cancelled) return;
 
         const lockedSession = sessionsData.find((s) => !s.access || !s.access.bookable);
@@ -132,41 +165,6 @@ export function BundleBookingFlow({ ids }: { ids: string[] }) {
           setLoading(false);
           return;
         }
-
-        await Promise.all(
-          sessionsData.map(async (s) => {
-            try {
-              const rideConfigs = await apiGet<RideConfig[]>(
-                `/api/v1/transport/sessions/${s.id}/ride-configs`,
-                { auth: true }
-              );
-              if (rideConfigs && rideConfigs.length > 0) {
-                s.rideShareAreas = rideConfigs.map(
-                  (config): RideShareArea => ({
-                    id: config.id,
-                    ride_area_id: config.ride_area_id,
-                    ride_area_name: config.ride_area_name,
-                    cost: config.cost,
-                    capacity: config.capacity,
-                    pickup_locations: config.pickup_locations.map((loc) => ({
-                      id: loc.id,
-                      name: loc.name,
-                      description: loc.description,
-                      is_available: loc.is_available,
-                      max_capacity: loc.max_capacity,
-                      current_bookings: loc.current_bookings,
-                      distance_text: loc.distance_text,
-                      duration_text: loc.duration_text,
-                      departure_time_calculated: loc.departure_time_calculated,
-                    })),
-                  })
-                );
-              }
-            } catch {
-              // No ride configs for this session — optional
-            }
-          })
-        );
 
         sessionsData.sort(
           (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()

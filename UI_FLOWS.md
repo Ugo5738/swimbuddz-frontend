@@ -830,6 +830,12 @@ independent approval, without preventing products from loading. This corrects a
 Store startup import failure and introduces no checkout or price changes.
 
 
+### Mobile-First Swim Cards, Evergreen Swim Bubbles Card & Fast Session Checkout (26 Nov 2026 — ADR-025)
+
+- **Mobile-first Upcoming Swims & Find a Swim cards (`/account/bookings`, `/account/find-a-swim`):** Status badges (`Scheduled for your Club`, `Confirmed`, etc.) use `inline-flex shrink-0 whitespace-nowrap` and sit above the title/time block on narrow viewports so titles and times get 100% card width without squeezing or colliding with the badge. Action buttons (`Details`, `Book this swim`, `+ Add`) sit in a cleanly separated footer row on mobile and align right on `sm:`+ screens.
+- **Evergreen Weekly Swim Bubbles card (`/account/wallet/rewards`, `SwimRewards.tsx`):** Drops the `"Swim Bubbles Programme · Since 22 Nov 2026"` eyebrow, the `"Automatic · ₦100 / 🫧"` header chip, and the launch-date disclaimer paragraph, leaving a single muted rule line (`"1 🫧 (₦100) per eligible swim day, up to 3 days/week · Reversed if absent or cancelled."`).
+- **Low-latency Session Checkout (`/sessions/[id]/book`, `/sessions/bundle/[bundleId]/book`):** Fires session details, `/members/me`, `/wallet/me`, ride-configs, and single-session `bookings/me?session_id=...` concurrently on mount (once per session, no `[session]` re-fire), unlocks the checkout UI as soon as session + profile resolve while hydrating ride-share and wallet balance non-blocking, and passes `session_id` + `include_session=false` on the legacy `/attendance/me` fallback.
+
 ### Reviewed purchased stock and Fatima collection (24 November 2026)
 
 The owner-approved operator reconciliation converts the purchased product families to Stocked and leaves five units per purchased variant after Fatima’s confirmed collection. Her existing pickup order completes as Picked Up through the normal admin status API; original preorder snapshots and payment remain intact. This scoped data correction adds no new UI or global completion shortcut. Unknown acquisition costs remain visibly unvalued.
