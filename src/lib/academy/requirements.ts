@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPost } from "@/lib/api";
 
 export type EffectiveMilestone = {
   definition_id: string;
@@ -33,9 +33,54 @@ export type FrozenRequirements = RequirementsPreview & {
   created_at: string;
 };
 
+export type ProgramAssignments = {
+  program_id: string;
+  modules: {
+    id: string;
+    module_version_id: string;
+    code: string | null;
+    title: string | null;
+    version: number | null;
+    order_index: number;
+  }[];
+  milestones: {
+    id: string;
+    milestone_version_id: string;
+    code: string | null;
+    title: string | null;
+    version: number | null;
+    safety_gate: boolean;
+    required_for_completion: boolean;
+    target_week: number | null;
+  }[];
+};
+
+export type CohortAssignments = {
+  cohort_id: string;
+  is_frozen: boolean;
+  milestones: {
+    id: string;
+    milestone_version_id: string;
+    code: string | null;
+    title: string | null;
+    version: number | null;
+    safety_gate: boolean;
+    target_week: number | null;
+    override_reason: string;
+    assigned_by_auth_id: string;
+    created_at: string;
+  }[];
+};
+
 const base = "/api/v1/academy/admin";
 
 export const AcademyRequirementsApi = {
+  listProgramAssignments: (programId: string) =>
+    apiGet<ProgramAssignments>(
+      `${base}/programs/${programId}/curriculum/assignments`,
+      { auth: true },
+    ),
+
   assignProgramMilestone: (
     programId: string,
     input: {
@@ -47,6 +92,18 @@ export const AcademyRequirementsApi = {
     apiPost<{ id: string }>(
       `${base}/programs/${programId}/curriculum/milestones`,
       input,
+      { auth: true },
+    ),
+
+  removeProgramMilestone: (programId: string, assignmentId: string) =>
+    apiDelete<void>(
+      `${base}/programs/${programId}/curriculum/milestones/${assignmentId}`,
+      { auth: true },
+    ),
+
+  listCohortAssignments: (cohortId: string) =>
+    apiGet<CohortAssignments>(
+      `${base}/cohorts/${cohortId}/curriculum/assignments`,
       { auth: true },
     ),
 
@@ -64,6 +121,12 @@ export const AcademyRequirementsApi = {
       { auth: true },
     ),
 
+  removeCohortMilestone: (cohortId: string, assignmentId: string) =>
+    apiDelete<void>(
+      `${base}/cohorts/${cohortId}/curriculum/milestones/${assignmentId}`,
+      { auth: true },
+    ),
+
   assignModuleMilestone: (
     moduleVersionId: string,
     input: {
@@ -78,6 +141,12 @@ export const AcademyRequirementsApi = {
       { auth: true },
     ),
 
+  removeModuleMilestone: (moduleVersionId: string, assignmentId: string) =>
+    apiDelete<void>(
+      `${base}/modules/${moduleVersionId}/curriculum/milestones/${assignmentId}`,
+      { auth: true },
+    ),
+
   assignProgramModule: (
     programId: string,
     input: { module_version_id: string; order_index: number },
@@ -85,6 +154,12 @@ export const AcademyRequirementsApi = {
     apiPost<{ id: string }>(
       `${base}/programs/${programId}/curriculum/modules`,
       input,
+      { auth: true },
+    ),
+
+  removeProgramModule: (programId: string, assignmentId: string) =>
+    apiDelete<void>(
+      `${base}/programs/${programId}/curriculum/modules/${assignmentId}`,
       { auth: true },
     ),
 

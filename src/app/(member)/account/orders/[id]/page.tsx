@@ -78,7 +78,7 @@ export default function OrderDetailPage() {
         Back to Orders
       </Link>
 
-      {/* Header with Separated Payment & Fulfillment Statuses (ADR-023) */}
+      {/* Header with Separated Payment & Fulfillment Statuses (ADR-024) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Order #{order.order_number}</h1>

@@ -3,6 +3,7 @@
 import { EvidenceMedia } from "@/components/academy/EvidenceMedia";
 import { LearnerKnowledgeQuizzes } from "@/components/academy/LearnerKnowledgeQuizzes";
 import { SupplementaryEvidence } from "@/components/academy/SupplementaryEvidence";
+import { LearnerV2PlanPanel } from "@/components/academy/LearnerV2PlanPanel";
 import { MilestoneClaimModal } from "@/components/academy/MilestoneClaimModal";
 import {
   WithdrawEnrollmentModal,
@@ -629,6 +630,9 @@ export default function EnrollmentDetailPage() {
               </div>
             )}
           </Card>
+
+          {/* V2 Competency Plan, Prior Credit & TI Practice Drills */}
+          <LearnerV2PlanPanel enrollmentId={enrollmentId} />
 
           {/* Upcoming Sessions */}
           <Card className="p-6">

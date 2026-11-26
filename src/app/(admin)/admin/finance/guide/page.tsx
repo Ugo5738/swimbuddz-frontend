@@ -21,21 +21,21 @@ const sections = [
     ],
   },
   {
-    id: "expenses", title: "3. Pay a legitimate business expense",
+    id: "expenses", title: "3. Pay an expense or settle a liability",
     content: [
-      ["Prepare", "Finance Operations records the amount, source bank, business purpose, vendor, invoice/receipt evidence, category, programme and budget."],
+      ["Prepare", "Finance Operations records the amount, source bank, business purpose, vendor, invoice/receipt reference (plus optional PDF/image receipt upload), category, programme and budget. Choose Liability Settlement when paying an Accounts Payable supplier invoice."],
       ["Approve internally", "Finance Owner reviews evidence, budget and conflicts of interest. Unbudgeted payments require a written exception reason."],
-      ["Execute outside SwimBuddz", "Comfort initiates in the bank if authorised; the authorised bank approver releases the transaction there. SwimBuddz does not send money."],
+      ["Execute outside the platform", "Authorised staff initiate in the bank portal; the authorised bank approver releases the transaction there. The Ledger never executes bank transfers directly."],
       ["Confirm evidence", "Import the bank debit statement and verify it directly in the bank portal. Never equate a manual CSV with bank verification."],
-      ["Post or reconcile", "If Payments, Paystack or a coach payout already created a journal, link it. Otherwise Owner can post the reviewed balanced entry exactly once."],
+      ["Post or reconcile", "If Payments, Paystack or a coach payout already created a journal, link it. Otherwise Owner posts once: DR Expense / CR Bank for operating expenses, or DR Liability (e.g. 2110 Accounts Payable) / CR Bank for supplier invoice settlements."],
     ],
   },
   {
-    id: "transfer", title: "4. Fund Moniepoint from Stanbic",
+    id: "transfer", title: "4. Fund an operations account from treasury",
     content: [
       ["Request", "Choose Funding, not Expense, and allocate against a treasury funding budget."],
-      ["Verify both banks", "After independent approval and the actual bank transfer, check Stanbic's debit and Moniepoint's credit."],
-      ["Reconcile", "Link an existing balanced journal or post a reviewed internal transfer. This is neither sales revenue nor operational expense."],
+      ["Verify both banks", "After independent approval and the actual bank transfer, check the treasury debit and operations credit."],
+      ["Reconcile", "Link an existing balanced journal or post a reviewed internal transfer. This moves cash between bank asset accounts and is neither revenue nor expense."],
     ],
   },
   {

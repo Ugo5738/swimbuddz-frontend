@@ -1,5 +1,6 @@
 "use client";
 
+import { CoachV2CompetencyPanel } from "@/components/academy/CoachV2CompetencyPanel";
 import { EvidenceMedia } from "@/components/academy/EvidenceMedia";
 import { MediaInput } from "@/components/ui/MediaInput";
 import { Alert } from "@/components/ui/Alert";
@@ -228,6 +229,9 @@ export default function CoachStudentProgressPage() {
           </div>
         )}
       </Card>
+
+      {/* Native V2 Competency Assessments & TI Drill Prescriptions */}
+      <CoachV2CompetencyPanel enrollmentId={enrollmentId} />
     </div>
   );
 }

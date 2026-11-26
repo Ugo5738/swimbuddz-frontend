@@ -14,6 +14,7 @@ interface MediaInputProps {
   purpose:
     | "coach_document"
     | "payment_proof"
+    | "finance_document"
     | "milestone_evidence"
     | "milestone_video"
     | "club_assessment_video"
@@ -122,6 +123,7 @@ export function MediaInput({
         return "image/*";
       case "coach_document":
       case "payment_proof":
+      case "finance_document":
         return "image/*,.pdf";
       default:
         return "*/*";

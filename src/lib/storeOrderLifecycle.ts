@@ -1,4 +1,4 @@
-/** Shared typed contracts & presentation helpers for Store post-purchase lifecycle (ADR-023). */
+/** Shared typed contracts & presentation helpers for Store post-purchase lifecycle (ADR-024). */
 
 export interface StoreOrderItem {
   id: string;

@@ -524,7 +524,11 @@ existing link. Merely creating an offering does not attach it to a Club plan.
 
 Member navigation shows Make-ups only for members with Academy payment/history,
 including members who also have Club. Stroke Lab links to
-`https://analyzer.swimbuddz.com`; old `/account/strokelab` reports remain available.
+`https://analyzer.swimbuddz.com`; member `/account/strokelab/[jobId]` reports
+remain available and render the collated coach summary, longitudinal swim
+comparison against the member's previous completed freestyle clip, cross-stroke
+consistency / second-opinion verification badges, and curated water-safe TI
+drill cards (with Academy links when present).
 
 ### Flow: Admin Dashboard → Payments → Verify
 
@@ -810,12 +814,11 @@ or frontend control is introduced by the scoped operator repair. See backend
 `docs/SESSION_WALLET_REALLOCATION_RUNBOOK.md` for checks and accounting replay.
 
 
-### Finance intelligence availability (20 Nov 2026)
+### Finance intelligence & detachable Ledger workflows (25 Nov 2026 — ADR-023)
 
-The Finance Intelligence page gets its operational rollup from the Ledger
-service. The signed-in caller needs an active Ledger membership at viewer level
-or above. The page uses the existing report contract after Ledger startup
-recovery.
+- **Finance Intelligence (`/admin/finance/intelligence`):** Aggregated by **`gateway_service`** from service-owned internal endpoints (zero SwimBuddz queries inside `ledger_service`), gated strictly on active Ledger membership. Surfaces `dropout_pending_enrollments` alongside `active_enrollments` (with installments excluding dropped learners), `unvalued_fulfilled_orders_count` for legacy Store SKUs, and partial-outage banners (`degraded_domains`) if any service is unreachable.
+- **Treasury & Operations (`/admin/finance/treasury`):** Supports **Operating Expense**, **Liability / Supplier Invoice Settlement** (`liability_settlement`, posting `DR Liability / CR Bank`), and **Treasury → Operations Allocation** requests, N-bank reconciliation & cash projection, and optional private PDF/image receipt attachments (`finance_document`) on requests and bank balance snapshots.
+- **Store Procurement (`/admin/store/procurement`):** Supports optional PDF/image receipt uploads on deliveries, invoices, openings, settlements, and repayments; Owner-verified partial/full **Supplier Invoice Settlements** (linking posted Treasury Ledger journals); **Customer Credit Agreements** (independent approval posts AR and unlocks controlled fulfillment, followed by verified partial/full repayments); and **Fulfilled Order Returns & COGS Reversals** (`restockable` vs. `damaged`).
 
 ### Store availability and procurement authorization (19 Nov 2026)
 
@@ -831,7 +834,7 @@ Store startup import failure and introduces no checkout or price changes.
 
 The owner-approved operator reconciliation converts the purchased product families to Stocked and leaves five units per purchased variant after Fatima’s confirmed collection. Her existing pickup order completes as Picked Up through the normal admin status API; original preorder snapshots and payment remain intact. This scoped data correction adds no new UI or global completion shortcut. Unknown acquisition costs remain visibly unvalued.
 
-### Store post-purchase order lifecycle, cases & refunds (25 November 2026 — ADR-023)
+### Store post-purchase order lifecycle, cases & refunds (25 November 2026 — ADR-024)
 
 - **Member Order Detail (`/account/orders/[id]`):** Displays separated **Payment** and **Fulfillment** status badges, full tender breakdown (Order Total, Store Credit, Bubbles, Card/Bank Paid), a server-driven **Manage Your Order** panel (instant self-cancel for unpaid orders with live Paystack check and for stocked paid orders awaiting preparation; instant same-price size/color swap before preparation; request-only cancellation for preorder/dropship or processing/ready orders; 7-day return/exchange for unused items with swimwear hygiene notice; FCCPA defective/wrong-item claims with photo evidence upload), and a live **Requests & Refunds** payout tracker.
 - **Admin Store Cases (`/admin/store/cases`) & Order Detail (`/admin/store/orders/[id]`):** Replaces silent paid-order cancellation in the raw status dropdown with an audited **Cancel & Issue Refund** workflow. Admins review open cancellation, return/exchange, and defect cases, record physical return inspection (`restockable`, `damaged`, `hygiene_unsellable` — restocking stock + reversing COGS only when `restockable`), and trigger Paystack or verified bank refunds.

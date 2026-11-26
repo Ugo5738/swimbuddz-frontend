@@ -81,7 +81,7 @@ function makeEligibility(overrides: Partial<OrderActionEligibility> = {}): Order
   };
 }
 
-describe("OrderManagePanel (ADR-023)", () => {
+describe("OrderManagePanel (ADR-024)", () => {
   it("computes true effective order total independently of Bubbles and Store Credit tenders", () => {
     expect(effectiveOrderTotal(baseOrder)).toBe(22500);
     expect(
