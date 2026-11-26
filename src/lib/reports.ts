@@ -314,3 +314,54 @@ export async function fetchYTDStats(year: number): Promise<YTDStats> {
   summed.quarters_loaded = reports.length;
   return summed;
 }
+
+export type MemberYtdAttendanceSummary = {
+  year: number;
+  sessions_attended: number;
+  sessions_recorded: number;
+  sessions_absent: number;
+  sessions_excused: number;
+  attendance_rate: number;
+  pool_hours: number;
+  streak_current: number;
+  streak_longest: number;
+  active_weeks: number;
+};
+
+/**
+ * Single-request all-swim YTD attendance summary for the member dashboard (ADR-022).
+ * Falls back gracefully to quarterly YTD aggregation if the backend endpoint is
+ * unavailable during rollout.
+ */
+export async function fetchYTDAttendanceSummary(
+  year: number
+): Promise<MemberYtdAttendanceSummary | null> {
+  try {
+    return await apiGet<MemberYtdAttendanceSummary>(
+      `/api/v1/attendance/me/ytd-summary?year=${year}`,
+      { auth: true }
+    );
+  } catch {
+    try {
+      const legacy = await fetchYTDStats(year);
+      if (legacy.quarters_loaded === 0) return null;
+      return {
+        year,
+        sessions_attended: legacy.total_sessions_attended,
+        sessions_recorded: legacy.total_sessions_available,
+        sessions_absent: Math.max(
+          legacy.total_sessions_available - legacy.total_sessions_attended,
+          0
+        ),
+        sessions_excused: 0,
+        attendance_rate: legacy.attendance_rate,
+        pool_hours: legacy.pool_hours,
+        streak_current: legacy.streak_current,
+        streak_longest: legacy.streak_longest,
+        active_weeks: 0,
+      };
+    } catch {
+      return null;
+    }
+  }
+}

@@ -6439,6 +6439,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attendance/me/ytd-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Ytd Attendance Summary
+         * @description Return a single-request all-swim YTD attendance summary for the member dashboard.
+         *
+         *     Counts all recorded swimmer sessions across Club, Academy, and Community in
+         *     Lagos time and computes true cross-quarter weekly streaks (ADR-022).
+         */
+        get: operations["get_my_ytd_attendance_summary_attendance_me_ytd_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/attendance/sessions/{session_id}/pool-list": {
         parameters: {
             query?: never;
@@ -8088,6 +8111,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/competencies/admin/legacy-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Legacy Promotion Candidates
+         * @description List achieved legacy StudentProgress records with V2 promotion readiness.
+         */
+        get: operations["list_legacy_promotion_candidates_academy_competencies_admin_legacy_candidates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/admin/verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Admin Verifications
+         * @description List issued competency verifications with live status for admin review.
+         */
+        get: operations["list_admin_verifications_academy_competencies_admin_verifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/competencies/admin/verify-legacy": {
         parameters: {
             query?: never;
@@ -9391,6 +9454,213 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/curriculum-library/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Catalog Skills */
+        get: operations["list_catalog_skills_academy_admin_curriculum_library_skills_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/lessons/{lesson_version_id}/drills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Lesson Drills */
+        get: operations["list_lesson_drills_academy_admin_curriculum_library_lessons__lesson_version_id__drills_get"];
+        put?: never;
+        /** Attach Lesson Drill */
+        post: operations["attach_lesson_drill_academy_admin_curriculum_library_lessons__lesson_version_id__drills_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/lessons/{lesson_version_id}/drills/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Lesson Drill */
+        delete: operations["remove_lesson_drill_academy_admin_curriculum_library_lessons__lesson_version_id__drills__link_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/modules/{module_version_id}/composition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Module Composition */
+        get: operations["get_module_composition_academy_admin_curriculum_library_modules__module_version_id__composition_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/modules/{module_version_id}/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attach Module Lesson */
+        post: operations["attach_module_lesson_academy_admin_curriculum_library_modules__module_version_id__lessons_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/modules/{module_version_id}/lessons/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Module Lesson */
+        delete: operations["remove_module_lesson_academy_admin_curriculum_library_modules__module_version_id__lessons__link_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/modules/{module_version_id}/quizzes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attach Module Quiz */
+        post: operations["attach_module_quiz_academy_admin_curriculum_library_modules__module_version_id__quizzes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/modules/{module_version_id}/quizzes/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Module Quiz */
+        delete: operations["remove_module_quiz_academy_admin_curriculum_library_modules__module_version_id__quizzes__link_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/milestones/{definition_id}/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Milestone Skills */
+        get: operations["list_milestone_skills_academy_admin_curriculum_library_milestones__definition_id__skills_get"];
+        put?: never;
+        /** Attach Milestone Skill */
+        post: operations["attach_milestone_skill_academy_admin_curriculum_library_milestones__definition_id__skills_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/milestones/{definition_id}/skills/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Milestone Skill */
+        delete: operations["remove_milestone_skill_academy_admin_curriculum_library_milestones__definition_id__skills__link_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/drills/{definition_id}/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Drill Skills */
+        get: operations["list_drill_skills_academy_admin_curriculum_library_drills__definition_id__skills_get"];
+        put?: never;
+        /** Attach Drill Skill */
+        post: operations["attach_drill_skill_academy_admin_curriculum_library_drills__definition_id__skills_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/drills/{definition_id}/skills/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Drill Skill */
+        delete: operations["remove_drill_skill_academy_admin_curriculum_library_drills__definition_id__skills__link_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/admin/curriculum-library/{kind}": {
         parameters: {
             query?: never;
@@ -9403,6 +9673,23 @@ export interface paths {
         put?: never;
         /** Create Definition */
         post: operations["create_definition_academy_admin_curriculum_library__kind__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/{kind}/{definition_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire Definition */
+        post: operations["retire_definition_academy_admin_curriculum_library__kind___definition_id__retire_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9425,6 +9712,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/{kind}/{definition_id}/versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Draft Version */
+        patch: operations["update_draft_version_academy_admin_curriculum_library__kind___definition_id__versions__version_id__patch"];
         trace?: never;
     };
     "/api/v1/academy/admin/curriculum-library/{kind}/{definition_id}/versions/{version_id}/publish": {
@@ -9461,6 +9765,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/modules/{module_version_id}/curriculum/milestones/{assignment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Module Milestone */
+        delete: operations["remove_module_milestone_academy_admin_modules__module_version_id__curriculum_milestones__assignment_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/programs/{program_id}/curriculum/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Program Assignments */
+        get: operations["list_program_assignments_academy_admin_programs__program_id__curriculum_assignments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/admin/programs/{program_id}/curriculum/modules": {
         parameters: {
             query?: never;
@@ -9473,6 +9811,23 @@ export interface paths {
         /** Assign Program Module */
         post: operations["assign_program_module_academy_admin_programs__program_id__curriculum_modules_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/programs/{program_id}/curriculum/modules/{assignment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Program Module */
+        delete: operations["remove_program_module_academy_admin_programs__program_id__curriculum_modules__assignment_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -9495,6 +9850,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/admin/programs/{program_id}/curriculum/milestones/{assignment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Program Milestone */
+        delete: operations["remove_program_milestone_academy_admin_programs__program_id__curriculum_milestones__assignment_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/cohorts/{cohort_id}/curriculum/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Cohort Assignments */
+        get: operations["list_cohort_assignments_academy_admin_cohorts__cohort_id__curriculum_assignments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/admin/cohorts/{cohort_id}/curriculum/milestones": {
         parameters: {
             query?: never;
@@ -9507,6 +9896,23 @@ export interface paths {
         /** Assign Cohort Milestone */
         post: operations["assign_cohort_milestone_academy_admin_cohorts__cohort_id__curriculum_milestones_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/cohorts/{cohort_id}/curriculum/milestones/{assignment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Cohort Milestone */
+        delete: operations["remove_cohort_milestone_academy_admin_cohorts__cohort_id__curriculum_milestones__assignment_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -32709,6 +33115,59 @@ export interface components {
             attendance_available: boolean;
         };
         /**
+         * MemberYtdAttendanceSummary
+         * @description Lightweight all-swim YTD attendance summary for the member dashboard.
+         */
+        MemberYtdAttendanceSummary: {
+            /** Year */
+            year: number;
+            /**
+             * Sessions Attended
+             * @default 0
+             */
+            sessions_attended: number;
+            /**
+             * Sessions Recorded
+             * @default 0
+             */
+            sessions_recorded: number;
+            /**
+             * Sessions Absent
+             * @default 0
+             */
+            sessions_absent: number;
+            /**
+             * Sessions Excused
+             * @default 0
+             */
+            sessions_excused: number;
+            /**
+             * Attendance Rate
+             * @default 0
+             */
+            attendance_rate: number;
+            /**
+             * Pool Hours
+             * @default 0
+             */
+            pool_hours: number;
+            /**
+             * Streak Current
+             * @default 0
+             */
+            streak_current: number;
+            /**
+             * Streak Longest
+             * @default 0
+             */
+            streak_longest: number;
+            /**
+             * Active Weeks
+             * @default 0
+             */
+            active_weeks: number;
+        };
+        /**
          * ParticipantAttendanceCreate
          * @description Admin/service attendance for a canonical SessionParticipant.
          */
@@ -34755,6 +35214,28 @@ export interface components {
             questions?: components["schemas"]["QuizQuestionPublic"][] | null;
             latest_result?: components["schemas"]["QuizAttemptResponse"] | null;
         };
+        /** LessonDrillInput */
+        LessonDrillInput: {
+            /**
+             * Drill Version Id
+             * Format: uuid
+             */
+            drill_version_id: string;
+            /**
+             * Order Index
+             * @default 0
+             */
+            order_index: number;
+            /**
+             * Sets
+             * @default 1
+             */
+            sets: number;
+            /** Distance M */
+            distance_m?: number | string | null;
+            /** Focal Cue Override */
+            focal_cue_override?: string | null;
+        };
         /**
          * LocationType
          * @enum {string}
@@ -35043,6 +35524,19 @@ export interface components {
          * @enum {string}
          */
         MilestoneType: "skill" | "endurance" | "technique" | "assessment";
+        /** ModuleLessonInput */
+        ModuleLessonInput: {
+            /**
+             * Lesson Version Id
+             * Format: uuid
+             */
+            lesson_version_id: string;
+            /**
+             * Order Index
+             * @default 0
+             */
+            order_index: number;
+        };
         /** ModuleMilestoneInput */
         ModuleMilestoneInput: {
             /**
@@ -35060,6 +35554,19 @@ export interface components {
              * @default 0
              */
             order_index: number;
+        };
+        /** ModuleQuizInput */
+        ModuleQuizInput: {
+            /**
+             * Quiz Version Id
+             * Format: uuid
+             */
+            quiz_version_id: string;
+            /**
+             * Required For Completion
+             * @default true
+             */
+            required_for_completion: boolean;
         };
         /**
          * NextSessionInfo
@@ -35768,6 +36275,14 @@ export interface components {
             category: string;
             /** Description */
             description?: string | null;
+        };
+        /** SkillLinkInput */
+        SkillLinkInput: {
+            /**
+             * Skill Id
+             * Format: uuid
+             */
+            skill_id: string;
         };
         /**
          * SkillResponse
@@ -64899,6 +65414,37 @@ export interface operations {
             };
         };
     };
+    get_my_ytd_attendance_summary_attendance_me_ytd_summary_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberYtdAttendanceSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_pool_list_csv_attendance_sessions__session_id__pool_list_get: {
         parameters: {
             query?: never;
@@ -67728,6 +68274,73 @@ export interface operations {
             };
         };
     };
+    list_legacy_promotion_candidates_academy_competencies_admin_legacy_candidates_get: {
+        parameters: {
+            query?: {
+                cohort_id?: string | null;
+                member_auth_id?: string | null;
+                include_credited?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_admin_verifications_academy_competencies_admin_verifications_get: {
+        parameters: {
+            query?: {
+                cohort_id?: string | null;
+                member_auth_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     verify_legacy_competency_academy_competencies_admin_verify_legacy_post: {
         parameters: {
             query?: never;
@@ -69903,6 +70516,475 @@ export interface operations {
             };
         };
     };
+    list_catalog_skills_academy_admin_curriculum_library_skills_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_lesson_drills_academy_admin_curriculum_library_lessons__lesson_version_id__drills_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_lesson_drill_academy_admin_curriculum_library_lessons__lesson_version_id__drills_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonDrillInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_lesson_drill_academy_admin_curriculum_library_lessons__lesson_version_id__drills__link_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_version_id: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_module_composition_academy_admin_curriculum_library_modules__module_version_id__composition_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_module_lesson_academy_admin_curriculum_library_modules__module_version_id__lessons_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModuleLessonInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_module_lesson_academy_admin_curriculum_library_modules__module_version_id__lessons__link_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_version_id: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_module_quiz_academy_admin_curriculum_library_modules__module_version_id__quizzes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModuleQuizInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_module_quiz_academy_admin_curriculum_library_modules__module_version_id__quizzes__link_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_version_id: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_milestone_skills_academy_admin_curriculum_library_milestones__definition_id__skills_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_milestone_skill_academy_admin_curriculum_library_milestones__definition_id__skills_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillLinkInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_milestone_skill_academy_admin_curriculum_library_milestones__definition_id__skills__link_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_drill_skills_academy_admin_curriculum_library_drills__definition_id__skills_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_drill_skill_academy_admin_curriculum_library_drills__definition_id__skills_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillLinkInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_drill_skill_academy_admin_curriculum_library_drills__definition_id__skills__link_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_definitions_academy_admin_curriculum_library__kind__get: {
         parameters: {
             query?: never;
@@ -69951,6 +71033,38 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_definition_academy_admin_curriculum_library__kind___definition_id__retire_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: "milestone" | "drill" | "lesson" | "quiz" | "module";
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -70037,6 +71151,43 @@ export interface operations {
             };
         };
     };
+    update_draft_version_academy_admin_curriculum_library__kind___definition_id__versions__version_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: "milestone" | "drill" | "lesson" | "quiz" | "module";
+                definition_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogVersionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     publish_version_academy_admin_curriculum_library__kind___definition_id__versions__version_id__publish_post: {
         parameters: {
             query?: never;
@@ -70105,6 +71256,67 @@ export interface operations {
             };
         };
     };
+    remove_module_milestone_academy_admin_modules__module_version_id__curriculum_milestones__assignment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_version_id: string;
+                assignment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_program_assignments_academy_admin_programs__program_id__curriculum_assignments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                program_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     assign_program_module_academy_admin_programs__program_id__curriculum_modules_post: {
         parameters: {
             query?: never;
@@ -70128,6 +71340,36 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_program_module_academy_admin_programs__program_id__curriculum_modules__assignment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                program_id: string;
+                assignment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -70175,6 +71417,67 @@ export interface operations {
             };
         };
     };
+    remove_program_milestone_academy_admin_programs__program_id__curriculum_milestones__assignment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                program_id: string;
+                assignment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_cohort_assignments_academy_admin_cohorts__cohort_id__curriculum_assignments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     assign_cohort_milestone_academy_admin_cohorts__cohort_id__curriculum_milestones_post: {
         parameters: {
             query?: never;
@@ -70198,6 +71501,36 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_cohort_milestone_academy_admin_cohorts__cohort_id__curriculum_milestones__assignment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cohort_id: string;
+                assignment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

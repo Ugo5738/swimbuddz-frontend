@@ -18,15 +18,14 @@ import { Card } from "@/components/ui/Card";
 import { useApi } from "@/hooks/useApi";
 import { useMemberProfile } from "@/lib/member-profile-context";
 import type { Announcement } from "@/lib/communications";
-import { formatAnnouncementCategory } from "@/lib/communications";
 import { loadPaymentIntentCache, type CachedPaymentIntent } from "@/lib/paymentCache";
 import { getMyPod, type PodSummary } from "@/lib/pods";
 import {
   fetchQuarterlyReport,
-  fetchYTDStats,
+  fetchYTDAttendanceSummary,
   quarterSlug,
   type MemberQuarterlyReport,
-  type YTDStats,
+  type MemberYtdAttendanceSummary,
 } from "@/lib/reports";
 import {
   getMembershipLabel,
@@ -38,7 +37,6 @@ import {
 } from "@/lib/tiers";
 import {
   ArrowRight,
-  Bell,
   Megaphone,
   Trophy,
   Calendar,
@@ -49,9 +47,13 @@ import {
   Sparkles,
   TrendingUp,
   Wallet,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+
+const DISMISSED_ANNOUNCEMENTS_KEY = "swimbuddz-dismissed-announcements";
+const RECENT_ANNOUNCEMENT_MS = 14 * 24 * 60 * 60 * 1000;
 
 type AttendanceRecord = {
   session_id: string;
@@ -68,14 +70,55 @@ export default function MemberDashboardPage() {
   const { data: attendanceData } = useApi<AttendanceRecord[]>("/api/v1/attendance/me");
   const allRecords = useMemo(() => attendanceData ?? [], [attendanceData]);
   const { data: announcementData } = useApi<Announcement[]>("/api/v1/communications/announcements/");
-  const announcements = useMemo(() => (announcementData ?? [])
-    .filter((a) => a.status === "published" && (!a.expires_at || new Date(a.expires_at).getTime() > Date.now()))
-    .sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned) ||
-      new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
-    .slice(0, 2), [announcementData]);
-  const [ytdStats, setYtdStats] = useState<YTDStats | null>(null);
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  const [ytdStats, setYtdStats] = useState<MemberYtdAttendanceSummary | null>(null);
   const [myPod, setMyPod] = useState<PodSummary | null>(null);
   const [swimProgress, setSwimProgress] = useState<SwimProgress | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DISMISSED_ANNOUNCEMENTS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setDismissedIds(parsed.map(String));
+      }
+    } catch {
+      // Ignore malformed local preferences.
+    }
+  }, []);
+
+  const dismissAnnouncement = (id: string) => {
+    setDismissedIds((current) => {
+      const next = current.includes(id) ? current : [...current, id].slice(-50);
+      try {
+        localStorage.setItem(DISMISSED_ANNOUNCEMENTS_KEY, JSON.stringify(next));
+      } catch {
+        // Ignore storage errors.
+      }
+      return next;
+    });
+  };
+
+  // Surface only genuinely active pinned or recent (<= 14 days) announcements that haven't been dismissed.
+  const activeAnnouncement = useMemo(() => {
+    const now = Date.now();
+    const list = (announcementData ?? [])
+      .filter((a) => {
+        if (a.status !== "published") return false;
+        if (a.expires_at && new Date(a.expires_at).getTime() <= now) return false;
+        if (dismissedIds.includes(a.id)) return false;
+        const publishedTs = new Date(a.published_at || a.created_at).getTime();
+        const isRecent = !Number.isNaN(publishedTs) && now - publishedTs <= RECENT_ANNOUNCEMENT_MS;
+        return Boolean(a.is_pinned) || isRecent;
+      })
+      .sort(
+        (a, b) =>
+          Number(b.is_pinned) - Number(a.is_pinned) ||
+          new Date(b.published_at || b.created_at).getTime() -
+            new Date(a.published_at || a.created_at).getTime()
+      );
+    return list[0] ?? null;
+  }, [announcementData, dismissedIds]);
 
   const currentYear = new Date().getFullYear();
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
@@ -83,8 +126,8 @@ export default function MemberDashboardPage() {
   const leaderboardSlug = quarterSlug(currentYear, currentQuarter);
 
   useEffect(() => {
-    // Fetch YTD stats
-    fetchYTDStats(currentYear)
+    // Fetch single-request all-swim YTD attendance summary (ADR-022)
+    fetchYTDAttendanceSummary(currentYear)
       .then(setYtdStats)
       .catch(() => setYtdStats(null));
 
@@ -445,6 +488,65 @@ export default function MemberDashboardPage() {
         </Card>
       )}
 
+      {/* ── Conditional Slim Dismissible Announcement Strip (ADR-022: never renders empty box) ── */}
+      {activeAnnouncement && (
+        <div
+          role="region"
+          aria-label="Latest SwimBuddz update"
+          className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${
+            activeAnnouncement.is_pinned
+              ? "border-amber-200 bg-amber-50/90 text-amber-950"
+              : "border-cyan-200 bg-cyan-50/70 text-slate-900"
+          }`}
+        >
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 text-sm">
+            <Megaphone
+              className={`h-4 w-4 shrink-0 ${
+                activeAnnouncement.is_pinned ? "text-amber-700" : "text-cyan-700"
+              }`}
+              aria-hidden="true"
+            />
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                activeAnnouncement.is_pinned
+                  ? "bg-amber-200/70 text-amber-900"
+                  : "bg-cyan-100 text-cyan-800"
+              }`}
+            >
+              {activeAnnouncement.is_pinned ? "Pinned" : "Update"}
+            </span>
+            <Link
+              href={`/announcements/${activeAnnouncement.id}`}
+              className="truncate font-semibold hover:underline"
+            >
+              {activeAnnouncement.title}
+            </Link>
+            <Link
+              href={`/announcements/${activeAnnouncement.id}`}
+              className="shrink-0 text-xs font-semibold text-cyan-800 underline underline-offset-2"
+            >
+              Read →
+            </Link>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <Link
+              href="/account/notifications?filter=announcements"
+              className="text-xs font-medium text-slate-600 hover:underline"
+            >
+              All updates
+            </Link>
+            <button
+              type="button"
+              onClick={() => dismissAnnouncement(activeAnnouncement.id)}
+              aria-label="Dismiss announcement"
+              className="rounded-lg p-1 text-slate-500 transition hover:bg-black/5 hover:text-slate-800"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Section 4: Hero Bento — Next Swim (65%) + Unified Wallet & Rewards (35%) ── */}
       <div className="grid gap-4 lg:grid-cols-12">
         <div className="lg:col-span-8">
@@ -458,39 +560,9 @@ export default function MemberDashboardPage() {
       {/* ── Section 5: Quick Actions promoted right below the hero ── */}
       <QuickActions leaderboardSlug={leaderboardSlug} showAcademy={showAcademy} />
 
-      {/* ── Section 6: Updates & Community (left) + Compact Swim Summary (right) ── */}
+      {/* ── Section 6: Pod & Community (left) + All-Swim Summary (right) ── */}
       <div className="grid gap-4 lg:grid-cols-12">
         <div className={`${ytdStats ? "lg:col-span-7" : "lg:col-span-12"} space-y-4`}>
-          {/* Latest updates */}
-          <section aria-labelledby="member-updates-heading" className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 id="member-updates-heading" className="flex items-center gap-2 text-base font-semibold text-slate-900">
-                <Megaphone className="h-5 w-5 text-cyan-700" /> Latest updates
-              </h2>
-              <Link href="/account/notifications?filter=announcements" className="text-sm font-medium text-cyan-700 hover:underline">All announcements →</Link>
-            </div>
-            {announcements.length ? (
-              <Card className="divide-y divide-slate-100 overflow-hidden">
-                {announcements.map((a) => (
-                  <Link key={a.id} href={`/announcements/${a.id}`} className={`flex items-start gap-3 p-4 transition hover:bg-slate-50 ${a.is_pinned ? "bg-amber-50/60" : ""}`}>
-                    <Bell className={`mt-1 h-4 w-4 shrink-0 ${a.is_pinned ? "text-amber-600" : "text-slate-400"}`} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-900">{a.title}</p>
-                        {a.is_pinned && <span className="text-xs font-semibold text-amber-800">Pinned</span>}
-                      </div>
-                      {a.summary && <p className="mt-1 line-clamp-2 text-sm text-slate-600">{a.summary}</p>}
-                      <p className="mt-1 text-xs text-slate-500">{formatAnnouncementCategory(a.category)}</p>
-                    </div>
-                    <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
-                  </Link>
-                ))}
-              </Card>
-            ) : (
-              <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">No new announcements at the moment.</p>
-            )}
-          </section>
-
           {/* My Pod (Club members) */}
           {isClubMember && <MyPodCard pod={myPod} showJoinCta={!myPod} />}
 

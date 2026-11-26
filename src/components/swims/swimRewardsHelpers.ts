@@ -62,19 +62,26 @@ export function getNextSwimRewardCue(data: SwimProgress | null): string | null {
   return "+1 🫧 automatically after swim";
 }
 
-export function getNextRewardMessage(data: SwimProgress): string {
+export function getLiveRewardStatusMessage(data: SwimProgress): string | null {
   if (data.week_days >= data.weekly_limit) {
-    return "You’ve reached this week’s 3-day limit. You can earn again on Monday.";
+    return "You’ve reached this week’s 3-day limit. Resets Monday.";
   }
   if (data.today_counted) {
     return "Today’s swim counts. Swim on another day this week to earn your next Bubble.";
   }
   if (data.bubbles_credited > data.bubbles_earned) {
-    return "Your next qualifying swim counts toward a Bubble already spent before an attendance update.";
+    return "Your next qualifying swim offsets a Bubble already spent before an attendance update.";
   }
   if (data.week_days > 0) {
     const remaining = data.weekly_limit - data.week_days;
-    return `${data.week_days} reward ${data.week_days === 1 ? "day" : "days"} earned this week — ${remaining} more swim ${remaining === 1 ? "day" : "days"} before Sunday earns up to ${remaining} more ${remaining === 1 ? "Bubble" : "Bubbles"}.`;
+    return `${data.week_days} of ${data.weekly_limit} reward days earned this week — ${remaining} more swim ${remaining === 1 ? "day" : "days"} before Sunday earns up to ${remaining} more ${remaining === 1 ? "Bubble" : "Bubbles"}.`;
   }
-  return "After your next eligible swim ends, you earn 1 Bubble automatically.";
+  return null;
+}
+
+export function getNextRewardMessage(data: SwimProgress): string {
+  return (
+    getLiveRewardStatusMessage(data) ??
+    `Earn 1 Bubble automatically after each eligible swim (up to ${data.weekly_limit} days/week).`
+  );
 }

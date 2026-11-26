@@ -6,6 +6,20 @@ The implementation of pages should follow these flows closely.
 **Last Updated:** November 2026
 **Total Routes:** 103 pages across Community, Club, Academy, Store, Events, and Admin domains
 
+## November 25, 2026 — Payments & Credits redesign, All-Swim YTD Summary & Dashboard polish (`ADR-022`)
+
+- **Rewards page copy (`/account/wallet/rewards`):** Removed 3× repeated rule copy in the Weekly Swim Bubbles card; live weekly status text now appears only when conveying active weekly progress/offsets, paired with one 1-line rule footnote and a single launch sentence when `bubbles_earned === 0`.
+- **Dashboard (`/account`) polish:**
+  - `NextSwimDashboardFocus` now presents one primary CTA button + inline `+1 🫧` pill without redundant `My Swims` / `Other swims` links.
+  - **2026 Swim Summary** (`YTDStatsOverview`) reads a single lightweight `GET /api/v1/attendance/me/ytd-summary` endpoint covering *all* attended Club, Academy, and Community swims with true cross-quarter Lagos-week streaks (replacing 4× quarterly report requests).
+  - **Latest updates** renders only as a slim, dismissible banner for active pinned or recent (≤14-day) announcements, never showing an empty announcements box.
+- **Payments & Credits (`/account/billing`):**
+  - Reuses shared `useOptionalMemberProfile()` from `MemberLayout` instead of firing a duplicate `/api/v1/members/me` query.
+  - Pairs calm **Payment Status** (`✓ All caught up` at `₦0`, urgent amber styling only when `> ₦0`) beside **Your Credits** (`Bubbles` vs `Store Credit`), hiding empty obligation cards (`Needs payment`, `Coming up`, `We’re checking your payment`).
+  - Replaces the 4 collapsed `<details>` toggles with visible **Memberships & Plans** and **Payment History** tabs (rendering all recorded payments with expandable itemized quote breakdowns when present), human-readable bank transfer labels, and contextual `#bank-transfer-receipts` links only when pending transfers exist.
+
+---
+
 ## November 24, 2026 — Independent Account Registration, Modular Journeys & Store-First Access (`ADR-021`)
 
 - **Decoupled signup (`/register`):** Regular account registration is a 2-step identity flow (**Create Account** → **Confirm & Finish**) requiring only First Name, Last Name, Email, Password (`>= 8` chars), and terms confirmation, plus an optional *"How did you hear about SwimBuddz?"* dropdown for flywheel attribution. Contact details, address, and swimming level are deferred to programme onboarding or Store checkout (coach signups via `/register?coach=true` still validate contact details).
