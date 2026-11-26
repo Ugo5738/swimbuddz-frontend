@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { PrivateAssessmentClip } from "@/components/club/PrivateAssessmentClip";
+import { ClubReadinessCompetencyAdvisory } from "@/components/club/ClubReadinessCompetencyAdvisory";
 import {
   ClubPaymentArrangementFields,
   type ClubPaymentArrangementValue,
@@ -193,6 +194,7 @@ export default function ClubApplicationsPage() {
                 ))}
               </dl>
             </div>
+            <ClubReadinessCompetencyAdvisory memberAuthId={selected.member_auth_id} />
             {selected.assessment?.self_report?.assessment_method === "video" && (
               <div className="mb-5 space-y-4 rounded-lg border border-cyan-200 p-4">
                 <h3 className="font-semibold">Video assessment evidence</h3>
