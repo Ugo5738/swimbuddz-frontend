@@ -77,6 +77,8 @@ export type ClubAssessment = {
 
 export type ClubApplication = {
   id: string;
+  member_id?: string;
+  member_auth_id?: string | null;
   member_name: string | null;
   member_email: string | null;
   club_id: string;

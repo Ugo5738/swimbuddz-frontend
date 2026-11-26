@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CLUB_ADVISORY_SIGNAL_LABELS,
+  PARITY_STATUS_LABELS,
   SOURCE_TYPE_LABELS,
   extractRubricCriteriaCodes,
 } from "@/lib/academy/competency-passport";
@@ -41,5 +43,21 @@ describe("Academy V2 competency passport helpers & starter contracts", () => {
     expect(SOURCE_TYPE_LABELS.cohort_v2).toBe("Cohort Assessment");
     expect(SOURCE_TYPE_LABELS.diagnostic_assessment).toBe("Diagnostic Clinic");
     expect(SOURCE_TYPE_LABELS.legacy_promotion).toBe("Verified Legacy Record");
+  });
+
+  it("maps every Phase 5A graduation parity status and Club advisory signal to a clear label", () => {
+    expect(PARITY_STATUS_LABELS.aligned_eligible).toBe("Aligned — Eligible");
+    expect(PARITY_STATUS_LABELS.aligned_ineligible).toBe("Aligned — In Progress");
+    expect(PARITY_STATUS_LABELS.legacy_only_eligible).toBe("Legacy-Only Eligible");
+    expect(PARITY_STATUS_LABELS.v2_only_eligible).toBe("V2-Only Eligible");
+    expect(PARITY_STATUS_LABELS.no_frozen_snapshot).toBe("No Frozen Snapshot");
+    expect(PARITY_STATUS_LABELS.snapshot_integrity_error).toBe(
+      "Snapshot Integrity Error",
+    );
+
+    expect(CLUB_ADVISORY_SIGNAL_LABELS.meets_club_safety_profile).toContain("Advisory");
+    expect(CLUB_ADVISORY_SIGNAL_LABELS.partial_evidence).toContain("Partial");
+    expect(CLUB_ADVISORY_SIGNAL_LABELS.renewal_or_recheck_needed).toContain("Renewal");
+    expect(CLUB_ADVISORY_SIGNAL_LABELS.no_v2_evidence).toContain("No Academy V2");
   });
 });

@@ -179,6 +179,135 @@ export interface EnrollmentV2LearningPlan {
   drill_assignments: StudentDrillAssignment[];
 }
 
+export type ParityStatus =
+  | "aligned_eligible"
+  | "aligned_ineligible"
+  | "legacy_only_eligible"
+  | "v2_only_eligible"
+  | "no_frozen_snapshot"
+  | "snapshot_integrity_error";
+
+export interface EnrollmentParityBlockedDetail {
+  code: string;
+  title: string;
+  safety_gate: boolean;
+  status: CompetencyStatus;
+  reason: string | null;
+}
+
+export interface EnrollmentParityRow {
+  enrollment_id: string;
+  member_id: string;
+  member_auth_id: string | null;
+  member_name: string | null;
+  enrollment_status: string;
+  certificate_issued: boolean;
+  certificate_issued_at: string | null;
+  certificate_code: string | null;
+  legacy_achieved_count: number;
+  legacy_total_milestones: number;
+  legacy_eligible: boolean;
+  legacy_missing_milestones: string[];
+  v2_verified_required_count: number;
+  v2_required_total: number;
+  v2_eligible: boolean;
+  v2_missing_required_codes: string[];
+  v2_missing_safety_gate_codes: string[];
+  v2_prior_credit_codes: string[];
+  v2_blocked_details: EnrollmentParityBlockedDetail[];
+  parity_status: ParityStatus;
+}
+
+export interface CohortGraduationParitySummary {
+  total_enrollments: number;
+  aligned_count: number;
+  aligned_eligible_count: number;
+  aligned_ineligible_count: number;
+  legacy_only_eligible_count: number;
+  v2_only_eligible_count: number;
+  no_frozen_snapshot_count: number;
+  snapshot_integrity_error_count: number;
+  discrepancy_count: number;
+  parity_rate_percent: number | null;
+  strict_parity_holds: boolean;
+  zero_legacy_regression: boolean;
+}
+
+export interface CohortGraduationParity {
+  advisory_only: true;
+  legacy_consumer_active: true;
+  evaluated_at: string;
+  cohort_id: string;
+  cohort_name: string;
+  cohort_status: string;
+  program_id: string;
+  program_name: string | null;
+  has_frozen_snapshot: boolean;
+  snapshot_integrity_valid: boolean;
+  snapshot_sha256: string | null;
+  snapshot_frozen_at: string | null;
+  legacy_total_milestones: number;
+  v2_required_milestones_count: number;
+  v2_safety_gate_count: number;
+  summary: CohortGraduationParitySummary;
+  enrollments: EnrollmentParityRow[];
+}
+
+export type ClubAdvisorySignal =
+  | "meets_club_safety_profile"
+  | "partial_evidence"
+  | "renewal_or_recheck_needed"
+  | "no_v2_evidence";
+
+export interface ClubCoreCheckResult {
+  check_key: string;
+  milestone_code: string;
+  label: string;
+  required_for_club_profile: boolean;
+  status: CompetencyStatus | "not_verified";
+  status_reason: string | null;
+  verification_id: string | null;
+  source_type: VerificationSourceType | null;
+  assessor_role: "coach" | "admin" | null;
+  verified_at: string | null;
+  expires_at: string | null;
+}
+
+export interface ClubAdvisoryCompetencyItem {
+  verification_id: string;
+  milestone_definition_id: string;
+  milestone_version_id: string;
+  code: string | null;
+  title: string;
+  safety_gate: boolean;
+  status: CompetencyStatus;
+  status_reason: string | null;
+  source_type: VerificationSourceType;
+  assessor_role: "coach" | "admin";
+  verified_at: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+}
+
+export interface ClubReadinessAdvisory {
+  advisory_only: true;
+  human_approval_required: true;
+  advisory_note: string;
+  member_auth_id: string;
+  evaluated_at: string;
+  advisory_signal: ClubAdvisorySignal;
+  core_club_checks: ClubCoreCheckResult[];
+  verified_safety_gates: ClubAdvisoryCompetencyItem[];
+  verified_competencies: ClubAdvisoryCompetencyItem[];
+  non_verified_alerts: ClubAdvisoryCompetencyItem[];
+  counts: {
+    verified_total: number;
+    verified_safety_gates: number;
+    expired_or_recheck: number;
+    revoked: number;
+  };
+}
+
 const base = "/api/v1/academy/competencies";
 
 function buildQuery(params: Record<string, string | boolean | number | undefined>) {
@@ -199,6 +328,20 @@ export const CompetencyPassportApi = {
     apiGet<CompetencyPassport>(`${base}/admin/members/${encodeURIComponent(memberAuthId)}`, {
       auth: true,
     }),
+
+  adminCohortGraduationParity: (cohortId: string, includeInactive = false) =>
+    apiGet<CohortGraduationParity>(
+      `${base}/admin/cohorts/${encodeURIComponent(cohortId)}/graduation-parity${buildQuery({
+        include_inactive: includeInactive || undefined,
+      })}`,
+      { auth: true },
+    ),
+
+  adminClubReadinessAdvisory: (memberAuthId: string) =>
+    apiGet<ClubReadinessAdvisory>(
+      `${base}/admin/members/${encodeURIComponent(memberAuthId)}/club-readiness-advisory`,
+      { auth: true },
+    ),
 
   adminLegacyCandidates: (
     params: {
@@ -297,6 +440,22 @@ export const SOURCE_TYPE_LABELS: Record<VerificationSourceType, string> = {
   cohort_v2: "Cohort Assessment",
   diagnostic_assessment: "Diagnostic Clinic",
   legacy_promotion: "Verified Legacy Record",
+};
+
+export const PARITY_STATUS_LABELS: Record<ParityStatus, string> = {
+  aligned_eligible: "Aligned — Eligible",
+  aligned_ineligible: "Aligned — In Progress",
+  legacy_only_eligible: "Legacy-Only Eligible",
+  v2_only_eligible: "V2-Only Eligible",
+  no_frozen_snapshot: "No Frozen Snapshot",
+  snapshot_integrity_error: "Snapshot Integrity Error",
+};
+
+export const CLUB_ADVISORY_SIGNAL_LABELS: Record<ClubAdvisorySignal, string> = {
+  meets_club_safety_profile: "Meets Club Safety Profile (Advisory)",
+  partial_evidence: "Partial Academy V2 Evidence",
+  renewal_or_recheck_needed: "Safety Credential Renewal / Recheck Needed",
+  no_v2_evidence: "No Academy V2 Credentials Recorded",
 };
 
 export function extractRubricCriteriaCodes(
