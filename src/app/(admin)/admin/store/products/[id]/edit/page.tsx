@@ -46,6 +46,7 @@ export default function EditProductPage() {
   const [showVariantForm, setShowVariantForm] = useState(false);
   const [savingVariant, setSavingVariant] = useState(false);
   const [deletingVariantId, setDeletingVariantId] = useState<string | null>(null);
+  const [togglingBackorderId, setTogglingBackorderId] = useState<string | null>(null);
   const [variantForm, setVariantForm] = useState<VariantFormState>({
     name: "",
     sku: "",
@@ -54,6 +55,7 @@ export default function EditProductPage() {
     weight_grams: "",
     options: "" as string,
     is_active: true,
+    allow_backorder: false,
   });
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
   const [editVariantForm, setEditVariantForm] = useState<VariantFormState>({
@@ -64,6 +66,7 @@ export default function EditProductPage() {
     weight_grams: "",
     options: "",
     is_active: true,
+    allow_backorder: false,
   });
 
   // Image management state
@@ -237,6 +240,7 @@ export default function EditProductPage() {
       const payload: Record<string, unknown> = {
         name: variantForm.name,
         options,
+        allow_backorder: Boolean(variantForm.allow_backorder),
       };
 
       // Only send SKU if user explicitly provided one
@@ -268,6 +272,7 @@ export default function EditProductPage() {
         weight_grams: "",
         options: "",
         is_active: true,
+        allow_backorder: false,
       });
       setShowVariantForm(false);
       toast.success(`Variant created (SKU: ${newVariant.sku})`);
@@ -291,6 +296,7 @@ export default function EditProductPage() {
         .map(([key, value]) => `${key}: ${value}`)
         .join("\n"),
       is_active: variant.is_active,
+      allow_backorder: Boolean(variant.allow_backorder),
     });
   };
 
@@ -328,6 +334,7 @@ export default function EditProductPage() {
             ? Number(editVariantForm.weight_grams)
             : null,
           is_active: editVariantForm.is_active,
+          allow_backorder: Boolean(editVariantForm.allow_backorder),
         },
         { auth: true },
       );
@@ -349,6 +356,69 @@ export default function EditProductPage() {
       toast.error(err instanceof Error ? err.message : "Failed to update variant");
     } finally {
       setSavingVariant(false);
+    }
+  };
+
+  const handleToggleVariantBackorder = async (variant: Variant) => {
+    const nextValue = !variant.allow_backorder;
+    setTogglingBackorderId(variant.id);
+    try {
+      const updated = await apiPatch<Variant>(
+        `/api/v1/admin/store/products/${productId}/variants/${variant.id}`,
+        { allow_backorder: nextValue },
+        { auth: true },
+      );
+      setVariants((current) =>
+        current.map((v) =>
+          v.id === variant.id
+            ? { ...v, ...updated, quantity_available: v.quantity_available, quantity_on_hand: v.quantity_on_hand }
+            : v,
+        ),
+      );
+      toast.success(
+        nextValue
+          ? `${variant.name || variant.sku}: continue selling when out of stock enabled`
+          : `${variant.name || variant.sku}: backorder disabled`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update backorder setting");
+    } finally {
+      setTogglingBackorderId(null);
+    }
+  };
+
+  const handleBulkToggleBackorder = async (allow: boolean) => {
+    const targets = variants.filter((v) => v.is_active && Boolean(v.allow_backorder) !== allow);
+    if (!targets.length) return;
+    setTogglingBackorderId("bulk");
+    try {
+      const results = await Promise.all(
+        targets.map((v) =>
+          apiPatch<Variant>(
+            `/api/v1/admin/store/products/${productId}/variants/${v.id}`,
+            { allow_backorder: allow },
+            { auth: true },
+          ),
+        ),
+      );
+      const byId = new Map(results.map((r) => [r.id, r]));
+      setVariants((current) =>
+        current.map((v) => {
+          const updated = byId.get(v.id);
+          return updated
+            ? { ...v, ...updated, quantity_available: v.quantity_available, quantity_on_hand: v.quantity_on_hand }
+            : v;
+        }),
+      );
+      toast.success(
+        allow
+          ? `Enabled pre-order when out of stock on ${targets.length} variants`
+          : `Disabled pre-order when out of stock on ${targets.length} variants`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update variants");
+    } finally {
+      setTogglingBackorderId(null);
     }
   };
 
@@ -704,6 +774,9 @@ export default function EditProductPage() {
             onCancelEditVariant={() => setEditingVariantId(null)}
             onUpdateVariant={handleUpdateVariant}
             onDeleteVariant={handleDeleteVariant}
+            onToggleBackorder={handleToggleVariantBackorder}
+            onBulkToggleBackorder={handleBulkToggleBackorder}
+            togglingBackorderId={togglingBackorderId}
             savingVariant={savingVariant}
             deletingVariantId={deletingVariantId}
           />

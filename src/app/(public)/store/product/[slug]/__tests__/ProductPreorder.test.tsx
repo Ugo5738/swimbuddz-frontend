@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({ useParams: () => ({ slug: "starter-kit" }), 
 vi.mock("@/lib/api", () => ({ apiGet: vi.fn() }));
 vi.mock("@/lib/storeCart", () => ({ useStoreCart: () => ({ addItem: mocks.addItem, itemCount: 0, isAuthenticated: false }) }));
 vi.mock("sonner", () => ({ toast: { error: mocks.error, success: vi.fn() } }));
-const variant = (id: string, options = {}) => ({ id, sku: id, name: id, options, is_active: true, price_override_ngn: null, quantity_available: 0 });
+const variant = (id: string, options = {}) => ({ id, sku: id, name: id, options, is_active: true, allow_backorder: false, price_override_ngn: null, quantity_available: 0 });
 const product = (variants: ReturnType<typeof variant>[], extras = {}) => ({
   id: "kit", name: "Starter Kit", slug: "starter-kit", base_price_ngn: 70000,
   status: "active", sourcing_type: "preorder", preorder_lead_days: 21,
@@ -72,5 +72,45 @@ describe("preorder product selection", () => {
     vi.mocked(apiGet).mockResolvedValue(product([variant("default")], { sourcing_type: "stocked" }));
     render(<ProductDetailPage />);
     for (const button of await screen.findAllByRole("button", { name: "Add to Cart" })) expect(button).toBeDisabled();
+  });
+
+  it("distinguishes in-stock, backorderable (continue selling), and out-of-stock variants on stocked products", async () => {
+    vi.mocked(apiGet).mockResolvedValue(
+      product(
+        [
+          { ...variant("blue", { Color: "Blue" }), quantity_available: 5, allow_backorder: false },
+          { ...variant("black", { Color: "Black" }), quantity_available: 0, allow_backorder: true },
+          { ...variant("gray", { Color: "Gray" }), quantity_available: 0, allow_backorder: false },
+        ],
+        { sourcing_type: "stocked", preorder_lead_days: 14 }
+      )
+    );
+    render(<ProductDetailPage />);
+
+    const blueBtn = await screen.findByRole("button", { name: "Blue" });
+    const blackBtn = screen.getByRole("button", { name: "Black" });
+    const grayBtn = screen.getByRole("button", { name: "Gray" });
+
+    expect(blueBtn).toHaveAttribute("data-availability", "in_stock");
+    expect(blackBtn).toHaveAttribute("data-availability", "preorder");
+    expect(grayBtn).toHaveAttribute("data-availability", "out_of_stock");
+
+    // Out-of-stock swatch stays clickable for preview, while ordering stays disabled
+    fireEvent.click(grayBtn);
+    for (const btn of screen.getAllByRole("button", { name: "Buy Now" })) {
+      expect(btn).toBeDisabled();
+    }
+
+    // Backorder-enabled 0-stock variant switches CTA to Pre-order Now & allows quantity > 1
+    fireEvent.click(blackBtn);
+    const preorderNow = screen.getByRole("button", { name: "Pre-order Now" });
+    expect(preorderNow).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Increase quantity" }));
+    fireEvent.click(preorderNow);
+    await waitFor(() =>
+      expect(mocks.router.push).toHaveBeenCalledWith(
+        "/store/checkout?buyNowVariant=black&quantity=2&product=starter-kit"
+      )
+    );
   });
 });

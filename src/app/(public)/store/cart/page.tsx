@@ -115,6 +115,14 @@ export default function CartPage() {
                         {item.variant_name && (
                           <p className="text-sm text-slate-500 mt-0.5">{item.variant_name}</p>
                         )}
+                        {item.is_preorder && (
+                          <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-[11px] font-medium bg-amber-100 text-amber-800 rounded-full">
+                            Pre-order
+                            {item.preorder_lead_days
+                              ? ` · ~${item.preorder_lead_days} days`
+                              : ""}
+                          </span>
+                        )}
                         {item.sku && <p className="text-xs text-slate-400 mt-0.5">{item.sku}</p>}
                         {item.quantity > 1 && (
                           <p className="text-xs text-slate-400 mt-1">
