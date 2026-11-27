@@ -36,5 +36,5 @@ export function isStandaloneReturnPath(value: string | null | undefined): boolea
   const safe = safeReturnPath(value);
   if (!safe) return false;
   const url = new URL(safe, "https://swimbuddz.invalid");
-  return /^\/(pool-access|store|experiences|guest-pass|tips)(?:\/|$)/.test(url.pathname);
+  return /^\/(pool-access|store|experiences|guest-pass|tips|scorecard)(?:\/|$)/.test(url.pathname);
 }

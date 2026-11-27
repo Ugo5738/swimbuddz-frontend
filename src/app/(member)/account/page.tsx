@@ -37,6 +37,7 @@ import {
 } from "@/lib/tiers";
 import {
   ArrowRight,
+  Award,
   Megaphone,
   Trophy,
   Calendar,
@@ -572,7 +573,17 @@ export default function MemberDashboardPage() {
               <h2 id="community-highlights-heading" className="text-base font-semibold text-slate-900">Your SwimBuddz community</h2>
               <Link href="/community/events" className="text-sm font-medium text-cyan-700 hover:underline">Explore community</Link>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Link href="/account/scorecard" className="group block">
+                <Card className="flex h-full items-start gap-3 border-emerald-200 bg-emerald-50/60 p-4 transition hover:border-emerald-400 hover:shadow-sm">
+                  <span className="rounded-xl bg-emerald-100 p-2.5"><Award className="h-5 w-5 text-emerald-700" /></span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-900">Swim Scorecard</h3>
+                    <p className="mt-1 text-sm text-slate-600">Track strokes, skills, distance, SPL, SWOLF &amp; verified progress.</p>
+                    <p className="mt-2 text-sm font-medium text-emerald-800 group-hover:underline">Open scorecard →</p>
+                  </div>
+                </Card>
+              </Link>
               <Link href={`/account/reports/${leaderboardSlug}/leaderboard`} className="group block">
                 <Card className="flex h-full items-start gap-3 border-amber-200 bg-amber-50/70 p-4 transition hover:border-amber-400 hover:shadow-sm">
                   <span className="rounded-xl bg-amber-100 p-2.5"><Trophy className="h-5 w-5 text-amber-700" /></span>

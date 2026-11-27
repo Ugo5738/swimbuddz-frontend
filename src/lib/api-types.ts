@@ -3316,6 +3316,306 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/scorecards/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Scorecard Catalog
+         * @description Return canonical SwimBuddz skill domains, skills, strokes & benchmark specs.
+         */
+        get: operations["get_scorecard_catalog_scorecards_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/public/{share_token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Public Shared Scorecard
+         * @description Strictly opt-in public positive milestone card (no authentication required).
+         */
+        get: operations["get_public_shared_scorecard_scorecards_public__share_token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Scorecard
+         * @description Return the authenticated member's complete live Swim Scorecard.
+         */
+        get: operations["get_my_scorecard_scorecards_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/me/skills/{skill_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update My Skill
+         * @description Self-update proficiency on a canonical swim skill and optionally request review.
+         */
+        put: operations["update_my_skill_scorecards_me_skills__skill_code__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/me/benchmarks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create My Benchmark
+         * @description Log a personal swim benchmark (progressive Club gating on advanced metrics).
+         */
+        post: operations["create_my_benchmark_scorecards_me_benchmarks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/me/benchmarks/{benchmark_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete My Benchmark
+         * @description Delete an unverified self-logged benchmark owned by the current member.
+         */
+        delete: operations["delete_my_benchmark_scorecards_me_benchmarks__benchmark_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/me/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update My Scorecard Settings
+         * @description Update audience visibility toggles, preferred pool length, or share token.
+         */
+        patch: operations["update_my_scorecard_settings_scorecards_me_settings_patch"];
+        trace?: never;
+    };
+    "/api/v1/scorecards/review-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Scorecard Review Queue
+         * @description Pending skill claims and benchmark verifications scoped by caller role.
+         */
+        get: operations["list_scorecard_review_queue_scorecards_review_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Scorecard Roster
+         * @description Searchable swimmer roster for Coaches, Admins, and active Pod Leads.
+         */
+        get: operations["list_scorecard_roster_scorecards_roster_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/benchmark-day/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Benchmark Day Batch
+         * @description Batch-record Coach/Pod-Lead verified benchmarks during a Club Benchmark Day.
+         */
+        post: operations["record_benchmark_day_batch_scorecards_benchmark_day_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/benchmarks/{benchmark_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review Member Benchmark
+         * @description Approve (`coach_verified`) or reject a member's self-logged benchmark.
+         */
+        post: operations["review_member_benchmark_scorecards_benchmarks__benchmark_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/pod/{pod_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Pod Scorecard Overview
+         * @description Pod roster highlights honoring each swimmer's `pod_visibility_enabled` setting.
+         */
+        get: operations["get_pod_scorecard_overview_scorecards_pod__pod_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/members/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member Scorecard By Id
+         * @description Audience-scoped scorecard read (full for self/coach/admin/pod_lead; peer highlight for pod_mate).
+         */
+        get: operations["get_member_scorecard_by_id_scorecards_members__member_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/members/{member_id}/skills/{skill_code}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Swimmer Skill
+         * @description Coach, Admin, or scoped Pod Lead verifies or rejects a swimmer's skill.
+         */
+        post: operations["verify_swimmer_skill_scorecards_members__member_id__skills__skill_code__verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scorecards/members/{member_id}/benchmarks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Verified Benchmark For Swimmer
+         * @description Coach, Admin, or scoped Pod Lead directly records a verified benchmark.
+         */
+        post: operations["record_verified_benchmark_for_swimmer_scorecards_members__member_id__benchmarks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/members/pods/rosters/batch": {
         parameters: {
             query?: never;
@@ -3408,6 +3708,30 @@ export interface paths {
          * @description Look up a member by Supabase auth_id.
          */
         get: operations["get_member_by_auth_id_internal_members_by_auth__auth_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/members/by-auth/{auth_id}/membership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member Membership By Auth Id
+         * @description Single-hop auth_id → member_id + normalized membership lookup (ADR-025).
+         *
+         *     Replaces the 2-step `/by-auth/{auth_id}` (which also called media_service
+         *     for profile photos) + `/{member_id}/membership` chain used on hot session
+         *     read paths.
+         */
+        get: operations["get_member_membership_by_auth_id_internal_members_by_auth__auth_id__membership_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4362,6 +4686,8 @@ export interface paths {
          *     UI surfaces this list so the member can pay the pool fee after-the-fact
          *     via a generated Paystack link (POST /api/v1/payments/intents with
          *     purpose=session_booking, payment_metadata.booking_id=<this id>).
+         *     Pass ``?session_id=<uuid>`` to check a single session without scanning
+         *     every unpaid booking.
          */
         get: operations["list_my_unpaid_bookings_sessions_bookings_me_unpaid_get"];
         put?: never;
@@ -4612,7 +4938,7 @@ export interface paths {
          *     intent-only, so a confirmed booking never produces an AttendanceRecord
          *     until day-of sign-in — the Booked tab must read bookings directly,
          *     not attendance. Pass ``?status_filter=cancelled`` (etc.) to narrow to
-         *     a single state.
+         *     a single state, or ``?session_id=<uuid>`` for a single-session lookup.
          *
          *     Registered before the admin ``/sessions/{session_id}/bookings`` route
          *     so the literal ``bookings/me`` path is matched first.
@@ -8168,6 +8494,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/competencies/coach/assess-cohort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assess Cohort V2 Competency
+         * @description Assigned cohort coach or human admin issues a native V2 cohort assessment.
+         */
+        post: operations["assess_cohort_v2_competency_academy_competencies_coach_assess_cohort_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/admin/assess-diagnostic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assess Diagnostic Competency
+         * @description Human coach or admin issues portable prerequisite credit from a diagnostic clinic.
+         */
+        post: operations["assess_diagnostic_competency_academy_competencies_admin_assess_diagnostic_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/competencies/admin/{verification_id}/revoke": {
         parameters: {
             query?: never;
@@ -8179,6 +8545,26 @@ export interface paths {
         put?: never;
         /** Revoke Verification */
         post: operations["revoke_verification_academy_competencies_admin__verification_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/enrollments/{enrollment_id}/v2-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Enrollment V2 Learning Plan
+         * @description Read-only V2 learning plan: frozen cohort milestones + prior credit + remedial drills.
+         */
+        get: operations["get_enrollment_v2_learning_plan_academy_competencies_enrollments__enrollment_id__v2_plan_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8202,6 +8588,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/academy/competencies/admin/graduation-mode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Admin Graduation Mode
+         * @description Read-only Phase 5B status showing the active ACADEMY_V2_GRADUATION_MODE flag.
+         */
+        get: operations["get_admin_graduation_mode_academy_competencies_admin_graduation_mode_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/admin/cohorts/{cohort_id}/graduation-parity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cohort Graduation Parity
+         * @description Read-only Phase 5A dual-read shadow comparison: legacy vs. V2 graduation eligibility.
+         */
+        get: operations["get_cohort_graduation_parity_academy_competencies_admin_cohorts__cohort_id__graduation_parity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/admin/members/{member_auth_id}/club-readiness-advisory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Member Club Readiness Advisory
+         * @description Read-only Phase 5A advisory Club-readiness summary from V2 verified credentials.
+         */
+        get: operations["member_club_readiness_advisory_academy_competencies_admin_members__member_auth_id__club_readiness_advisory_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/academy/competencies/admin/members/{member_auth_id}": {
         parameters: {
             query?: never;
@@ -8217,6 +8663,146 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/me/drills/from-strokelab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save Strokelab Drill To My Plan
+         * @description Member saves a vetted Stroke Lab TI drill recommendation into their Academy drill list.
+         */
+        post: operations["save_strokelab_drill_to_my_plan_academy_competencies_me_drills_from_strokelab_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/drills/published": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Published Drills For Coaching
+         * @description List latest published version of each active TI drill for coaches & admins.
+         */
+        get: operations["list_published_drills_for_coaching_academy_competencies_drills_published_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/me/drills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Assigned Drills
+         * @description List TI drills prescribed to the authenticated swimmer.
+         */
+        get: operations["list_my_assigned_drills_academy_competencies_me_drills_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/me/drills/{assignment_id}/practiced": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark My Drill Practiced
+         * @description Learner logs that they practiced an assigned drill (cannot self-mark mastered).
+         */
+        post: operations["mark_my_drill_practiced_academy_competencies_me_drills__assignment_id__practiced_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/enrollments/{enrollment_id}/drills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Enrollment Drills
+         * @description List prescribed TI drills for a cohort enrollment (owner, assigned coach, or admin).
+         */
+        get: operations["list_enrollment_drills_academy_competencies_enrollments__enrollment_id__drills_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/coach/drills/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assign Student Drill
+         * @description Coach or admin prescribes a published TI drill version to a swimmer.
+         */
+        post: operations["assign_student_drill_academy_competencies_coach_drills_assign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/competencies/coach/drills/{assignment_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Student Drill Status
+         * @description Coach or admin updates a prescribed drill's status (e.g., mastered or archived).
+         */
+        patch: operations["update_student_drill_status_academy_competencies_coach_drills__assignment_id__status_patch"];
         trace?: never;
     };
     "/api/v1/academy/coach/me/dashboard": {
@@ -9123,6 +9709,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/academy/competencies/members/{member_auth_id}/club-readiness-advisory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Internal Member Club Readiness Advisory
+         * @description Service-role read-only Club-readiness advisory from V2 competency passport.
+         *
+         *     Strictly advisory evidence (ADR-005 / ADR-010); never auto-approves Club admission.
+         */
+        get: operations["internal_member_club_readiness_advisory_internal_academy_competencies_members__member_auth_id__club_readiness_advisory_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/academy/competencies/drills/prescribe-from-strokelab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal Prescribe Strokelab Drill
+         * @description Service-role advisory hook linking a Stroke Lab TI drill to Academy V2 drills.
+         *
+         *     Deterministic curated mapping only; never issues practical competency credentials
+         *     (ADR-010 / ADR-013).
+         */
+        post: operations["internal_prescribe_strokelab_drill_internal_academy_competencies_drills_prescribe_from_strokelab_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/academy/finance-summary": {
         parameters: {
             query?: never;
@@ -9142,6 +9773,26 @@ export interface paths {
          *          ``active_enrollments`` (per ADR-007).
          */
         get: operations["academy_finance_summary_internal_academy_finance_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/academy/members/{member_auth_id}/scorecard-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member Academy Scorecard Summary
+         * @description Lifetime Academy progression summary for the Member Swim Scorecard (ADR-026).
+         */
+        get: operations["get_member_academy_scorecard_summary_internal_academy_members__member_auth_id__scorecard_summary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9621,6 +10272,41 @@ export interface paths {
         post?: never;
         /** Remove Milestone Skill */
         delete: operations["remove_milestone_skill_academy_admin_curriculum_library_milestones__definition_id__skills__link_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/milestones/{definition_id}/remedial-drills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Milestone Remedial Drills */
+        get: operations["list_milestone_remedial_drills_academy_admin_curriculum_library_milestones__definition_id__remedial_drills_get"];
+        put?: never;
+        /** Attach Milestone Remedial Drill */
+        post: operations["attach_milestone_remedial_drill_academy_admin_curriculum_library_milestones__definition_id__remedial_drills_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/academy/admin/curriculum-library/milestones/{definition_id}/remedial-drills/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Milestone Remedial Drill */
+        delete: operations["remove_milestone_remedial_drill_academy_admin_curriculum_library_milestones__definition_id__remedial_drills__link_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -11414,6 +12100,206 @@ export interface paths {
         put?: never;
         /** Attach Receipt */
         post: operations["attach_receipt_payments_admin__reference__receipt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/refunds/banks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Refund Banks
+         * @description List Nigerian banks from Paystack for manual bank-transfer refund verification.
+         */
+        get: operations["list_refund_banks_payments_admin_refunds_banks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Refunds Admin
+         * @description List shared refunds with filterable queue and cash summary totals.
+         */
+        get: operations["list_refunds_admin_payments_admin_refunds_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/refunds/{refund_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Refund Admin
+         * @description Fetch a single refund record (admin).
+         */
+        get: operations["get_refund_admin_payments_admin_refunds__refund_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/refunds/{refund_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Refund Admin
+         * @description Approve a requested refund (accrues Refunds Payable in the ledger).
+         */
+        post: operations["approve_refund_admin_payments_admin_refunds__refund_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/refunds/{refund_id}/initiate-paystack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Initiate Paystack Refund Admin
+         * @description Initiate (or idempotently return) a Paystack API refund.
+         */
+        post: operations["initiate_paystack_refund_admin_payments_admin_refunds__refund_id__initiate_paystack_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/refunds/{refund_id}/sync-paystack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Paystack Refund Admin
+         * @description Poll Paystack GET /refund/{id} to reconcile refund status.
+         */
+        post: operations["sync_paystack_refund_admin_payments_admin_refunds__refund_id__sync_paystack_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/refunds/{refund_id}/verify-bank-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Refund Bank Account Admin
+         * @description Verify recipient NUBAN via Paystack resolve_account before bank-transfer refund.
+         */
+        post: operations["verify_refund_bank_account_admin_payments_admin_refunds__refund_id__verify_bank_account_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/refunds/{refund_id}/complete-manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Manual Refund Admin
+         * @description Confirm manual bank-transfer refund disbursement with a verified bank reference.
+         */
+        post: operations["complete_manual_refund_admin_payments_admin_refunds__refund_id__complete_manual_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/admin/refunds/{refund_id}/fail-or-cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fail Or Cancel Refund Admin
+         * @description Cancel an uninitiated refund or mark a disbursement failed.
+         */
+        post: operations["fail_or_cancel_refund_admin_payments_admin_refunds__refund_id__fail_or_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/me/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Refunds
+         * @description List the authenticated member's own refunds with live status tracking.
+         */
+        get: operations["list_my_refunds_payments_me_refunds_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -13545,6 +14431,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/reporting/members/{member_auth_id}/scorecard-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member Reporting Scorecard Summary
+         * @description Aggregate lifetime consistency & community stats from quarterly snapshots (ADR-026).
+         */
+        get: operations["get_member_reporting_scorecard_summary_internal_reporting_members__member_auth_id__scorecard_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/wallet/me": {
         parameters: {
             query?: never;
@@ -15152,6 +16058,11 @@ export interface paths {
          * Get Session Ride Configs
          * @description Get ride configurations for a session with route info and pickup location
          *     availability.
+         *
+         *     Short-circuits immediately when the session has no ride configurations
+         *     (zero cross-service HTTP calls) and batches RideArea, PickupLocation,
+         *     RideBooking counts, and RouteInfo lookups into constant SQL queries
+         *     (ADR-025).
          */
         get: operations["get_session_ride_configs_transport_sessions__session_id__ride_configs_get"];
         put?: never;
@@ -15961,6 +16872,26 @@ export interface paths {
         };
         /** Get Reporting Summary */
         get: operations["get_reporting_summary_internal_ai_reporting_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/ai/members/{member_auth_id}/strokelab-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member Strokelab Summary
+         * @description Return completed Stroke Lab metric snapshots for one member.
+         */
+        get: operations["get_member_strokelab_summary_internal_ai_members__member_auth_id__strokelab_summary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -16886,6 +17817,29 @@ export interface paths {
          *     rows.
          */
         post: operations["materialise_from_session_template_internal_volunteer_opportunities_from_session_template_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/volunteer/members/{member_id}/scorecard-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Member Volunteer Scorecard Summary
+         * @description Positive volunteer summary for the Member Swim Scorecard (ADR-026).
+         *
+         *     Deliberately excludes internal `reliability_score` so raw ops metrics are
+         *     never exposed on member/peer/public scorecards.
+         */
+        get: operations["get_member_volunteer_scorecard_summary_internal_volunteer_members__member_id__scorecard_summary_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -18456,6 +19410,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/store/orders/{order_number}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Order Actions
+         * @description Return allowed post-purchase actions, refund preview, cases, and live refund status.
+         */
+        get: operations["get_order_actions_store_orders__order_number__actions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/store/orders/{order_number}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Self Cancel Order
+         * @description Self-cancel an unpaid order or a paid stocked order awaiting preparation (ADR-024).
+         */
+        post: operations["self_cancel_order_store_orders__order_number__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/store/orders/{order_number}/swap-variant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Self Swap Order Variant
+         * @description Perform an instant same-price variant swap before preparation starts.
+         */
+        post: operations["self_swap_order_variant_store_orders__order_number__swap_variant_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/store/orders/{order_number}/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Order Cases
+         * @description List post-purchase cases submitted for a member's order.
+         */
+        get: operations["list_my_order_cases_store_orders__order_number__cases_get"];
+        put?: never;
+        /**
+         * Create Order Case
+         * @description Submit a post-purchase request (cancel_request, return_exchange, or defect_claim).
+         */
+        post: operations["create_order_case_store_orders__order_number__cases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/store/orders/{order_number}/cases/{case_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw Order Case
+         * @description Withdraw a submitted case before admin review.
+         */
+        post: operations["withdraw_order_case_store_orders__order_number__cases__case_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/store/categories": {
         parameters: {
             query?: never;
@@ -18935,6 +19993,146 @@ export interface paths {
          * @description Issue a store credit refund for an order.
          */
         post: operations["issue_refund_admin_store_orders__order_id__refund_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/store/cases/open-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Open Cases Count
+         * @description Count open store post-purchase cases needing admin action.
+         */
+        get: operations["get_open_cases_count_admin_store_cases_open_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/store/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Store Cases Admin
+         * @description List post-purchase order cases for Store operations review.
+         */
+        get: operations["list_store_cases_admin_admin_store_cases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/store/cases/{case_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Store Case Admin
+         * @description Fetch a single StoreOrderCase with order & item details.
+         */
+        get: operations["get_store_case_admin_admin_store_cases__case_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/store/orders/{order_id}/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Order Cases And Refunds Admin
+         * @description Fetch all post-purchase cases and live payments_service refunds for an admin order.
+         */
+        get: operations["list_order_cases_and_refunds_admin_admin_store_orders__order_id__cases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/store/cases/{case_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review Store Case Admin
+         * @description Approve or decline a customer post-purchase case (ADR-024).
+         */
+        post: operations["review_store_case_admin_admin_store_cases__case_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/store/cases/{case_id}/receive-return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive Return Admin
+         * @description Record receipt & physical inspection of returned items, restock if eligible, and execute remedy.
+         */
+        post: operations["receive_return_admin_admin_store_cases__case_id__receive_return_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/store/orders/{order_id}/cancel-and-refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin Cancel And Refund Order
+         * @description Audited admin cancellation for paid orders that guarantees refund & tender restoration.
+         */
+        post: operations["admin_cancel_and_refund_order_admin_store_orders__order_id__cancel_and_refund_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -24213,6 +25411,52 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AcademyMilestoneSummaryItem */
+        AcademyMilestoneSummaryItem: {
+            /** Milestone Name */
+            milestone_name: string;
+            /** Achieved At */
+            achieved_at?: string | null;
+            /** Program Name */
+            program_name?: string | null;
+            /** Cohort Name */
+            cohort_name?: string | null;
+        };
+        /** AcademyProgressSection */
+        AcademyProgressSection: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /**
+             * Milestones Achieved
+             * @default 0
+             */
+            milestones_achieved: number;
+            /**
+             * Milestones In Progress
+             * @default 0
+             */
+            milestones_in_progress: number;
+            /**
+             * Certificates Earned
+             * @default 0
+             */
+            certificates_earned: number;
+            /**
+             * Cohorts Completed
+             * @default 0
+             */
+            cohorts_completed: number;
+            /**
+             * Active Enrollments
+             * @default 0
+             */
+            active_enrollments: number;
+            /** Recent Milestones */
+            recent_milestones?: components["schemas"]["AcademyMilestoneSummaryItem"][];
+        };
         /**
          * ActivateAcademyRequest
          * @description Request to activate (or extend) academy tier until a specific date.
@@ -24783,6 +26027,171 @@ export interface components {
             bank_name: string;
             /** Account Number */
             account_number: string;
+        };
+        /** BatchBenchmarkDayRequest */
+        BatchBenchmarkDayRequest: {
+            /** Benchmark Day Label */
+            benchmark_day_label: string;
+            /** Recorded At */
+            recorded_at?: string | null;
+            /** Session Id */
+            session_id?: string | null;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Pool Name */
+            pool_name?: string | null;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Entries */
+            entries: components["schemas"]["BatchBenchmarkEntry"][];
+        };
+        /** BatchBenchmarkDayResponse */
+        BatchBenchmarkDayResponse: {
+            /** Benchmark Day Label */
+            benchmark_day_label: string;
+            /** Recorded Count */
+            recorded_count: number;
+            /** Benchmarks */
+            benchmarks: components["schemas"]["BenchmarkItemResponse"][];
+        };
+        /** BatchBenchmarkEntry */
+        BatchBenchmarkEntry: {
+            /**
+             * Stroke
+             * @enum {string}
+             */
+            stroke: "freestyle" | "backstroke" | "breaststroke" | "butterfly" | "medley" | "open_water" | "any";
+            /**
+             * Benchmark Type
+             * @enum {string}
+             */
+            benchmark_type: "max_distance" | "time_trial" | "spl" | "stroke_rate" | "swolf" | "open_water";
+            /** Recorded At */
+            recorded_at?: string | null;
+            /** Distance M */
+            distance_m?: number | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Stroke Count */
+            stroke_count?: number | null;
+            /** Stroke Rate Spm */
+            stroke_rate_spm?: number | null;
+            /** Swolf Score */
+            swolf_score?: number | null;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Pool Name */
+            pool_name?: string | null;
+            /** Session Id */
+            session_id?: string | null;
+            /** Benchmark Day Label */
+            benchmark_day_label?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Request Verification
+             * @default false
+             */
+            request_verification: boolean;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Verifier Notes */
+            verifier_notes?: string | null;
+        };
+        /** BenchmarkItemResponse */
+        BenchmarkItemResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /**
+             * Stroke
+             * @enum {string}
+             */
+            stroke: "freestyle" | "backstroke" | "breaststroke" | "butterfly" | "medley" | "open_water" | "any";
+            /**
+             * Benchmark Type
+             * @enum {string}
+             */
+            benchmark_type: "max_distance" | "time_trial" | "spl" | "stroke_rate" | "swolf" | "open_water";
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Distance M */
+            distance_m?: number | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Pace Per 100M Seconds */
+            pace_per_100m_seconds?: number | null;
+            /** Stroke Count */
+            stroke_count?: number | null;
+            /** Stroke Rate Spm */
+            stroke_rate_spm?: number | null;
+            /** Swolf Score */
+            swolf_score?: number | null;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Pool Name */
+            pool_name?: string | null;
+            /** Session Id */
+            session_id?: string | null;
+            /** Benchmark Day Label */
+            benchmark_day_label?: string | null;
+            /**
+             * Verification Source
+             * @enum {string}
+             */
+            verification_source: "self_logged" | "strokelab_ai" | "coach_verified";
+            /**
+             * Verification Status
+             * @enum {string}
+             */
+            verification_status: "unverified" | "pending_review" | "verified" | "rejected";
+            /** Verified By Member Id */
+            verified_by_member_id?: string | null;
+            /** Verified By Name */
+            verified_by_name?: string | null;
+            /** Verified By Role */
+            verified_by_role?: ("coach" | "pod_lead" | "admin") | null;
+            /** Verified At */
+            verified_at?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Verifier Notes */
+            verifier_notes?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** BenchmarkTrendSeries */
+        BenchmarkTrendSeries: {
+            /** Metric Key */
+            metric_key: string;
+            /** Title */
+            title: string;
+            /** Unit */
+            unit: string;
+            /** Higher Is Better */
+            higher_is_better?: boolean | null;
+            /** Points */
+            points?: components["schemas"]["TrendPoint"][];
         };
         /** BirthdayMember */
         BirthdayMember: {
@@ -25414,6 +26823,8 @@ export interface components {
              * Format: uuid
              */
             member_id: string;
+            /** Member Auth Id */
+            member_auth_id?: string | null;
             /** Member Name */
             member_name?: string | null;
             /** Member Email */
@@ -26344,6 +27755,26 @@ export interface components {
                 };
             };
         };
+        /** ClubReadinessSnapshot */
+        ClubReadinessSnapshot: {
+            /**
+             * Is Club Ready
+             * @default false
+             */
+            is_club_ready: boolean;
+            /** Outcome */
+            outcome?: string | null;
+            /** Nonstop Distance M */
+            nonstop_distance_m?: number | null;
+            /** Deep Water Comfort */
+            deep_water_comfort?: string | null;
+            /** Primary Technique Focus */
+            primary_technique_focus?: string | null;
+            /** First Club Milestone */
+            first_club_milestone?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+        };
         /** ClubResponse */
         ClubResponse: {
             /** Name */
@@ -26835,6 +28266,50 @@ export interface components {
             is_verified: boolean;
             /** Recipient Code */
             recipient_code?: string | null;
+        };
+        /** CoachCreateBenchmarkRequest */
+        CoachCreateBenchmarkRequest: {
+            /**
+             * Stroke
+             * @enum {string}
+             */
+            stroke: "freestyle" | "backstroke" | "breaststroke" | "butterfly" | "medley" | "open_water" | "any";
+            /**
+             * Benchmark Type
+             * @enum {string}
+             */
+            benchmark_type: "max_distance" | "time_trial" | "spl" | "stroke_rate" | "swolf" | "open_water";
+            /** Recorded At */
+            recorded_at?: string | null;
+            /** Distance M */
+            distance_m?: number | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Stroke Count */
+            stroke_count?: number | null;
+            /** Stroke Rate Spm */
+            stroke_rate_spm?: number | null;
+            /** Swolf Score */
+            swolf_score?: number | null;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Pool Name */
+            pool_name?: string | null;
+            /** Session Id */
+            session_id?: string | null;
+            /** Benchmark Day Label */
+            benchmark_day_label?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Request Verification
+             * @default false
+             */
+            request_verification: boolean;
+            /** Verifier Notes */
+            verifier_notes?: string | null;
         };
         /**
          * CoachGradeEnum
@@ -27422,6 +28897,62 @@ export interface components {
              */
             already_purchased: boolean;
         };
+        /** ConsistencyCommunitySection */
+        ConsistencyCommunitySection: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /**
+             * Volunteer Available
+             * @default false
+             */
+            volunteer_available: boolean;
+            /**
+             * Total Sessions Attended
+             * @default 0
+             */
+            total_sessions_attended: number;
+            /**
+             * Total Pool Hours
+             * @default 0
+             */
+            total_pool_hours: number;
+            /**
+             * Longest Streak Weeks
+             * @default 0
+             */
+            longest_streak_weeks: number;
+            /**
+             * Current Streak Weeks
+             * @default 0
+             */
+            current_streak_weeks: number;
+            /** Punctuality Rate */
+            punctuality_rate?: number | null;
+            /**
+             * Volunteer Hours
+             * @default 0
+             */
+            volunteer_hours: number;
+            /** Volunteer Tier */
+            volunteer_tier?: string | null;
+            /** Volunteer Recognition Tier */
+            volunteer_recognition_tier?: string | null;
+            /**
+             * Rides Shared
+             * @default 0
+             */
+            rides_shared: number;
+            /**
+             * Events Attended
+             * @default 0
+             */
+            events_attended: number;
+            /** Latest Quarter Label */
+            latest_quarter_label?: string | null;
+        };
         /**
          * CreateAgreementVersionRequest
          * @description Admin request to create a new agreement version.
@@ -27438,6 +28969,48 @@ export interface components {
              * Format: date
              */
             effective_date: string;
+        };
+        /** CreateBenchmarkRequest */
+        CreateBenchmarkRequest: {
+            /**
+             * Stroke
+             * @enum {string}
+             */
+            stroke: "freestyle" | "backstroke" | "breaststroke" | "butterfly" | "medley" | "open_water" | "any";
+            /**
+             * Benchmark Type
+             * @enum {string}
+             */
+            benchmark_type: "max_distance" | "time_trial" | "spl" | "stroke_rate" | "swolf" | "open_water";
+            /** Recorded At */
+            recorded_at?: string | null;
+            /** Distance M */
+            distance_m?: number | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Stroke Count */
+            stroke_count?: number | null;
+            /** Stroke Rate Spm */
+            stroke_rate_spm?: number | null;
+            /** Swolf Score */
+            swolf_score?: number | null;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Pool Id */
+            pool_id?: string | null;
+            /** Pool Name */
+            pool_name?: string | null;
+            /** Session Id */
+            session_id?: string | null;
+            /** Benchmark Day Label */
+            benchmark_day_label?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Request Verification
+             * @default false
+             */
+            request_verification: boolean;
         };
         /**
          * CreateHandbookVersionRequest
@@ -28533,6 +30106,74 @@ export interface components {
             preferences?: components["schemas"]["MemberPreferencesResponse"] | null;
             coach_profile?: components["schemas"]["CoachProfileResponse"] | null;
         };
+        /** MemberScorecardResponse */
+        MemberScorecardResponse: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Name */
+            member_name: string;
+            /** First Name */
+            first_name: string;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
+            /**
+             * Member Since
+             * Format: date-time
+             */
+            member_since: string;
+            /** Active Programmes */
+            active_programmes?: string[];
+            /**
+             * Has Club Access
+             * @default false
+             */
+            has_club_access: boolean;
+            /**
+             * Has Full Performance Access
+             * @default false
+             */
+            has_full_performance_access: boolean;
+            /**
+             * Viewer Audience
+             * @enum {string}
+             */
+            viewer_audience: "self" | "coach_or_admin" | "pod_lead" | "pod_mate" | "public_share";
+            /**
+             * Can Edit Self
+             * @default false
+             */
+            can_edit_self: boolean;
+            /**
+             * Can Verify
+             * @default false
+             */
+            can_verify: boolean;
+            /** Pod Name */
+            pod_name?: string | null;
+            /** Club Name */
+            club_name?: string | null;
+            club_readiness: components["schemas"]["ClubReadinessSnapshot"];
+            headline: components["schemas"]["ScorecardHeadlineStats"];
+            /** Domains */
+            domains: components["schemas"]["ScorecardDomainSection"][];
+            /** Personal Bests */
+            personal_bests?: components["schemas"]["PersonalBestRecord"][];
+            /** Benchmarks */
+            benchmarks?: components["schemas"]["BenchmarkItemResponse"][];
+            /** Trends */
+            trends?: components["schemas"]["BenchmarkTrendSeries"][];
+            strokelab: components["schemas"]["StrokeLabSection"];
+            academy: components["schemas"]["AcademyProgressSection"];
+            consistency: components["schemas"]["ConsistencyCommunitySection"];
+            settings?: components["schemas"]["ScorecardSettingsResponse"] | null;
+            /** Source Availability */
+            source_availability?: {
+                [key: string]: boolean;
+            };
+        };
         /**
          * MemberSearchResult
          * @description Slim search result with auth_id for cross-service filtering.
@@ -28686,6 +30327,101 @@ export interface components {
             excluded_dates?: string[];
         };
         /**
+         * PeerScorecardHighlightResponse
+         * @description Sanitized positive-only view shown to active Pod-mates (ADR-026).
+         */
+        PeerScorecardHighlightResponse: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Name */
+            member_name: string;
+            /** First Name */
+            first_name: string;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
+            /** Pod Visibility Enabled */
+            pod_visibility_enabled: boolean;
+            /**
+             * Is Club Ready
+             * @default false
+             */
+            is_club_ready: boolean;
+            /** Verified Strokes Unlocked */
+            verified_strokes_unlocked?: string[];
+            /**
+             * Verified Skills Count
+             * @default 0
+             */
+            verified_skills_count: number;
+            /**
+             * Total Skills
+             * @default 0
+             */
+            total_skills: number;
+            /** Volunteer Recognition Tier */
+            volunteer_recognition_tier?: string | null;
+            /** Verified Benchmarks */
+            verified_benchmarks?: components["schemas"]["PersonalBestRecord"][];
+        };
+        /** PendingBenchmarkReviewItem */
+        PendingBenchmarkReviewItem: {
+            /**
+             * Benchmark Id
+             * Format: uuid
+             */
+            benchmark_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Name */
+            member_name: string;
+            /** Pod Name */
+            pod_name?: string | null;
+            /**
+             * Stroke
+             * @enum {string}
+             */
+            stroke: "freestyle" | "backstroke" | "breaststroke" | "butterfly" | "medley" | "open_water" | "any";
+            /**
+             * Benchmark Type
+             * @enum {string}
+             */
+            benchmark_type: "max_distance" | "time_trial" | "spl" | "stroke_rate" | "swolf" | "open_water";
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Distance M */
+            distance_m?: number | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Pace Per 100M Seconds */
+            pace_per_100m_seconds?: number | null;
+            /** Stroke Count */
+            stroke_count?: number | null;
+            /** Stroke Rate Spm */
+            stroke_rate_spm?: number | null;
+            /** Swolf Score */
+            swolf_score?: number | null;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Pool Name */
+            pool_name?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
          * PendingMemberResponse
          * @description Extended response for pending members (admin view).
          */
@@ -28789,6 +30525,83 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** PendingSkillReviewItem */
+        PendingSkillReviewItem: {
+            /**
+             * Progress Id
+             * Format: uuid
+             */
+            progress_id: string;
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Name */
+            member_name: string;
+            /** Pod Name */
+            pod_name?: string | null;
+            /** Skill Code */
+            skill_code: string;
+            /** Skill Title */
+            skill_title: string;
+            /**
+             * Domain
+             * @enum {string}
+             */
+            domain: "foundations" | "freestyle" | "backstroke" | "breaststroke" | "butterfly" | "advanced_skills";
+            /** Is Safety Gate */
+            is_safety_gate: boolean;
+            /**
+             * Claimed Proficiency
+             * @enum {string}
+             */
+            claimed_proficiency: "not_started" | "learning" | "confident" | "mastered";
+            /** Verified Proficiency */
+            verified_proficiency?: ("not_started" | "learning" | "confident" | "mastered") | null;
+            /** Member Notes */
+            member_notes?: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PersonalBestRecord */
+        PersonalBestRecord: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Stroke */
+            stroke: string;
+            /** Benchmark Type */
+            benchmark_type: string;
+            /** Value */
+            value: number;
+            /** Display Value */
+            display_value: string;
+            /** Unit */
+            unit: string;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Pool Name */
+            pool_name?: string | null;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /**
+             * Verification Source
+             * @enum {string}
+             */
+            verification_source: "self_logged" | "strokelab_ai" | "coach_verified";
+            /** Is Verified */
+            is_verified: boolean;
+            /** Benchmark Id */
+            benchmark_id?: string | null;
         };
         /**
          * PodAssignmentSource
@@ -29051,6 +30864,23 @@ export interface components {
              */
             pod_id: string;
         };
+        /** PodScorecardOverviewResponse */
+        PodScorecardOverviewResponse: {
+            /**
+             * Pod Id
+             * Format: uuid
+             */
+            pod_id: string;
+            /** Pod Name */
+            pod_name: string;
+            /**
+             * Viewer Can Verify
+             * @default false
+             */
+            viewer_can_verify: boolean;
+            /** Members */
+            members?: components["schemas"]["PeerScorecardHighlightResponse"][];
+        };
         /**
          * PodStatus
          * @description Lifecycle marker. Active pods accept members and surface in the
@@ -29226,6 +31056,74 @@ export interface components {
             /** Pool Id */
             pool_id?: string | null;
         };
+        /**
+         * PublicShareScorecardResponse
+         * @description Strictly opt-in public highlight card (zero private notes or raw weaknesses).
+         */
+        PublicShareScorecardResponse: {
+            /** Display Name */
+            display_name: string;
+            /** First Name */
+            first_name: string;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
+            /**
+             * Member Since
+             * Format: date-time
+             */
+            member_since: string;
+            /** Active Programmes */
+            active_programmes?: string[];
+            /**
+             * Is Club Ready
+             * @default false
+             */
+            is_club_ready: boolean;
+            /** Verified Strokes Unlocked */
+            verified_strokes_unlocked?: string[];
+            /**
+             * Verified Skills Count
+             * @default 0
+             */
+            verified_skills_count: number;
+            /**
+             * Total Skills
+             * @default 0
+             */
+            total_skills: number;
+            /**
+             * Safety Gates Cleared
+             * @default 0
+             */
+            safety_gates_cleared: number;
+            /**
+             * Safety Gates Total
+             * @default 0
+             */
+            safety_gates_total: number;
+            /** Top Verified Distance M */
+            top_verified_distance_m?: number | null;
+            /** Top Verified Distance Stroke */
+            top_verified_distance_stroke?: string | null;
+            /** Best Verified Spl */
+            best_verified_spl?: number | null;
+            /** Best Verified Spl Pool Length M */
+            best_verified_spl_pool_length_m?: number | null;
+            /** Best Verified Swolf */
+            best_verified_swolf?: number | null;
+            /** Best Verified Swolf Pool Length M */
+            best_verified_swolf_pool_length_m?: number | null;
+            /** Total Sessions Attended */
+            total_sessions_attended?: number | null;
+            /** Total Pool Hours */
+            total_pool_hours?: number | null;
+            /** Volunteer Recognition Tier */
+            volunteer_recognition_tier?: string | null;
+            /** Domain Highlights */
+            domain_highlights?: {
+                [key: string]: unknown;
+            }[];
+        };
         /** QuarterRecommendationRequest */
         QuarterRecommendationRequest: {
             /** Template Id */
@@ -29308,6 +31206,262 @@ export interface components {
             /** Account Number */
             account_number: string;
         };
+        /** ReviewBenchmarkRequest */
+        ReviewBenchmarkRequest: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "verify" | "reject";
+            /** Verifier Notes */
+            verifier_notes?: string | null;
+        };
+        /** ScorecardDomainSection */
+        ScorecardDomainSection: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "foundations" | "freestyle" | "backstroke" | "breaststroke" | "butterfly" | "advanced_skills";
+            /** Title */
+            title: string;
+            /** Short Title */
+            short_title: string;
+            /** Description */
+            description: string;
+            /** Order Index */
+            order_index: number;
+            /** Layer */
+            layer: string;
+            /** Default Expanded For Beginner */
+            default_expanded_for_beginner: boolean;
+            /** Total Skills */
+            total_skills: number;
+            /** Started Count */
+            started_count: number;
+            /** Confident Or Mastered Count */
+            confident_or_mastered_count: number;
+            /** Verified Count */
+            verified_count: number;
+            /** Pending Review Count */
+            pending_review_count: number;
+            /** Stroke Unlocked */
+            stroke_unlocked: boolean;
+            /** Skills */
+            skills: components["schemas"]["ScorecardSkillItem"][];
+        };
+        /** ScorecardHeadlineStats */
+        ScorecardHeadlineStats: {
+            /** Total Skills */
+            total_skills: number;
+            /** Verified Skills Count */
+            verified_skills_count: number;
+            /** Confident Or Mastered Count */
+            confident_or_mastered_count: number;
+            /** Pending Review Count */
+            pending_review_count: number;
+            /** Safety Gates Cleared */
+            safety_gates_cleared: number;
+            /** Safety Gates Total */
+            safety_gates_total: number;
+            /** Verified Strokes Unlocked */
+            verified_strokes_unlocked?: string[];
+            /** Top Distance M */
+            top_distance_m?: number | null;
+            /** Top Distance Stroke */
+            top_distance_stroke?: string | null;
+            /**
+             * Top Distance Verified
+             * @default false
+             */
+            top_distance_verified: boolean;
+            /** Best Spl */
+            best_spl?: number | null;
+            /** Best Spl Pool Length M */
+            best_spl_pool_length_m?: number | null;
+            /** Best Swolf */
+            best_swolf?: number | null;
+            /** Best Swolf Pool Length M */
+            best_swolf_pool_length_m?: number | null;
+            /** Latest Stroke Rate Spm */
+            latest_stroke_rate_spm?: number | null;
+            /** Latest Stroke Rate Source */
+            latest_stroke_rate_source?: ("self_logged" | "strokelab_ai" | "coach_verified") | null;
+        };
+        /** ScorecardReviewQueueResponse */
+        ScorecardReviewQueueResponse: {
+            /**
+             * Actor Role
+             * @enum {string}
+             */
+            actor_role: "coach" | "pod_lead" | "admin";
+            /** Scoped Pod Ids */
+            scoped_pod_ids?: string[];
+            /** Pending Skills */
+            pending_skills?: components["schemas"]["PendingSkillReviewItem"][];
+            /** Pending Benchmarks */
+            pending_benchmarks?: components["schemas"]["PendingBenchmarkReviewItem"][];
+        };
+        /** ScorecardRosterMemberSummary */
+        ScorecardRosterMemberSummary: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Name */
+            member_name: string;
+            /** Email */
+            email?: string | null;
+            /** Profile Photo Url */
+            profile_photo_url?: string | null;
+            /**
+             * Has Club Access
+             * @default false
+             */
+            has_club_access: boolean;
+            /**
+             * Is Club Ready
+             * @default false
+             */
+            is_club_ready: boolean;
+            /** Pod Id */
+            pod_id?: string | null;
+            /** Pod Name */
+            pod_name?: string | null;
+            /**
+             * Verified Skills Count
+             * @default 0
+             */
+            verified_skills_count: number;
+            /**
+             * Total Skills
+             * @default 0
+             */
+            total_skills: number;
+            /**
+             * Pending Reviews Count
+             * @default 0
+             */
+            pending_reviews_count: number;
+            /** Verified Strokes Unlocked */
+            verified_strokes_unlocked?: string[];
+            /** Top Distance M */
+            top_distance_m?: number | null;
+            /** Last Benchmark At */
+            last_benchmark_at?: string | null;
+        };
+        /** ScorecardSettingsResponse */
+        ScorecardSettingsResponse: {
+            /**
+             * Pod Visibility Enabled
+             * @default true
+             */
+            pod_visibility_enabled: boolean;
+            /**
+             * Show Benchmarks To Pod
+             * @default false
+             */
+            show_benchmarks_to_pod: boolean;
+            /**
+             * Directory Highlights Enabled
+             * @default false
+             */
+            directory_highlights_enabled: boolean;
+            /**
+             * Public Share Card Enabled
+             * @default false
+             */
+            public_share_card_enabled: boolean;
+            /** Share Token */
+            share_token?: string | null;
+            /**
+             * Preferred Pool Length M
+             * @default 25
+             */
+            preferred_pool_length_m: number | null;
+        };
+        /** ScorecardSkillItem */
+        ScorecardSkillItem: {
+            /** Skill Code */
+            skill_code: string;
+            /**
+             * Domain
+             * @enum {string}
+             */
+            domain: "foundations" | "freestyle" | "backstroke" | "breaststroke" | "butterfly" | "advanced_skills";
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Ti Focal Point */
+            ti_focal_point: string;
+            /** Order Index */
+            order_index: number;
+            /** Is Safety Gate */
+            is_safety_gate: boolean;
+            /**
+             * Proficiency
+             * @default not_started
+             * @enum {string}
+             */
+            proficiency: "not_started" | "learning" | "confident" | "mastered";
+            /**
+             * Verification Source
+             * @default self_logged
+             * @enum {string}
+             */
+            verification_source: "self_logged" | "strokelab_ai" | "coach_verified";
+            /**
+             * Verification Status
+             * @default unverified
+             * @enum {string}
+             */
+            verification_status: "unverified" | "pending_review" | "verified" | "rejected";
+            /** Verified Proficiency */
+            verified_proficiency?: ("not_started" | "learning" | "confident" | "mastered") | null;
+            /**
+             * Is Verified
+             * @default false
+             */
+            is_verified: boolean;
+            /**
+             * Is Safety Gate Cleared
+             * @default false
+             */
+            is_safety_gate_cleared: boolean;
+            /** Auto Verified Via */
+            auto_verified_via?: string | null;
+            /** Verified By Member Id */
+            verified_by_member_id?: string | null;
+            /** Verified By Name */
+            verified_by_name?: string | null;
+            /** Verified By Role */
+            verified_by_role?: ("coach" | "pod_lead" | "admin") | null;
+            /** Verified At */
+            verified_at?: string | null;
+            /** Member Notes */
+            member_notes?: string | null;
+            /** Verifier Notes */
+            verifier_notes?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** SelfUpdateSkillRequest */
+        SelfUpdateSkillRequest: {
+            /**
+             * Proficiency
+             * @enum {string}
+             */
+            proficiency: "not_started" | "learning" | "confident" | "mastered";
+            /** Member Notes */
+            member_notes?: string | null;
+            /**
+             * Request Verification
+             * @default false
+             */
+            request_verification: boolean;
+        };
         /**
          * SignAgreementRequest
          * @description Request to sign the coach agreement.
@@ -29345,6 +31499,55 @@ export interface components {
          * @enum {string}
          */
         SignatureTypeEnum: "typed_name" | "drawn" | "checkbox" | "uploaded_image";
+        /** StrokeLabRunSummary */
+        StrokeLabRunSummary: {
+            /** Job Id */
+            job_id: string;
+            /** Stroke Type */
+            stroke_type: string;
+            /**
+             * Completed At
+             * Format: date-time
+             */
+            completed_at: string;
+            /** Stroke Rate Spm */
+            stroke_rate_spm?: number | null;
+            /** Body Roll Proxy Degrees */
+            body_roll_proxy_degrees?: number | null;
+            /** Breath Balance Left Ratio */
+            breath_balance_left_ratio?: number | null;
+            /** Focus Area */
+            focus_area?: string | null;
+            /** Summary Text */
+            summary_text?: string | null;
+        };
+        /** StrokeLabSection */
+        StrokeLabSection: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /**
+             * Total Analyses
+             * @default 0
+             */
+            total_analyses: number;
+            /** Latest Stroke Rate Spm */
+            latest_stroke_rate_spm?: number | null;
+            /** Latest Body Roll Degrees */
+            latest_body_roll_degrees?: number | null;
+            /** Latest Breath Balance Left Ratio */
+            latest_breath_balance_left_ratio?: number | null;
+            /** Latest Focus Area */
+            latest_focus_area?: string | null;
+            /** Latest Summary Text */
+            latest_summary_text?: string | null;
+            /** Latest Completed At */
+            latest_completed_at?: string | null;
+            /** Recent Runs */
+            recent_runs?: components["schemas"]["StrokeLabRunSummary"][];
+        };
         /** TierHistoryEntry */
         TierHistoryEntry: {
             /** Tier */
@@ -29359,6 +31562,49 @@ export interface components {
             /** Entries */
             entries: components["schemas"]["TierHistoryEntry"][];
         };
+        /** TrendPoint */
+        TrendPoint: {
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Value */
+            value: number;
+            /** Display Value */
+            display_value: string;
+            /** Stroke */
+            stroke: string;
+            /** Pool Length M */
+            pool_length_m?: number | null;
+            /** Pool Name */
+            pool_name?: string | null;
+            /**
+             * Verification Source
+             * @enum {string}
+             */
+            verification_source: "self_logged" | "strokelab_ai" | "coach_verified";
+            /** Label */
+            label?: string | null;
+        };
+        /** UpdateScorecardSettingsRequest */
+        UpdateScorecardSettingsRequest: {
+            /** Pod Visibility Enabled */
+            pod_visibility_enabled?: boolean | null;
+            /** Show Benchmarks To Pod */
+            show_benchmarks_to_pod?: boolean | null;
+            /** Directory Highlights Enabled */
+            directory_highlights_enabled?: boolean | null;
+            /** Public Share Card Enabled */
+            public_share_card_enabled?: boolean | null;
+            /** Preferred Pool Length M */
+            preferred_pool_length_m?: number | null;
+            /**
+             * Rotate Share Token
+             * @default false
+             */
+            rotate_share_token: boolean;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -29367,6 +31613,19 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** VerifySkillRequest */
+        VerifySkillRequest: {
+            /**
+             * Action
+             * @default verify
+             * @enum {string}
+             */
+            action: "verify" | "reject";
+            /** Proficiency */
+            proficiency?: ("not_started" | "learning" | "confident" | "mastered") | null;
+            /** Verifier Notes */
+            verifier_notes?: string | null;
         };
         /**
          * VolunteerInterestCreate
@@ -33542,6 +35801,31 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** AssignDrillInput */
+        AssignDrillInput: {
+            /**
+             * Drill Version Id
+             * Format: uuid
+             */
+            drill_version_id: string;
+            /** Enrollment Id */
+            enrollment_id?: string | null;
+            /** Member Id */
+            member_id?: string | null;
+            /** Member Auth Id */
+            member_auth_id?: string | null;
+            /** Milestone Definition Id */
+            milestone_definition_id?: string | null;
+            /** Focal Cue Note */
+            focal_cue_note?: string | null;
+            /**
+             * Sets
+             * @default 3
+             */
+            sets: number;
+            /** Distance M */
+            distance_m?: number | string | null;
+        };
         /**
          * AssignmentRoleEnum
          * @enum {string}
@@ -34719,6 +37003,34 @@ export interface components {
             /** Installment Deposit Amount */
             installment_deposit_amount?: number | null;
         };
+        /** CohortV2AssessmentInput */
+        CohortV2AssessmentInput: {
+            /**
+             * Enrollment Id
+             * Format: uuid
+             */
+            enrollment_id: string;
+            /**
+             * Milestone Version Id
+             * Format: uuid
+             */
+            milestone_version_id: string;
+            /**
+             * Evidence Media Id
+             * Format: uuid
+             */
+            evidence_media_id: string;
+            /**
+             * Evidence Uploaded By
+             * @default assessor
+             * @enum {string}
+             */
+            evidence_uploaded_by: "assessor" | "member";
+            /** Criteria Passed */
+            criteria_passed: string[];
+            /** Assessment Notes */
+            assessment_notes: string;
+        };
         /** CommercialTermsRequest */
         CommercialTermsRequest: {
             /**
@@ -34906,6 +37218,38 @@ export interface components {
             objectives?: string | null;
             /** Order Index */
             order_index?: number | null;
+        };
+        /** DiagnosticAssessmentInput */
+        DiagnosticAssessmentInput: {
+            /**
+             * Member Id
+             * Format: uuid
+             */
+            member_id: string;
+            /** Member Auth Id */
+            member_auth_id?: string | null;
+            /**
+             * Milestone Version Id
+             * Format: uuid
+             */
+            milestone_version_id: string;
+            /**
+             * Evidence Media Id
+             * Format: uuid
+             */
+            evidence_media_id: string;
+            /**
+             * Evidence Uploaded By
+             * @default assessor
+             * @enum {string}
+             */
+            evidence_uploaded_by: "assessor" | "member";
+            /** Criteria Passed */
+            criteria_passed: string[];
+            /** Assessment Notes */
+            assessment_notes: string;
+            /** Clinic Label */
+            clinic_label?: string | null;
         };
         /**
          * DimensionLabelsResponse
@@ -35168,6 +37512,24 @@ export interface components {
          * @enum {string}
          */
         InstallmentStatus: "pending" | "paid" | "missed" | "waived";
+        /** InternalStrokeLabDrillPrescription */
+        InternalStrokeLabDrillPrescription: {
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Member Id */
+            member_id?: string | null;
+            /** Academy Ref */
+            academy_ref: string;
+            /** Strokelab Job Id */
+            strokelab_job_id?: string | null;
+            /** Focal Cue Note */
+            focal_cue_note?: string | null;
+            /**
+             * Sets
+             * @default 3
+             */
+            sets: number;
+        };
         /** LearnerQuizResponse */
         LearnerQuizResponse: {
             /**
@@ -36201,6 +38563,21 @@ export interface components {
          * @enum {string}
          */
         ReadinessCheckStatus: "passed" | "pending" | "failed";
+        /** RemedialDrillInput */
+        RemedialDrillInput: {
+            /**
+             * Drill Id
+             * Format: uuid
+             */
+            drill_id: string;
+            /**
+             * Priority Order
+             * @default 0
+             */
+            priority_order: number;
+            /** Coach Tip */
+            coach_tip?: string | null;
+        };
         /**
          * RequiredEvidence
          * @enum {string}
@@ -36318,6 +38695,25 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** StrokeLabDrillInput */
+        StrokeLabDrillInput: {
+            /** Academy Ref */
+            academy_ref: string;
+            /** Strokelab Job Id */
+            strokelab_job_id?: string | null;
+            /** Focal Cue Note */
+            focal_cue_note?: string | null;
+            /**
+             * Sets
+             * @default 3
+             */
+            sets: number;
+            /**
+             * Distance M
+             * @default 25
+             */
+            distance_m: number | string | null;
+        };
         /** StudentProgressResponse */
         StudentProgressResponse: {
             /** @default pending */
@@ -36403,6 +38799,16 @@ export interface components {
              * @default 0
              */
             enrolled_count: number;
+        };
+        /** UpdateDrillStatusInput */
+        UpdateDrillStatusInput: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "assigned" | "practiced" | "mastered" | "archived";
+            /** Focal Cue Note */
+            focal_cue_note?: string | null;
         };
         /**
          * WithdrawEnrollmentRequest
@@ -38178,6 +40584,86 @@ export interface components {
          */
         RecurringPayoutStatus: "active" | "paused" | "completed" | "cancelled";
         /**
+         * RefundApproveRequest
+         * @description Admin approves a requested refund.
+         */
+        RefundApproveRequest: {
+            /** Admin Note */
+            admin_note?: string | null;
+            /** Override Reason */
+            override_reason?: string | null;
+            /**
+             * Auto Initiate Paystack
+             * @default false
+             */
+            auto_initiate_paystack: boolean;
+        };
+        /**
+         * RefundCompleteManualRequest
+         * @description Admin confirms manual bank-transfer refund disbursement with bank reference.
+         */
+        RefundCompleteManualRequest: {
+            /** External Bank Reference */
+            external_bank_reference: string;
+            /** Admin Note */
+            admin_note?: string | null;
+        };
+        /**
+         * RefundFailOrCancelRequest
+         * @description Admin marks a refund failed or cancels an uninitiated request.
+         */
+        RefundFailOrCancelRequest: {
+            /** Action */
+            action: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * RefundInitiatePaystackRequest
+         * @description Admin initiates Paystack API refund for an approved refund.
+         */
+        RefundInitiatePaystackRequest: {
+            /** Customer Note */
+            customer_note?: string | null;
+            /** Merchant Note */
+            merchant_note?: string | null;
+        };
+        /**
+         * RefundListResponse
+         * @description Paginated admin refund queue with summary totals.
+         */
+        RefundListResponse: {
+            /** Items */
+            items: components["schemas"]["RefundResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /**
+             * Pending Cash Kobo
+             * @default 0
+             */
+            pending_cash_kobo: number;
+            /**
+             * Initiated Cash Kobo
+             * @default 0
+             */
+            initiated_cash_kobo: number;
+            /**
+             * Completed Cash Kobo
+             * @default 0
+             */
+            completed_cash_kobo: number;
+        };
+        /**
+         * RefundMethod
+         * @description Disbursement channel for a refund (ADR-024).
+         * @enum {string}
+         */
+        RefundMethod: "paystack_refund" | "manual_bank_transfer" | "wallet_bubbles" | "store_credit" | "mixed";
+        /**
          * RefundOwedItem
          * @description One refund obligation, derived from a payment's metadata.refund_owed.
          */
@@ -38233,6 +40719,136 @@ export interface components {
             item_count: number;
             /** Items */
             items: components["schemas"]["RefundOwedItem"][];
+        };
+        /**
+         * RefundResponse
+         * @description Canonical refund representation.
+         */
+        RefundResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Refund Reference */
+            refund_reference: string;
+            /** Idempotency Key */
+            idempotency_key: string;
+            /** Payment Id */
+            payment_id?: string | null;
+            /** Payment Reference */
+            payment_reference?: string | null;
+            /** Member Auth Id */
+            member_auth_id: string;
+            /** Payer Email */
+            payer_email?: string | null;
+            /** Source Service */
+            source_service: string;
+            /** Source Entity Type */
+            source_entity_type: string;
+            /** Source Entity Id */
+            source_entity_id: string;
+            /** Purpose */
+            purpose: string;
+            /** Currency */
+            currency: string;
+            /** Requested Total Kobo */
+            requested_total_kobo: number;
+            /** Cash Refund Kobo */
+            cash_refund_kobo: number;
+            /** Bubbles Refund */
+            bubbles_refund: number;
+            /** Store Credit Refund Kobo */
+            store_credit_refund_kobo: number;
+            refund_method: components["schemas"]["RefundMethod"];
+            status: components["schemas"]["RefundStatus"];
+            /** Reason */
+            reason?: string | null;
+            /** Admin Note */
+            admin_note?: string | null;
+            /** Override Reason */
+            override_reason?: string | null;
+            /** Provider */
+            provider?: string | null;
+            /** Provider Refund Id */
+            provider_refund_id?: string | null;
+            /** Provider Status */
+            provider_status?: string | null;
+            /** External Bank Reference */
+            external_bank_reference?: string | null;
+            /** Recipient Bank Code */
+            recipient_bank_code?: string | null;
+            /** Recipient Bank Name */
+            recipient_bank_name?: string | null;
+            /** Recipient Account Number */
+            recipient_account_number?: string | null;
+            /** Recipient Account Name */
+            recipient_account_name?: string | null;
+            /**
+             * Recipient Account Verified
+             * @default false
+             */
+            recipient_account_verified: boolean;
+            /** Wallet Refund Transaction Id */
+            wallet_refund_transaction_id?: string | null;
+            /** Store Credit Id */
+            store_credit_id?: string | null;
+            /**
+             * Ledger Accrual Posted
+             * @default false
+             */
+            ledger_accrual_posted: boolean;
+            /**
+             * Ledger Disbursement Posted
+             * @default false
+             */
+            ledger_disbursement_posted: boolean;
+            /** Requested By Auth Id */
+            requested_by_auth_id?: string | null;
+            /** Approved By Auth Id */
+            approved_by_auth_id?: string | null;
+            /** Approved At */
+            approved_at?: string | null;
+            /** Initiated By Auth Id */
+            initiated_by_auth_id?: string | null;
+            /** Initiated At */
+            initiated_at?: string | null;
+            /** Completed By Auth Id */
+            completed_by_auth_id?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Failed At */
+            failed_at?: string | null;
+            /** Failure Reason */
+            failure_reason?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * RefundStatus
+         * @description Lifecycle of a shared refund record (ADR-024).
+         * @enum {string}
+         */
+        RefundStatus: "requested" | "approved" | "initiated" | "completed" | "failed" | "cancelled";
+        /**
+         * RefundVerifyBankRequest
+         * @description Verify recipient NUBAN via Paystack resolve_account before manual refund.
+         */
+        RefundVerifyBankRequest: {
+            /** Bank Code */
+            bank_code: string;
+            /** Bank Name */
+            bank_name?: string | null;
+            /** Account Number */
+            account_number: string;
         };
         /** RidePassengerManifestEntry */
         RidePassengerManifestEntry: {
@@ -47000,6 +49616,69 @@ export interface components {
             explanation: string;
         };
         /**
+         * AdminCancelAndRefundRequest
+         * @description Admin audited cancellation + refund initiation for a paid (or unpaid) order.
+         */
+        AdminCancelAndRefundRequest: {
+            /** Reason */
+            reason: string;
+            /** @default full_refund_original_method */
+            resolution: components["schemas"]["OrderCaseResolution"];
+            /**
+             * Include Delivery Fee
+             * @default true
+             */
+            include_delivery_fee: boolean;
+            /**
+             * Auto Initiate Paystack
+             * @default true
+             */
+            auto_initiate_paystack: boolean;
+            /**
+             * Is Policy Override
+             * @default false
+             */
+            is_policy_override: boolean;
+            /** Override Reason */
+            override_reason?: string | null;
+        };
+        /**
+         * AdminCaseReviewRequest
+         * @description Admin approves or declines a post-purchase case.
+         */
+        AdminCaseReviewRequest: {
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approve" | "decline";
+            approved_resolution?: components["schemas"]["OrderCaseResolution"] | null;
+            /**
+             * Require Return Before Resolution
+             * @default false
+             */
+            require_return_before_resolution: boolean;
+            /**
+             * Include Delivery Fee
+             * @default false
+             */
+            include_delivery_fee: boolean;
+            /**
+             * Auto Initiate Paystack
+             * @default true
+             */
+            auto_initiate_paystack: boolean;
+            /**
+             * Is Policy Override
+             * @default false
+             */
+            is_policy_override: boolean;
+            /** Override Reason */
+            override_reason?: string | null;
+            /** Admin Notes */
+            admin_notes?: string | null;
+        };
+        /**
          * AdminProductVariantResponse
          * @description Admin variant response including internal unit cost.
          */
@@ -47043,6 +49722,26 @@ export interface components {
             updated_at: string;
             /** Cost Price Ngn */
             cost_price_ngn?: string | null;
+        };
+        /**
+         * AdminReceiveReturnRequest
+         * @description Admin records receipt & physical inspection of returned goods.
+         */
+        AdminReceiveReturnRequest: {
+            return_condition: components["schemas"]["ReturnInspectionCondition"];
+            /** Admin Notes */
+            admin_notes?: string | null;
+            /**
+             * Include Delivery Fee
+             * @default false
+             */
+            include_delivery_fee: boolean;
+            /**
+             * Auto Initiate Paystack
+             * @default true
+             */
+            auto_initiate_paystack: boolean;
+            override_resolution?: components["schemas"]["OrderCaseResolution"] | null;
         };
         /** ApplyDiscountRequest */
         ApplyDiscountRequest: {
@@ -47657,6 +50356,303 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * OrderActionEligibilityResponse
+         * @description Server-computed post-purchase actions available for an order (ADR-024).
+         */
+        OrderActionEligibilityResponse: {
+            /** Order Number */
+            order_number: string;
+            /** Payment Status */
+            payment_status: string;
+            /** Fulfillment Status */
+            fulfillment_status: string;
+            /**
+             * Can Self Cancel Unpaid
+             * @default false
+             */
+            can_self_cancel_unpaid: boolean;
+            /**
+             * Can Self Cancel Paid
+             * @default false
+             */
+            can_self_cancel_paid: boolean;
+            /**
+             * Can Request Cancel
+             * @default false
+             */
+            can_request_cancel: boolean;
+            /**
+             * Can Swap Variant
+             * @default false
+             */
+            can_swap_variant: boolean;
+            /**
+             * Can Request Return Exchange
+             * @default false
+             */
+            can_request_return_exchange: boolean;
+            /**
+             * Can Report Defect
+             * @default false
+             */
+            can_report_defect: boolean;
+            /**
+             * Has Preorder Or Dropship
+             * @default false
+             */
+            has_preorder_or_dropship: boolean;
+            /**
+             * Has Swimwear Items
+             * @default false
+             */
+            has_swimwear_items: boolean;
+            /**
+             * Has Open Case
+             * @default false
+             */
+            has_open_case: boolean;
+            /**
+             * Payment Pending Review
+             * @default false
+             */
+            payment_pending_review: boolean;
+            /** Return Window Ends At */
+            return_window_ends_at?: string | null;
+            /** Cancel Block Reason */
+            cancel_block_reason?: string | null;
+            /** Policy Notes */
+            policy_notes?: string[];
+            full_cancel_refund_preview?: components["schemas"]["OrderRefundPreview"];
+            /** Cases */
+            cases?: components["schemas"]["OrderCaseResponse"][];
+            /** Refunds */
+            refunds?: components["schemas"]["OrderRefundSummaryItem"][];
+        };
+        /** OrderCancelResultResponse */
+        OrderCancelResultResponse: {
+            /** Order Number */
+            order_number: string;
+            /** Status */
+            status: string;
+            /** Payment Status */
+            payment_status: string;
+            /** Fulfillment Status */
+            fulfillment_status: string;
+            case?: components["schemas"]["OrderCaseResponse"] | null;
+            /** Refund Reference */
+            refund_reference?: string | null;
+            /** Refund Status */
+            refund_status?: string | null;
+            /** Message */
+            message: string;
+        };
+        /**
+         * OrderCaseCreateRequest
+         * @description Customer submission for a cancellation request, return/exchange, or defect claim.
+         */
+        OrderCaseCreateRequest: {
+            case_type: components["schemas"]["OrderCaseType"];
+            /** Reason Code */
+            reason_code: string;
+            /** Customer Notes */
+            customer_notes?: string | null;
+            /** Evidence Media Ids */
+            evidence_media_ids?: string[];
+            preferred_resolution?: components["schemas"]["OrderCaseResolution"] | null;
+            /** Requested Variant Id */
+            requested_variant_id?: string | null;
+            /** Items */
+            items?: components["schemas"]["OrderCaseItemInput"][];
+            /** Recipient Bank Code */
+            recipient_bank_code?: string | null;
+            /** Recipient Bank Name */
+            recipient_bank_name?: string | null;
+            /** Recipient Account Number */
+            recipient_account_number?: string | null;
+            /** Recipient Account Name */
+            recipient_account_name?: string | null;
+        };
+        /**
+         * OrderCaseItemInput
+         * @description Order line item reference when submitting a return, exchange, or defect claim.
+         */
+        OrderCaseItemInput: {
+            /**
+             * Order Item Id
+             * Format: uuid
+             */
+            order_item_id: string;
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /** Replacement Variant Id */
+            replacement_variant_id?: string | null;
+        };
+        /** OrderCaseItemResponse */
+        OrderCaseItemResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Order Item Id
+             * Format: uuid
+             */
+            order_item_id: string;
+            /** Quantity */
+            quantity: number;
+            /** Replacement Variant Id */
+            replacement_variant_id?: string | null;
+            /** Product Name */
+            product_name?: string | null;
+            /** Variant Name */
+            variant_name?: string | null;
+            /** Sku */
+            sku?: string | null;
+            /** Unit Price Ngn */
+            unit_price_ngn?: string | null;
+        };
+        /** OrderCaseListResponse */
+        OrderCaseListResponse: {
+            /** Items */
+            items: components["schemas"]["OrderCaseResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * OrderCaseResolution
+         * @description Approved or requested remedy for a post-purchase case.
+         * @enum {string}
+         */
+        OrderCaseResolution: "full_refund_original_method" | "partial_refund_original_method" | "variant_exchange" | "store_credit" | "wallet_bubbles" | "replacement_shipment" | "no_refund";
+        /** OrderCaseResponse */
+        OrderCaseResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Case Number */
+            case_number: string;
+            /**
+             * Order Id
+             * Format: uuid
+             */
+            order_id: string;
+            /** Order Number */
+            order_number?: string | null;
+            /** Customer Name */
+            customer_name?: string | null;
+            /** Customer Email */
+            customer_email?: string | null;
+            /** Member Auth Id */
+            member_auth_id?: string | null;
+            case_type: components["schemas"]["OrderCaseType"];
+            status: components["schemas"]["OrderCaseStatus"];
+            /** Reason Code */
+            reason_code: string;
+            /** Customer Notes */
+            customer_notes?: string | null;
+            /** Evidence Media Ids */
+            evidence_media_ids?: string[];
+            preferred_resolution?: components["schemas"]["OrderCaseResolution"] | null;
+            approved_resolution?: components["schemas"]["OrderCaseResolution"] | null;
+            /** Requested Variant Id */
+            requested_variant_id?: string | null;
+            /**
+             * Approved Refund Cash Ngn
+             * @default 0
+             */
+            approved_refund_cash_ngn: string;
+            /**
+             * Approved Refund Bubbles
+             * @default 0
+             */
+            approved_refund_bubbles: number;
+            /**
+             * Approved Refund Store Credit Ngn
+             * @default 0
+             */
+            approved_refund_store_credit_ngn: string;
+            /**
+             * Delivery Fee Refunded
+             * @default false
+             */
+            delivery_fee_refunded: boolean;
+            /** Refund Reference */
+            refund_reference?: string | null;
+            /** Refund Status */
+            refund_status?: string | null;
+            /** Recipient Bank Code */
+            recipient_bank_code?: string | null;
+            /** Recipient Bank Name */
+            recipient_bank_name?: string | null;
+            /** Recipient Account Number */
+            recipient_account_number?: string | null;
+            /** Recipient Account Name */
+            recipient_account_name?: string | null;
+            /** @default pending */
+            return_condition: components["schemas"]["ReturnInspectionCondition"];
+            /** Return Received At */
+            return_received_at?: string | null;
+            /** Restocked At */
+            restocked_at?: string | null;
+            /**
+             * Is Policy Override
+             * @default false
+             */
+            is_policy_override: boolean;
+            /** Override Reason */
+            override_reason?: string | null;
+            /** Admin Notes */
+            admin_notes?: string | null;
+            /** Reviewed By Auth Id */
+            reviewed_by_auth_id?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Resolved By Auth Id */
+            resolved_by_auth_id?: string | null;
+            /** Resolved At */
+            resolved_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Items */
+            items?: components["schemas"]["OrderCaseItemResponse"][];
+        };
+        /**
+         * OrderCaseStatus
+         * @description Lifecycle of a post-purchase order case.
+         * @enum {string}
+         */
+        OrderCaseStatus: "submitted" | "under_review" | "approved" | "declined" | "awaiting_return" | "return_received" | "completed" | "cancelled";
+        /**
+         * OrderCaseType
+         * @description Kind of post-purchase customer request or remedy (ADR-024).
+         * @enum {string}
+         */
+        OrderCaseType: "cancel_request" | "variant_swap" | "return_exchange" | "defect_claim";
+        /**
+         * OrderFulfillmentStatus
+         * @description Physical fulfillment dimension of a store order (ADR-024).
+         * @enum {string}
+         */
+        OrderFulfillmentStatus: "not_started" | "awaiting_preparation" | "processing" | "ready_for_pickup" | "picked_up" | "shipped" | "delivered" | "cancelled" | "returned";
         /** OrderItemImageInfo */
         OrderItemImageInfo: {
             /** Url */
@@ -47708,8 +50704,22 @@ export interface components {
             unit_price_ngn: string;
             /** Line Total Ngn */
             line_total_ngn: string;
+            /** Net Line Total Ngn */
+            net_line_total_ngn?: string | null;
             /** Is Preorder */
             is_preorder: boolean;
+            /**
+             * Sourcing Type
+             * @default stocked
+             */
+            sourcing_type: string;
+            /**
+             * Requires Size Chart Ack
+             * @default false
+             */
+            requires_size_chart_ack: boolean;
+            /** Supplier Committed At */
+            supplier_committed_at?: string | null;
             /** Estimated Ship Date */
             estimated_ship_date: string | null;
             /** Supplier Id */
@@ -47749,6 +50759,84 @@ export interface components {
             /** Page Size */
             page_size: number;
         };
+        /**
+         * OrderPaymentStatus
+         * @description Payment dimension of a store order, independent of fulfillment (ADR-024).
+         * @enum {string}
+         */
+        OrderPaymentStatus: "unpaid" | "pending_review" | "paid" | "partially_refunded" | "refunded" | "failed";
+        /**
+         * OrderRefundPreview
+         * @description Exact tender preview shown to customer/admin before cancellation.
+         */
+        OrderRefundPreview: {
+            /**
+             * Cash Refund Ngn
+             * @default 0
+             */
+            cash_refund_ngn: string;
+            /**
+             * Bubbles Refund
+             * @default 0
+             */
+            bubbles_refund: number;
+            /**
+             * Store Credit Refund Ngn
+             * @default 0
+             */
+            store_credit_refund_ngn: string;
+            /**
+             * Total Refund Value Ngn
+             * @default 0
+             */
+            total_refund_value_ngn: string;
+            /**
+             * Delivery Fee Included
+             * @default true
+             */
+            delivery_fee_included: boolean;
+            /** Payment Method */
+            payment_method?: string | null;
+        };
+        /**
+         * OrderRefundSummaryItem
+         * @description Live refund status snapshot fetched from payments_service.
+         */
+        OrderRefundSummaryItem: {
+            /** Refund Reference */
+            refund_reference: string;
+            /** Status */
+            status: string;
+            /** Refund Method */
+            refund_method: string;
+            /** Provider */
+            provider?: string | null;
+            /**
+             * Cash Refund Kobo
+             * @default 0
+             */
+            cash_refund_kobo: number;
+            /**
+             * Bubbles Refund
+             * @default 0
+             */
+            bubbles_refund: number;
+            /**
+             * Store Credit Refund Kobo
+             * @default 0
+             */
+            store_credit_refund_kobo: number;
+            /** Provider Refund Id */
+            provider_refund_id?: string | null;
+            /** External Bank Reference */
+            external_bank_reference?: string | null;
+            /** Failure Reason */
+            failure_reason?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+        };
         /** OrderResponse */
         OrderResponse: {
             /**
@@ -47759,6 +50847,8 @@ export interface components {
             /** Order Number */
             order_number: string;
             status: components["schemas"]["OrderStatus"];
+            payment_status?: components["schemas"]["OrderPaymentStatus"] | null;
+            fulfillment_status?: components["schemas"]["OrderFulfillmentStatus"] | null;
             fulfillment_type: components["schemas"]["FulfillmentType"];
             /** Customer Email */
             customer_email: string;
@@ -47774,6 +50864,10 @@ export interface components {
             store_credit_applied_ngn: string;
             /** Delivery Fee Ngn */
             delivery_fee_ngn: string;
+            /** Order Total Ngn */
+            order_total_ngn?: string | null;
+            /** Cash Payable Ngn */
+            cash_payable_ngn?: string | null;
             /** Total Ngn */
             total_ngn: string;
             /** Discount Code */
@@ -47792,6 +50886,8 @@ export interface components {
             delivery_notes: string | null;
             /** Customer Notes */
             customer_notes: string | null;
+            /** Admin Notes */
+            admin_notes?: string | null;
             /** Payment Reference */
             payment_reference: string | null;
             /** Bubbles Applied */
@@ -47802,10 +50898,16 @@ export interface components {
             wallet_hold_id?: string | null;
             /** Paid At */
             paid_at: string | null;
+            /** Shipped At */
+            shipped_at?: string | null;
+            /** Delivered At */
+            delivered_at?: string | null;
             /** Fulfilled At */
             fulfilled_at: string | null;
             /** Cancelled At */
             cancelled_at: string | null;
+            /** Refunded At */
+            refunded_at?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -47833,6 +50935,27 @@ export interface components {
             lines: components["schemas"]["ReturnLineRequest"][];
         };
         /**
+         * OrderSelfCancelRequest
+         * @description Customer self-cancellation payload for unpaid or pre-prep stocked orders.
+         */
+        OrderSelfCancelRequest: {
+            /**
+             * Reason Code
+             * @default wrong_item_ordered
+             */
+            reason_code: string;
+            /** Customer Notes */
+            customer_notes?: string | null;
+            /** Recipient Bank Code */
+            recipient_bank_code?: string | null;
+            /** Recipient Bank Name */
+            recipient_bank_name?: string | null;
+            /** Recipient Account Number */
+            recipient_account_number?: string | null;
+            /** Recipient Account Name */
+            recipient_account_name?: string | null;
+        };
+        /**
          * OrderStatus
          * @enum {string}
          */
@@ -47856,6 +50979,24 @@ export interface components {
             admin_notes?: string | null;
             /** Tracking Number */
             tracking_number?: string | null;
+        };
+        /**
+         * OrderVariantSwapRequest
+         * @description Customer same-price variant swap before preparation.
+         */
+        OrderVariantSwapRequest: {
+            /**
+             * Order Item Id
+             * Format: uuid
+             */
+            order_item_id: string;
+            /**
+             * New Variant Id
+             * Format: uuid
+             */
+            new_variant_id: string;
+            /** Customer Notes */
+            customer_notes?: string | null;
         };
         /**
          * PaymentInitRequest
@@ -48601,6 +51742,12 @@ export interface components {
             /** Quantity */
             quantity: number;
         };
+        /**
+         * ReturnInspectionCondition
+         * @description Physical condition recorded when a returned item is received.
+         * @enum {string}
+         */
+        ReturnInspectionCondition: "pending" | "restockable" | "damaged" | "hygiene_unsellable";
         /** ReturnLineRequest */
         ReturnLineRequest: {
             /**
@@ -60521,6 +63668,472 @@ export interface operations {
             };
         };
     };
+    get_scorecard_catalog_scorecards_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_public_shared_scorecard_scorecards_public__share_token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                share_token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicShareScorecardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_scorecard_scorecards_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberScorecardResponse"];
+                };
+            };
+        };
+    };
+    update_my_skill_scorecards_me_skills__skill_code__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelfUpdateSkillRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScorecardSkillItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_my_benchmark_scorecards_me_benchmarks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBenchmarkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BenchmarkItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_my_benchmark_scorecards_me_benchmarks__benchmark_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                benchmark_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_my_scorecard_settings_scorecards_me_settings_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateScorecardSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScorecardSettingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scorecard_review_queue_scorecards_review_queue_get: {
+        parameters: {
+            query?: {
+                pod_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScorecardReviewQueueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scorecard_roster_scorecards_roster_get: {
+        parameters: {
+            query?: {
+                search?: string | null;
+                pod_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScorecardRosterMemberSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_benchmark_day_batch_scorecards_benchmark_day_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchBenchmarkDayRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchBenchmarkDayResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_member_benchmark_scorecards_benchmarks__benchmark_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                benchmark_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewBenchmarkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BenchmarkItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pod_scorecard_overview_scorecards_pod__pod_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pod_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodScorecardOverviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_member_scorecard_by_id_scorecards_members__member_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberScorecardResponse"] | components["schemas"]["PeerScorecardHighlightResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_swimmer_skill_scorecards_members__member_id__skills__skill_code__verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+                skill_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifySkillRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScorecardSkillItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_verified_benchmark_for_swimmer_scorecards_members__member_id__benchmarks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoachCreateBenchmarkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BenchmarkItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_pod_rosters_batch_internal_internal_members_pods_rosters_batch_post: {
         parameters: {
             query?: never;
@@ -60653,7 +64266,10 @@ export interface operations {
     };
     get_member_by_auth_id_internal_members_by_auth__auth_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Resolve profile photo URL from media_service (set false for ID-only lookups). */
+                include_photo?: boolean;
+            };
             header?: never;
             path: {
                 auth_id: string;
@@ -60669,6 +64285,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberBasic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_member_membership_by_auth_id_internal_members_by_auth__auth_id__membership_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["services__members_service__routers__internal___schemas__MemberMembershipResponse"];
                 };
             };
             /** @description Validation Error */
@@ -62108,7 +65755,9 @@ export interface operations {
     };
     list_my_unpaid_bookings_sessions_bookings_me_unpaid_get: {
         parameters: {
-            query?: never;
+            query?: {
+                session_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -62122,6 +65771,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnpaidBookingResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -62364,6 +66022,7 @@ export interface operations {
         parameters: {
             query?: {
                 status_filter?: components["schemas"]["SessionBookingStatus"] | null;
+                session_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -65383,6 +69042,8 @@ export interface operations {
     get_my_attendance_history_attendance_me_get: {
         parameters: {
             query?: {
+                /** @description Filter attendance records to a single session. */
+                session_id?: string | null;
                 /** @description Include batched session display details. */
                 include_session?: boolean;
                 limit?: number;
@@ -68374,6 +72035,72 @@ export interface operations {
             };
         };
     };
+    assess_cohort_v2_competency_academy_competencies_coach_assess_cohort_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CohortV2AssessmentInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assess_diagnostic_competency_academy_competencies_admin_assess_diagnostic_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosticAssessmentInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     revoke_verification_academy_competencies_admin__verification_id__revoke_post: {
         parameters: {
             query?: never;
@@ -68391,6 +72118,37 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_enrollment_v2_learning_plan_academy_competencies_enrollments__enrollment_id__v2_plan_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -68429,6 +72187,90 @@ export interface operations {
             };
         };
     };
+    get_admin_graduation_mode_academy_competencies_admin_graduation_mode_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_cohort_graduation_parity_academy_competencies_admin_cohorts__cohort_id__graduation_parity_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path: {
+                cohort_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_club_readiness_advisory_academy_competencies_admin_members__member_auth_id__club_readiness_advisory_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     member_competency_passport_academy_competencies_admin_members__member_auth_id__get: {
         parameters: {
             query?: never;
@@ -68439,6 +72281,222 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_strokelab_drill_to_my_plan_academy_competencies_me_drills_from_strokelab_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StrokeLabDrillInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_published_drills_for_coaching_academy_competencies_drills_published_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_my_assigned_drills_academy_competencies_me_drills_get: {
+        parameters: {
+            query?: {
+                include_archived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_my_drill_practiced_academy_competencies_me_drills__assignment_id__practiced_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_enrollment_drills_academy_competencies_enrollments__enrollment_id__drills_get: {
+        parameters: {
+            query?: {
+                include_archived?: boolean;
+            };
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_student_drill_academy_competencies_coach_drills_assign_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignDrillInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_student_drill_status_academy_competencies_coach_drills__assignment_id__status_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDrillStatusInput"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -69862,6 +73920,70 @@ export interface operations {
             };
         };
     };
+    internal_member_club_readiness_advisory_internal_academy_competencies_members__member_auth_id__club_readiness_advisory_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_prescribe_strokelab_drill_internal_academy_competencies_drills_prescribe_from_strokelab_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalStrokeLabDrillPrescription"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     academy_finance_summary_internal_academy_finance_summary_get: {
         parameters: {
             query?: never;
@@ -69878,6 +74000,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_member_academy_scorecard_summary_internal_academy_members__member_auth_id__scorecard_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -70860,6 +75013,102 @@ export interface operations {
         };
     };
     remove_milestone_skill_academy_admin_curriculum_library_milestones__definition_id__skills__link_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_milestone_remedial_drills_academy_admin_curriculum_library_milestones__definition_id__remedial_drills_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_milestone_remedial_drill_academy_admin_curriculum_library_milestones__definition_id__remedial_drills_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemedialDrillInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_milestone_remedial_drill_academy_admin_curriculum_library_milestones__definition_id__remedial_drills__link_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -73989,6 +78238,319 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_refund_banks_payments_admin_refunds_banks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_refunds_admin_payments_admin_refunds_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["RefundStatus"] | null;
+                source_service?: string | null;
+                provider?: string | null;
+                payment_reference?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_refund_admin_payments_admin_refunds__refund_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_refund_admin_payments_admin_refunds__refund_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundApproveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    initiate_paystack_refund_admin_payments_admin_refunds__refund_id__initiate_paystack_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RefundInitiatePaystackRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_paystack_refund_admin_payments_admin_refunds__refund_id__sync_paystack_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_refund_bank_account_admin_payments_admin_refunds__refund_id__verify_bank_account_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundVerifyBankRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_manual_refund_admin_payments_admin_refunds__refund_id__complete_manual_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundCompleteManualRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fail_or_cancel_refund_admin_payments_admin_refunds__refund_id__fail_or_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                refund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundFailOrCancelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_refunds_payments_me_refunds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundResponse"][];
                 };
             };
         };
@@ -77598,6 +82160,37 @@ export interface operations {
             };
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_member_reporting_scorecard_summary_internal_reporting_members__member_auth_id__scorecard_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -81801,6 +86394,39 @@ export interface operations {
             };
         };
     };
+    get_member_strokelab_summary_internal_ai_members__member_auth_id__strokelab_summary_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                member_auth_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     confirm_founding_member_internal_ai_founding_members_confirm_post: {
         parameters: {
             query?: never;
@@ -83567,6 +88193,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MaterialiseFromSessionTemplateResp"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_member_volunteer_scorecard_summary_internal_volunteer_members__member_id__scorecard_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -86800,6 +91457,205 @@ export interface operations {
             };
         };
     };
+    get_order_actions_store_orders__order_number__actions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderActionEligibilityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    self_cancel_order_store_orders__order_number__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OrderSelfCancelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCancelResultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    self_swap_order_variant_store_orders__order_number__swap_variant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderVariantSwapRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_order_cases_store_orders__order_number__cases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCaseResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_order_case_store_orders__order_number__cases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_number: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderCaseCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_order_case_store_orders__order_number__cases__case_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_number: string;
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_all_categories_admin_store_categories_get: {
         parameters: {
             query?: never;
@@ -87823,6 +92679,228 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreCreditResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_open_cases_count_admin_store_cases_open_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_store_cases_admin_admin_store_cases_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["OrderCaseStatus"] | null;
+                case_type?: components["schemas"]["OrderCaseType"] | null;
+                order_id?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCaseListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_store_case_admin_admin_store_cases__case_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_order_cases_and_refunds_admin_admin_store_orders__order_id__cases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_store_case_admin_admin_store_cases__case_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminCaseReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receive_return_admin_admin_store_cases__case_id__receive_return_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminReceiveReturnRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_cancel_and_refund_order_admin_store_orders__order_id__cancel_and_refund_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminCancelAndRefundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderCancelResultResponse"];
                 };
             };
             /** @description Validation Error */
