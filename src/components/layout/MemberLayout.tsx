@@ -123,6 +123,7 @@ const navSections: NavSection[] = [
     title: "Progress & Media",
     icon: Activity,
     items: [
+      { href: "/account/scorecard", label: "Swim Scorecard", icon: Award },
       { href: "/account/media-vault", label: "My Swim Videos", icon: CloudUpload },
       { href: "/account/reports", label: "Swim Reports", icon: Activity },
       { href: "https://analyzer.swimbuddz.com", label: "Stroke Lab", icon: Activity },
@@ -141,6 +142,7 @@ const navSections: NavSection[] = [
     icon: ClipboardCheck,
     items: [
       { href: "/account/pod-lead/sessions", label: "Practice Scheduling", icon: Calendar },
+      { href: "/account/pod-lead/scorecards", label: "Pod Scorecards", icon: Award },
       { href: "/account/pod-lead/review", label: "Submission Review", icon: ClipboardCheck },
     ],
   },
@@ -150,6 +152,8 @@ const MEMBER_NAV_EXPANDED_KEY = "swimbuddz-member-nav-expanded";
 
 function getTopBarTitle(pathname: string | null): string {
   if (!pathname || pathname === "/account") return "Dashboard";
+  if (pathname.startsWith("/account/scorecard")) return "Swim Scorecard";
+  if (pathname.startsWith("/account/pod-lead/scorecards")) return "Pod Scorecards";
   if (pathname.startsWith("/account/bookings")) return "My Swims";
   if (pathname.startsWith("/account/find-a-swim")) return "Find a Swim";
   if (pathname.startsWith("/account/wallet/rewards")) return "Rewards";

@@ -487,3 +487,15 @@ future swim for 30 minutes before payment exposure. Issued payment links and
 bank instructions protect those seats until settlement or verified closure.
 
 _Last updated: September 2026_
+
+### Member Swim Scorecard (ADR-026)
+
+| Route                         | File                                                              | Protection and purpose                                                                                              |
+| ----------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `/account/scorecard`          | `src/app/(member)/account/scorecard/page.tsx`                     | Authenticated member's living Swim Scorecard across all 6 skill domains, pool-length benchmarks, Stroke Lab AI, and privacy settings |
+| `/account/pod-lead/scorecards`| `src/app/(member)/account/pod-lead/scorecards/page.tsx`           | Pod Lead verification queue, Club Benchmark Day batch recorder, and swimmer inspector scoped to Pods they actively lead |
+| `/coach/scorecards`           | `src/app/coach/scorecards/page.tsx`                               | Coach verification queue, Benchmark Day batch recorder, and full swimmer scorecard inspector                        |
+| `/admin/scorecards`           | `src/app/(admin)/admin/scorecards/page.tsx`                       | Admin verification queue, Benchmark Day batch recorder, and community-wide swimmer scorecard inspector              |
+| `/scorecard/[token]`          | `src/app/(public)/scorecard/[token]/page.tsx`                     | Strictly opt-in public shareable Swim Scorecard showing only verified positive milestones (zero private notes/weaknesses) |
+
+_Last updated: November 2026_

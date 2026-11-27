@@ -26,7 +26,11 @@ import {
   podDisplayName,
   type PodSummary,
 } from "@/lib/pods";
-import { Calendar, CheckCircle, Clock, Users } from "lucide-react";
+import {
+  fetchPodScorecardOverview,
+  type PodScorecardOverview,
+} from "@/lib/scorecard";
+import { Award, Calendar, CheckCircle, Clock, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -34,6 +38,7 @@ export default function MemberPodsDirectoryPage() {
   const [pods, setPods] = useState<PodSummary[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [myPod, setMyPod] = useState<PodSummary | null>(null);
+  const [podScorecards, setPodScorecards] = useState<PodScorecardOverview | null>(null);
   const [clubFilter, setClubFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +55,13 @@ export default function MemberPodsDirectoryPage() {
       setPods(podList);
       setClubs(clubList);
       setMyPod(mine);
+      if (mine) {
+        fetchPodScorecardOverview(mine.id)
+          .then(setPodScorecards)
+          .catch(() => setPodScorecards(null));
+      } else {
+        setPodScorecards(null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load pods");
     } finally {
@@ -163,6 +175,84 @@ export default function MemberPodsDirectoryPage() {
               {actingPodId ? "Leaving…" : "Leave pod"}
             </Button>
           </div>
+
+          {podScorecards && podScorecards.members.length > 0 && (
+            <div className="border-t border-cyan-100 bg-white px-5 py-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 flex items-center gap-1.5">
+                  <Award className="h-3.5 w-3.5 text-cyan-600" />
+                  Pod Swimmer Highlights (Verified)
+                </p>
+                <div className="flex items-center gap-3 text-xs">
+                  <Link
+                    href="/account/scorecard"
+                    className="font-semibold text-cyan-700 hover:underline"
+                  >
+                    My Scorecard &amp; Privacy →
+                  </Link>
+                  {podScorecards.viewer_can_verify && (
+                    <Link
+                      href="/account/pod-lead/scorecards"
+                      className="font-semibold text-emerald-700 hover:underline"
+                    >
+                      Pod Lead Verification →
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {podScorecards.members.map((pm) => (
+                  <div
+                    key={pm.member_id}
+                    className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-900">
+                        {pm.member_name}
+                      </span>
+                      {pm.pod_visibility_enabled && pm.is_club_ready && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                          <ShieldCheck className="h-3 w-3" />
+                          Club Ready
+                        </span>
+                      )}
+                    </div>
+                    {!pm.pod_visibility_enabled ? (
+                      <p className="text-xs text-slate-400">
+                        Scorecard highlights kept private
+                      </p>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap gap-1">
+                          {pm.verified_strokes_unlocked.length > 0 ? (
+                            pm.verified_strokes_unlocked.map((st) => (
+                              <Badge key={st} variant="info">
+                                ✓ {st}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-500">
+                              {pm.verified_skills_count} verified skill
+                              {pm.verified_skills_count === 1 ? "" : "s"}
+                            </span>
+                          )}
+                        </div>
+                        {pm.verified_benchmarks.length > 0 && (
+                          <p className="text-[11px] text-cyan-800 font-medium">
+                            {pm.verified_benchmarks
+                              .slice(0, 2)
+                              .map((b) => `${b.label}: ${b.display_value}`)
+                              .join(" · ")}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

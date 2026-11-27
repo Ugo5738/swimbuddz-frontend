@@ -82,6 +82,7 @@ const navSections: NavSection[] = [
       { href: "/admin/academy/enrollment-changes", label: "Academy Transfers", icon: Repeat },
       { href: "/admin/academy/receipts", label: "Shared Academy Receipts", icon: Receipt },
       { href: "/admin/club-applications", label: "Club Assessments", icon: ClipboardCheck },
+      { href: "/admin/scorecards", label: "Swim Scorecards", icon: Award },
       { href: "/admin/community/clubs", label: "Club Operations", icon: Waves },
       { href: "/admin/community/experiences", label: "Experience Offerings", icon: Calendar },
     ],

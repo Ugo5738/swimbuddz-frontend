@@ -32,6 +32,20 @@ export default function MyClubSwimsPage() {
   return <div className="space-y-5">
     <h1 className="text-2xl font-bold">Your Club swims</h1>
     <p>Book available swims below. Pay-per-swim access does not create reservations automatically.</p>
+    <Card className="border-cyan-200 bg-gradient-to-r from-cyan-50 to-blue-50 p-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-sm font-semibold text-cyan-950">Club Swim Scorecard &amp; Benchmarks</p>
+        <p className="text-xs text-slate-600">
+          Track strokes unlocked, SPL, SWOLF, Stroke Rate, time trials, and Coach/Pod-verified Benchmark Days.
+        </p>
+      </div>
+      <Link
+        href="/account/scorecard"
+        className="inline-flex shrink-0 items-center justify-center rounded-lg bg-cyan-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-cyan-500"
+      >
+        Open Swim Scorecard →
+      </Link>
+    </Card>
     {(error || swims.error || available.error) && <Alert variant="error">{error || swims.error || available.error}</Alert>}
     <h2 className="text-xl font-semibold">Prepaid quarter reservations</h2>
     <p>Cancel attendance when you cannot come; this frees your seat and does not refund your quarter payment.</p>
