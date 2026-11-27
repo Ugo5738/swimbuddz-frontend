@@ -28,6 +28,7 @@ export interface Variant {
   cost_price_ngn: number | null;
   weight_grams: number | null;
   is_active: boolean;
+  allow_backorder?: boolean;
   quantity_available?: number;
   quantity_on_hand?: number;
 }

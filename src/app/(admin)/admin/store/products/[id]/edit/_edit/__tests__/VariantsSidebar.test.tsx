@@ -90,6 +90,7 @@ describe("VariantsSidebar", () => {
       target: { value: "17500" },
     });
     fireEvent.click(screen.getByLabelText(/active/i));
+    fireEvent.click(screen.getByLabelText(/continue selling when out of stock/i));
     fireEvent.click(screen.getByRole("button", { name: /save variant/i }));
 
     await waitFor(() =>
@@ -98,6 +99,7 @@ describe("VariantsSidebar", () => {
           cost_price_ngn: "9250",
           price_override_ngn: "17500",
           is_active: false,
+          allow_backorder: true,
         })
       )
     );

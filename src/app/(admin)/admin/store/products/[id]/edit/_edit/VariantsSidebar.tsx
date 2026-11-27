@@ -10,6 +10,7 @@ export type VariantFormState = {
   weight_grams: string;
   options: string;
   is_active: boolean;
+  allow_backorder?: boolean;
 };
 
 type Props = {
@@ -26,6 +27,9 @@ type Props = {
   onCancelEditVariant: () => void;
   onUpdateVariant: (e: React.FormEvent) => Promise<void>;
   onDeleteVariant: (variantId: string) => Promise<void>;
+  onToggleBackorder?: (variant: Variant) => Promise<void>;
+  onBulkToggleBackorder?: (allow: boolean) => Promise<void>;
+  togglingBackorderId?: string | null;
   savingVariant: boolean;
   deletingVariantId: string | null;
 };
@@ -44,12 +48,19 @@ export function VariantsSidebar({
   onCancelEditVariant,
   onUpdateVariant,
   onDeleteVariant,
+  onToggleBackorder,
+  onBulkToggleBackorder,
+  togglingBackorderId,
   savingVariant,
   deletingVariantId,
 }: Props) {
+  const activeVariants = variants.filter((v) => v.is_active);
+  const allAllowBackorder =
+    activeVariants.length > 0 && activeVariants.every((v) => Boolean(v.allow_backorder));
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h3 className="font-medium text-slate-900">
           Variants <span className="text-slate-400 font-normal">({variants.length})</span>
         </h3>
@@ -61,6 +72,26 @@ export function VariantsSidebar({
           {showVariantForm ? "Cancel" : "+ Add"}
         </button>
       </div>
+
+      {onBulkToggleBackorder && activeVariants.length > 1 && (
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-amber-100 bg-amber-50/60 px-2.5 py-2">
+          <span className="text-[11px] text-amber-900">
+            Continue selling when out of stock (all variants)
+          </span>
+          <button
+            type="button"
+            disabled={togglingBackorderId === "bulk"}
+            onClick={() => onBulkToggleBackorder(!allAllowBackorder)}
+            className="text-[11px] font-semibold text-amber-800 hover:text-amber-950 underline whitespace-nowrap disabled:opacity-50"
+          >
+            {togglingBackorderId === "bulk"
+              ? "Updating..."
+              : allAllowBackorder
+                ? "Disable all"
+                : "Enable all"}
+          </button>
+        </div>
+      )}
 
       {/* Add Variant Form */}
       {showVariantForm && (
@@ -165,6 +196,18 @@ export function VariantsSidebar({
               className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
             />
           </div>
+
+          <label className="flex items-start gap-2 text-xs text-slate-700">
+            <input
+              type="checkbox"
+              checked={Boolean(variantForm.allow_backorder)}
+              onChange={(e) =>
+                setVariantForm((prev) => ({ ...prev, allow_backorder: e.target.checked }))
+              }
+              className="mt-0.5"
+            />
+            <span>Continue selling when out of stock (pre-order)</span>
+          </label>
 
           <button
             type="submit"
@@ -331,6 +374,24 @@ export function VariantsSidebar({
                       Active
                     </label>
                   </div>
+                  <label
+                    htmlFor={`variant-backorder-${variant.id}`}
+                    className="flex items-start gap-2 text-xs text-slate-700"
+                  >
+                    <input
+                      id={`variant-backorder-${variant.id}`}
+                      type="checkbox"
+                      checked={Boolean(editVariantForm.allow_backorder)}
+                      onChange={(event) =>
+                        setEditVariantForm((current) => ({
+                          ...current,
+                          allow_backorder: event.target.checked,
+                        }))
+                      }
+                      className="mt-0.5"
+                    />
+                    <span>Continue selling when out of stock (pre-order)</span>
+                  </label>
                   <div className="flex gap-2">
                     <button
                       type="submit"
@@ -365,6 +426,27 @@ export function VariantsSidebar({
                         Cost ₦{Number(variant.cost_price_ngn).toLocaleString()}
                       </p>
                     ) : null}
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {variant.allow_backorder && (
+                        <span className="inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                          Pre-order when OOS
+                        </span>
+                      )}
+                      {onToggleBackorder && (
+                        <button
+                          type="button"
+                          disabled={togglingBackorderId === variant.id}
+                          onClick={() => onToggleBackorder(variant)}
+                          className="text-[11px] text-slate-500 hover:text-amber-700 underline disabled:opacity-50"
+                        >
+                          {togglingBackorderId === variant.id
+                            ? "Saving..."
+                            : variant.allow_backorder
+                              ? "Stop selling when OOS"
+                              : "Allow pre-order when OOS"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     <span
