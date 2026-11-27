@@ -153,7 +153,7 @@ export default function AdminOrderDetailPage() {
           onChange={(e) => updateOrder({ status: e.target.value })}
           className="px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-400"
         >
-          {allowedStoreOrderStatuses(order.status).map((s) => (
+          {allowedStoreOrderStatuses(order.status, order.fulfillment_type).map((s) => (
             <option key={s} value={s}>
               {storeOrderStatusLabel(s)}
             </option>

@@ -27,7 +27,23 @@ const allowedTransitions: Record<string, string[]> = {
   refunded: [],
 };
 
-export function allowedStoreOrderStatuses(current: string): string[] {
+export function allowedStoreOrderStatuses(
+  current: string,
+  fulfillmentType?: string | null
+): string[] {
+  if (current === "processing") {
+    if (fulfillmentType === "pickup") {
+      return [current, "ready_for_pickup"];
+    }
+    if (fulfillmentType === "delivery") {
+      return [current, "shipped"];
+    }
+  }
+  if (current === "shipped" && fulfillmentType === "pickup") {
+    // Allow pickup orders that were historically marked Shipped to complete cleanly
+    // as Picked Up or Delivered without getting trapped.
+    return [current, "picked_up", "delivered"];
+  }
   return [current, ...(allowedTransitions[current] ?? [])];
 }
 
