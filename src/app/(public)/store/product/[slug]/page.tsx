@@ -1,9 +1,15 @@
 "use client";
 
 import { ProductCard } from "@/components/store/ProductCard";
+import { ProductVariantSelector } from "@/components/store/ProductVariantSelector";
 import { LoadingCard } from "@/components/ui/LoadingCard";
 import { apiGet } from "@/lib/api";
-import { productOptionChoices, selectedProductVariant } from "@/lib/storeVariants";
+import {
+  canPurchaseVariant,
+  productOptionChoices,
+  selectedProductVariant,
+  variantAvailability,
+} from "@/lib/storeVariants";
 import { useStoreCart } from "@/lib/storeCart";
 import {
   ArrowLeft,
@@ -38,6 +44,7 @@ interface ProductVariant {
   options: Record<string, string>;
   price_override_ngn: number | null;
   is_active: boolean;
+  allow_backorder?: boolean;
   quantity_available: number;
 }
 
@@ -253,8 +260,7 @@ export default function ProductDetailPage() {
       toast.error("Please acknowledge the size chart");
       return;
     }
-    const stock = selectedVariant.quantity_available ?? 0;
-    if (stock <= 0 && product?.sourcing_type !== "preorder") {
+    if (!canPurchaseVariant(selectedVariant, product?.sourcing_type)) {
       toast.error("Out of stock");
       return;
     }
@@ -290,8 +296,7 @@ export default function ProductDetailPage() {
       toast.error("Please acknowledge the size chart before proceeding");
       return;
     }
-    const stock = selectedVariant.quantity_available ?? 0;
-    if (stock <= 0 && product?.sourcing_type !== "preorder") {
+    if (!canPurchaseVariant(selectedVariant, product?.sourcing_type)) {
       toast.error("Out of stock");
       return;
     }
@@ -315,9 +320,36 @@ export default function ProductDetailPage() {
   const basePrice = selectedVariant?.price_override_ngn ?? product.base_price_ngn;
   const finalPrice = memberDiscount > 0 ? basePrice * (1 - memberDiscount / 100) : basePrice;
   const hasDiscount = product.compare_at_price_ngn && product.compare_at_price_ngn > basePrice;
-  const isPreorder = product.sourcing_type === "preorder";
-  const stock = selectedVariant?.quantity_available ?? Math.max(0, ...activeVariants.map((variant) => variant.quantity_available ?? 0));
-  const inStock = activeVariants.length > 0 && (stock > 0 || isPreorder);
+  const selectedState = selectedVariant
+    ? variantAvailability(selectedVariant, product.sourcing_type)
+    : null;
+  const stock =
+    selectedVariant?.quantity_available ??
+    Math.max(0, ...activeVariants.map((variant) => variant.quantity_available ?? 0));
+  const allowsOverStockQty = Boolean(
+    product.sourcing_type === "preorder" ||
+      product.sourcing_type === "dropship" ||
+      selectedVariant?.allow_backorder
+  );
+  const isMixedBackorderQty = Boolean(
+    selectedVariant &&
+      selectedState === "in_stock" &&
+      selectedVariant.allow_backorder &&
+      quantity > (selectedVariant.quantity_available ?? 0)
+  );
+  const isPreorder = Boolean(
+    selectedState === "preorder" ||
+      isMixedBackorderQty ||
+      (!selectedVariant && product.sourcing_type === "preorder")
+  );
+  const inStock =
+    activeVariants.length > 0 &&
+    (selectedVariant
+      ? selectedState === "in_stock" || selectedState === "preorder"
+      : activeVariants.some((variant) => canPurchaseVariant(variant, product.sourcing_type)));
+  const hasAnyOrderableVariant = activeVariants.some((variant) =>
+    canPurchaseVariant(variant, product.sourcing_type)
+  );
 
   const discountPercent = hasDiscount
     ? Math.round(
@@ -579,19 +611,34 @@ export default function ProductDetailPage() {
           <div className="mt-3 flex items-center gap-2">
             {inStock ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-sm font-medium text-emerald-600">
-                  {isPreorder
-                    ? `Available for pre-order · Ships in ${product.preorder_lead_days || 14} days`
-                    : stock <= 5
-                      ? `Only ${stock} left in stock`
-                      : "In stock"}
+                <span
+                  className={`w-2 h-2 rounded-full animate-pulse ${
+                    isPreorder ? "bg-amber-500" : "bg-emerald-500"
+                  }`}
+                />
+                <span
+                  className={`text-sm font-medium ${
+                    isPreorder ? "text-amber-700" : "text-emerald-600"
+                  }`}
+                >
+                  {isMixedBackorderQty
+                    ? `${stock} in stock now · ${quantity - stock} will be pre-ordered (ships in ${product.preorder_lead_days || 14} days)`
+                    : isPreorder
+                      ? `Available for pre-order · Ships in ${product.preorder_lead_days || 14} days`
+                      : stock <= 5
+                        ? `Only ${stock} left in stock`
+                        : "In stock"}
                 </span>
               </>
             ) : (
               <>
                 <span className="w-2 h-2 rounded-full bg-slate-400" />
-                <span className="text-sm font-medium text-slate-500">Out of stock</span>
+                <span className="text-sm font-medium text-slate-500">
+                  Out of stock
+                  {selectedState === "out_of_stock" && hasAnyOrderableVariant
+                    ? " · Select another available option below"
+                    : ""}
+                </span>
               </>
             )}
           </div>
@@ -607,124 +654,14 @@ export default function ProductDetailPage() {
           )}
 
           {/* Variant Options */}
-          {requiredOptions.length > 0 && (
-            <div className="space-y-4 mb-5">
-              {Object.entries(optionChoices)
-                .map(([optionName, values]) => {
-                  const isColorOption = optionName.toLowerCase() === "color";
-                  const swatches =
-                    isColorOption && product.variant_options
-                      ? ((product.variant_options as Record<string, unknown>)._color_swatches as
-                          | Record<string, string>
-                          | undefined)
-                      : undefined;
-
-                  return (
-                    <div key={optionName}>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        {optionName}
-                        {selectedOptions[optionName] && (
-                          <span className="text-slate-400 font-normal ml-1">
-                            — {selectedOptions[optionName]}
-                          </span>
-                        )}
-                      </label>
-
-                      {isColorOption ? (
-                        /* ── Temu-style color swatch selector ── */
-                        <div className="flex flex-wrap gap-2">
-                          {(values as string[]).map((value) => {
-                            const isSelected = selectedOptions[optionName] === value;
-                            const isAvailable = product.variants.some(
-                              (v) => v.options[optionName] === value && v.is_active
-                            );
-                            const swatchUrl = swatches?.[value];
-
-                            return (
-                              <button
-                                key={value}
-                                onClick={() => handleOptionChange(optionName, value)}
-                                disabled={!isAvailable}
-                                title={value}
-                                aria-pressed={isSelected}
-                                className={`relative flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                                  isSelected
-                                    ? "border-cyan-500 ring-2 ring-cyan-200 shadow-sm"
-                                    : isAvailable
-                                      ? "border-slate-200 hover:border-cyan-400"
-                                      : "border-slate-100 opacity-40 cursor-not-allowed"
-                                } ${swatchUrl ? "w-16 h-16" : "px-4 py-2"}`}
-                              >
-                                {swatchUrl ? (
-                                  <Image
-                                    src={swatchUrl}
-                                    alt={value}
-                                    fill
-                                    unoptimized
-                                    className="object-cover"
-                                  />
-                                ) : (
-                                  <span
-                                    className={`text-sm font-medium ${
-                                      isSelected ? "text-cyan-700" : "text-slate-700"
-                                    }`}
-                                  >
-                                    {value}
-                                  </span>
-                                )}
-                                {isSelected && swatchUrl && (
-                                  <div className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-cyan-500 rounded-full flex items-center justify-center">
-                                    <svg
-                                      className="w-2.5 h-2.5 text-white"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={3}
-                                        d="M5 13l4 4L19 7"
-                                      />
-                                    </svg>
-                                  </div>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        /* ── Text button selector (Size, etc.) ── */
-                        <div className="flex flex-wrap gap-2">
-                          {(values as string[]).map((value) => {
-                            const isSelected = selectedOptions[optionName] === value;
-                            const isAvailable = product.variants.some(
-                              (v) => v.options[optionName] === value && v.is_active
-                            );
-                            return (
-                              <button
-                                key={value}
-                                onClick={() => handleOptionChange(optionName, value)}
-                                disabled={!isAvailable}
-                                className={`px-4 py-2 text-sm rounded-lg border-2 font-medium transition-all ${
-                                  isSelected
-                                    ? "bg-cyan-600 text-white border-cyan-600 shadow-sm"
-                                    : isAvailable
-                                      ? "bg-white text-slate-700 border-slate-200 hover:border-cyan-400 hover:text-cyan-700"
-                                      : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed line-through"
-                                }`}
-                              >
-                                {value}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-          )}
+          <ProductVariantSelector
+            optionChoices={optionChoices}
+            variants={product.variants}
+            selectedOptions={selectedOptions}
+            sourcingType={product.sourcing_type}
+            variantOptionsMeta={product.variant_options}
+            onSelectOption={handleOptionChange}
+          />
 
           {needsExplicitVariant && <label className="block mb-5 text-sm font-medium">
             Product option
@@ -789,7 +726,7 @@ export default function ProductDetailPage() {
                 <button
                   onClick={() =>
                     setQuantity((q) =>
-                      isPreorder ? q + 1 : Math.max(1, Math.min(stock, q + 1))
+                      allowsOverStockQty ? q + 1 : Math.max(1, Math.min(stock, q + 1))
                     )
                   }
                   className="p-3 hover:bg-slate-50 transition-colors active:bg-slate-100"

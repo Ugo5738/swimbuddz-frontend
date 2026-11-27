@@ -9,7 +9,7 @@ import {
   allowedStoreOrderStatuses,
   storeOrderStatusLabel,
 } from "@/lib/storeOrderStatuses";
-import { ArrowLeft, Eye, Package, Search } from "lucide-react";
+import { ArrowLeft, BookOpen, Eye, Package, Search } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -89,7 +89,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link
             href="/admin/store"
@@ -101,6 +101,13 @@ export default function AdminOrdersPage() {
           <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
           <p className="text-slate-500">{total} orders total</p>
         </div>
+        <Link
+          href="/admin/store/guide"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg hover:border-cyan-400 hover:text-cyan-700 transition-colors text-sm font-medium"
+        >
+          <BookOpen className="w-4 h-4 text-cyan-600" />
+          Operations Guide
+        </Link>
       </div>
 
       {/* Filters */}
