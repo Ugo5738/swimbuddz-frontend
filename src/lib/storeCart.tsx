@@ -17,6 +17,8 @@ export interface CartItem {
   image_url: string | null;
   requires_size_chart_ack?: boolean;
   size_chart_url?: string | null;
+  is_preorder?: boolean;
+  preorder_lead_days?: number | null;
 }
 
 export interface Cart {

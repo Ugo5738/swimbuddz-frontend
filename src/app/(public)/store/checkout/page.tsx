@@ -64,6 +64,7 @@ interface BuyNowProduct {
   name: string;
   status: string;
   sourcing_type: string;
+  preorder_lead_days?: number | null;
   base_price_ngn: number;
   requires_size_chart_ack: boolean;
   variants: Array<{
@@ -71,6 +72,7 @@ interface BuyNowProduct {
     name: string | null;
     sku: string;
     is_active: boolean;
+    allow_backorder?: boolean;
     price_override_ngn: number | null;
     quantity_available: number;
   }>;
@@ -174,6 +176,15 @@ export default function StoreCheckoutPage() {
     : 0;
   const quickDiscountPercent = Number(cart?.member_discount_percent ?? 0);
   const quickDiscount = Math.round(quickSubtotal * quickDiscountPercent) / 100;
+  const quickItemIsPreorder = Boolean(
+    buyNowProduct &&
+      quickVariant &&
+      buyNowSelection &&
+      (buyNowProduct.sourcing_type === "preorder" ||
+        (quickVariant.allow_backorder &&
+          buyNowProduct.sourcing_type !== "dropship" &&
+          quickVariant.quantity_available < buyNowSelection.quantity))
+  );
   const quickBuyCart = quickVariant && buyNowProduct && buyNowSelection
     ? {
         items: [{
@@ -181,6 +192,10 @@ export default function StoreCheckoutPage() {
           product_name: buyNowProduct.name,
           quantity: buyNowSelection.quantity,
           unit_price_ngn: quickVariant.price_override_ngn ?? buyNowProduct.base_price_ngn,
+          is_preorder: quickItemIsPreorder,
+          preorder_lead_days: quickItemIsPreorder
+            ? buyNowProduct.preorder_lead_days || 14
+            : null,
         }],
         requires_size_chart_ack: buyNowProduct.requires_size_chart_ack,
         subtotal_ngn: quickSubtotal,
@@ -537,11 +552,18 @@ export default function StoreCheckoutPage() {
             {/* Items */}
             <div className="space-y-2 text-sm pb-4 border-b border-slate-100">
               {checkoutCart.items.map((item) => (
-                <div key={item.id} className="flex justify-between">
-                  <span className="text-slate-600 truncate max-w-[180px]">
-                    {item.product_name} × {item.quantity}
-                  </span>
-                  <span className="text-slate-900">
+                <div key={item.id} className="flex justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-slate-600 truncate block max-w-[180px]">
+                      {item.product_name} × {item.quantity}
+                    </span>
+                    {"is_preorder" in item && item.is_preorder && (
+                      <span className="inline-block mt-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-800 rounded">
+                        Pre-order
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-slate-900 whitespace-nowrap">
                     ₦{(item.unit_price_ngn * item.quantity).toLocaleString()}
                   </span>
                 </div>
