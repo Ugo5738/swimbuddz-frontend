@@ -28,4 +28,24 @@ describe("store admin order status transitions", () => {
     expect(allowedStoreOrderStatuses("ready_for_pickup")).not.toContain("cancelled");
     expect(allowedStoreOrderStatuses("shipped")).not.toContain("cancelled");
   });
+
+  it("filters processing transitions by fulfillment type and lets shipped pickup orders complete cleanly", () => {
+    expect(allowedStoreOrderStatuses("processing", "pickup")).toEqual([
+      "processing",
+      "ready_for_pickup",
+    ]);
+    expect(allowedStoreOrderStatuses("processing", "delivery")).toEqual([
+      "processing",
+      "shipped",
+    ]);
+    expect(allowedStoreOrderStatuses("shipped", "pickup")).toEqual([
+      "shipped",
+      "picked_up",
+      "delivered",
+    ]);
+    expect(allowedStoreOrderStatuses("shipped", "delivery")).toEqual([
+      "shipped",
+      "delivered",
+    ]);
+  });
 });

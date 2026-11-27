@@ -77,7 +77,11 @@ export default function AdminOrdersPage() {
       toast.success("Order status updated");
       loadOrders();
     } catch (e) {
-      toast.error("Status change rejected. Verify payment in Finance before fulfillment.");
+      toast.error(
+        e instanceof Error && e.message
+          ? e.message
+          : "Status change rejected. Check order payment and stock status."
+      );
     }
   };
 
@@ -186,7 +190,7 @@ export default function AdminOrdersPage() {
                       onChange={(e) => updateStatus(order.id, e.target.value)}
                       className="text-sm px-2 py-1 border border-slate-200 rounded focus:ring-2 focus:ring-cyan-400"
                     >
-                      {allowedStoreOrderStatuses(order.status).map((s) => (
+                      {allowedStoreOrderStatuses(order.status, order.fulfillment_type).map((s) => (
                         <option key={s} value={s}>
                           {storeOrderStatusLabel(s)}
                         </option>
