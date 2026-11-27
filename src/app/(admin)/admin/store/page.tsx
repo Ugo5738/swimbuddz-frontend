@@ -6,6 +6,7 @@ import { apiGet } from "@/lib/api";
 import {
   AlertTriangle,
   BarChart3,
+  BookOpen,
   DollarSign,
   FolderTree,
   Layers,
@@ -124,17 +125,26 @@ export default function StoreDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Store Dashboard</h1>
           <p className="text-slate-500">Manage your products, orders, and inventory</p>
         </div>
-        <Link
-          href="/admin/store/products/new"
-          className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors font-medium"
-        >
-          + Add Product
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/admin/store/guide"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg hover:border-cyan-400 hover:text-cyan-700 transition-colors text-sm font-medium"
+          >
+            <BookOpen className="w-4 h-4 text-cyan-600" />
+            Operations Guide
+          </Link>
+          <Link
+            href="/admin/store/products/new"
+            className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors font-medium"
+          >
+            + Add Product
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -236,6 +246,12 @@ export default function StoreDashboardPage() {
           <Card className="p-4 text-center hover:shadow-md transition-shadow">
             <Trash2 className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
             <span className="text-sm font-medium text-slate-700">Maintenance</span>
+          </Card>
+        </Link>
+        <Link href="/admin/store/guide">
+          <Card className="p-4 text-center hover:shadow-md transition-shadow border-cyan-100 bg-cyan-50/30">
+            <BookOpen className="w-8 h-8 mx-auto text-cyan-600 mb-2" />
+            <span className="text-sm font-medium text-slate-700">Operations Guide</span>
           </Card>
         </Link>
       </div>

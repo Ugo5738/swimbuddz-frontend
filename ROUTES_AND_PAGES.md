@@ -347,6 +347,7 @@ The member dashboard shows this week’s progress. My Swims at `/account/booking
 | `/admin/store/inventory`          | `src/app/(admin)/admin/store/inventory/page.tsx`          | Inventory management         |
 | `/admin/store/orders`             | `src/app/(admin)/admin/store/orders/page.tsx`             | All orders list              |
 | `/admin/store/orders/[id]`        | `src/app/(admin)/admin/store/orders/[id]/page.tsx`        | Order detail and fulfillment |
+| `/admin/store/guide`              | `src/app/(admin)/admin/store/guide/page.tsx`              | Day-1 Store Operations Guide |
 
 ### Transport Management
 
